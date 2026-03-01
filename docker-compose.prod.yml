@@ -1,0 +1,88 @@
+version: '3.8'
+
+# Production Docker Compose Configuration
+# This uses optimized production builds
+
+services:
+  nginx_proxy:
+    image: nginx:alpine
+    container_name: gov_nginx_proxy
+    ports:
+      - "8081:80"
+    volumes:
+      - ./nginx/nginx-production.conf:/etc/nginx/nginx.conf
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      - frontend
+      - api
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.production
+    container_name: gov_react_frontend
+    restart: unless-stopped
+    # No need to expose port externally, nginx will proxy to it
+    expose:
+      - "80"
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: gov_node_api
+    ports:
+      - "3010:3000"
+    volumes:
+      - ./api:/app
+      - /app/node_modules
+      - ./uploads:/app/uploads
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DB_HOST: mysql_db
+      DB_USER: impesUser
+      DB_PASSWORD: Admin2010impes
+      DB_NAME: gov_imbesdb
+    command: npm run dev
+    restart: unless-stopped
+
+  public-dashboard:
+    build:
+      context: ./public-dashboard
+      dockerfile: Dockerfile.production
+    container_name: gov_public_dashboard
+    restart: unless-stopped
+    expose:
+      - "80"
+    ports:
+      - "5177:80"
+
+  mysql_db:
+    image: mysql:8.0
+    container_name: gov_db
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: gov_imbesdb
+      MYSQL_USER: impesUser
+      MYSQL_PASSWORD: Admin2010impes
+    volumes:
+      - ./api/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - gov_db_data:/var/lib/mysql
+    ports:
+      - "3308:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  gov_db_data:
+  nginx_cache:

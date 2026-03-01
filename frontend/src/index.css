@@ -1,0 +1,87 @@
+/* Fallback font import - will work offline */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap");
+
+html,
+body,
+#root,
+.app,
+.content {
+  height: 100%;
+  width: 100%;
+  font-family: "Inter", "Source Sans Pro", sans-serif;
+}
+
+.app {
+  display: flex;
+  position: relative;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #e0e0e0;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #888;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Ensure consistent color rendering across browsers */
+* {
+  -webkit-color-adjust: exact;
+  color-adjust: exact;
+}
+
+/* Force hardware acceleration for better color rendering */
+.status-chip, .status-badge, .project-status {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  isolation: isolate;
+}
+
+/* Enhanced color rendering for charts and visual elements */
+.recharts-wrapper,
+.recharts-surface,
+.recharts-pie,
+.recharts-bar,
+.recharts-cell {
+  -webkit-color-adjust: exact !important;
+  color-adjust: exact !important;
+  image-rendering: crisp-edges;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Ensure tooltips appear above charts */
+.recharts-tooltip-wrapper {
+  z-index: 10000 !important;
+  position: relative !important;
+}
+
+.recharts-tooltip-content {
+  z-index: 10001 !important;
+  position: relative !important;
+}
+
+/* Improve color sharpness for chart elements */
+.recharts-pie-sector,
+.recharts-bar-rectangle {
+  filter: saturate(1.1) contrast(1.05);
+  -webkit-color-adjust: exact;
+  color-adjust: exact;
+}
+
+/* Enhanced color rendering for all elements */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

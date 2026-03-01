@@ -1,0 +1,70 @@
+# Production docker-compose.yml for IMPES Application
+# This file is for production deployments using pre-built images from GitHub Container Registry
+
+services:
+  nginx_proxy:
+    image: ghcr.io/USERNAME/impes-nginx:latest
+    container_name: gov_nginx_proxy
+    ports:
+      - "8081:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - frontend
+      - api
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/USERNAME/impes-frontend:latest
+    container_name: gov_react_frontend
+    ports:
+      - "5176:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  api:
+    image: ghcr.io/USERNAME/impes-api:latest
+    container_name: gov_node_api
+    ports:
+      - "3010:3000"
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql_db
+      DB_USER: impesUser
+      DB_PASSWORD: Admin2010impes
+      DB_NAME: gov_imbesdb
+    restart: unless-stopped
+
+  mysql_db:
+    image: mysql:8.0
+    container_name: gov_db
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: gov_imbesdb
+      MYSQL_USER: impesUser
+      MYSQL_PASSWORD: Admin2010impes
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - gov_db_data:/var/lib/mysql
+    ports:
+      - "3308:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  gov_db_data:
+
+# Instructions:
+# 1. Replace USERNAME with your actual GitHub username
+# 2. Copy this file to your production machine
+# 3. Run: docker-compose -f docker-compose.production.yml up -d
+# 4. Access your app at: http://YOUR-SERVER-IP/impes/

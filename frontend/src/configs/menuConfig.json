@@ -33,6 +33,12 @@
           "route": "PROJECTS"
         },
         {
+          "title": "Upload Projects",
+          "icon": "CloudUploadIcon",
+          "route": "CENTRAL_IMPORT",
+          "permission": "project.create"
+        },
+        {
           "title": "Reports",
           "icon": "AssessmentIcon",
           "route": "REPORTS",

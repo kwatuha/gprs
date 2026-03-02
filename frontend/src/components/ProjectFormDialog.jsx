@@ -292,10 +292,13 @@ const ProjectFormDialog = ({
                 fullWidth 
                 variant="outlined" 
                 size="small"
+                required
                 value={formData.projectName} 
                 onChange={handleChange} 
                 error={!!formErrors.projectName} 
-                helperText={formErrors.projectName}
+                helperText={formErrors.projectName || "Enter a descriptive name for the project"}
+                placeholder="e.g., Construction of New Health Center"
+                inputProps={{ maxLength: 200 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     '& fieldset': {
@@ -330,6 +333,9 @@ const ProjectFormDialog = ({
                 size="small"
                 value={formData.directorate} 
                 onChange={handleChange}
+                placeholder="e.g., Ministry of Health"
+                helperText="The organization responsible for project implementation"
+                inputProps={{ maxLength: 150 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     '& fieldset': {
@@ -547,42 +553,6 @@ const ProjectFormDialog = ({
             </Grid>
             <Grid item xs={12}>
               <TextField 
-                name="expectedOutput" 
-                label="Expected Output" 
-                type="text" 
-                fullWidth 
-                multiline 
-                rows={2} 
-                variant="outlined" 
-                size="small"
-                value={formData.expectedOutput} 
-                onChange={handleChange}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: colors.blueAccent[600],
-                      borderWidth: '2px',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: colors.blueAccent[500],
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: colors.greenAccent[500],
-                      borderWidth: '2px',
-                    },
-                  },
-                                     '& .MuiInputLabel-root': {
-                     color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
-                     fontWeight: 'bold',
-                   },
-                   '& .MuiInputBase-input': {
-                     color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
-                   },
-                }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField 
                 name="expectedOutcome" 
                 label="Expected Outcome" 
                 type="text" 
@@ -769,94 +739,94 @@ const ProjectFormDialog = ({
           >
             📍 Geographical Coverage
             <Typography component="span" variant="caption" sx={{ ml: 1, opacity: 0.7, fontWeight: 'normal' }}>
-              (Select Counties, Sub-Counties, and Wards)
+              (Select Counties, Constituencies, and Wards)
             </Typography>
           </Typography>
           <Grid container spacing={2}>
-            {/* Multi-select Counties */}
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="dense" variant="outlined" size="small" sx={{ minWidth: 200 }}>
-                <InputLabel id="county-multi-select-label">Counties</InputLabel>
-                <Select 
-                  labelId="county-multi-select-label" 
-                  multiple 
-                  name="countyIds" 
-                  value={formData.countyIds || []} 
-                  onChange={handleMultiSelectChange}
-                  input={<OutlinedInput id="select-multiple-chip-county" label="Counties" />}
-                  renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {selected.map((value) => (
-                        <Chip 
-                          key={value} 
-                          label={allMetadata?.counties?.find(c => String(c.countyId) === String(value))?.name || value} 
-                          size="small"
-                        />
-                      ))}
-                    </Box>
-                  )}
-                  inputProps={{ 'aria-label': 'Select multiple counties' }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': {
-                        borderColor: colorMode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[400],
-                        borderWidth: '2px',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: colorMode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[300],
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: colorMode === 'dark' ? colors.greenAccent[500] : colors.greenAccent[400],
-                        borderWidth: '2px',
-                      },
+            {/* Free text fields for County, Constituency, Ward */}
+            <Grid item xs={12} sm={4}>
+              <TextField
+                name="county"
+                label="County"
+                type="text"
+                fullWidth
+                variant="outlined"
+                size="small"
+                value={formData.county || ''}
+                onChange={handleChange}
+                placeholder="e.g., Kisumu"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: colorMode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[400],
+                      borderWidth: '2px',
                     },
-                  }}
-                >
-                  {allMetadata?.counties?.map((county) => (
-                    <MenuItem key={county.countyId} value={String(county.countyId)}>
-                      {county.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+                    '&:hover fieldset': {
+                      borderColor: colorMode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[300],
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: colorMode === 'dark' ? colors.greenAccent[500] : colors.greenAccent[400],
+                      borderWidth: '2px',
+                    },
+                  },
+                }}
+              />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="dense" variant="outlined" size="small" sx={{ minWidth: 200 }}>
-                <InputLabel id="subcounty-multi-select-label">Sub-Counties</InputLabel>
-                <Select labelId="subcounty-multi-select-label" multiple name="subcountyIds" value={formData.subcountyIds} onChange={handleMultiSelectChange}
-                  input={<OutlinedInput id="select-multiple-chip-subcounty" label="Sub-Counties" />}
-                  renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {selected.map((value) => (
-                        <Chip key={value} label={formSubcounties?.find(sc => String(sc.subcountyId) === String(value))?.name || value} />
-                      ))}
-                    </Box>
-                  )}
-                  inputProps={{ 'aria-label': 'Select multiple sub-counties' }}
-                >
-                  {/* CORRECTED: Use the local state from the hook for dynamic sub-counties */}
-                  {formSubcounties?.map((subc) => (<MenuItem key={subc.subcountyId} value={String(subc.subcountyId)}>{subc.name}</MenuItem>))}
-                </Select>
-              </FormControl>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                name="constituency"
+                label="Constituency"
+                type="text"
+                fullWidth
+                variant="outlined"
+                size="small"
+                value={formData.constituency || ''}
+                onChange={handleChange}
+                placeholder="e.g., Kisumu Central"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: colorMode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[400],
+                      borderWidth: '2px',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: colorMode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[300],
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: colorMode === 'dark' ? colors.greenAccent[500] : colors.greenAccent[400],
+                      borderWidth: '2px',
+                    },
+                  },
+                }}
+              />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="dense" variant="outlined" size="small" sx={{ minWidth: 200 }} disabled={formData.subcountyIds.length === 0 && (allMetadata.wards?.length || 0) === 0}>
-                <InputLabel id="ward-multi-select-label">Wards</InputLabel>
-                <Select labelId="ward-multi-select-label" multiple name="wardIds" value={formData.wardIds} onChange={handleMultiSelectChange}
-                  input={<OutlinedInput id="select-multiple-chip-ward" label="Wards" />}
-                  renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {selected.map((value) => (
-                        <Chip key={value} label={formWards?.find(w => String(w.wardId) === String(value))?.name || value} />
-                      ))}
-                    </Box>
-                  )}
-                  inputProps={{ 'aria-label': 'Select multiple wards' }}
-                >
-                  {/* CORRECTED: Use the local state from the hook for dynamic wards */}
-                  {formWards?.map((ward) => (<MenuItem key={ward.wardId} value={String(ward.wardId)}>{ward.name}</MenuItem>))}
-                </Select>
-              </FormControl>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                name="ward"
+                label="Ward"
+                type="text"
+                fullWidth
+                variant="outlined"
+                size="small"
+                value={formData.ward || ''}
+                onChange={handleChange}
+                placeholder="e.g., Milimani"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: colorMode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[400],
+                      borderWidth: '2px',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: colorMode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[300],
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: colorMode === 'dark' ? colors.greenAccent[500] : colors.greenAccent[400],
+                      borderWidth: '2px',
+                    },
+                  },
+                }}
+              />
             </Grid>
           </Grid>
         </Paper>
@@ -1176,80 +1146,6 @@ const ProjectFormDialog = ({
                   <MenuItem value={false}>No</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField 
-                name="complaintsReceived" 
-                label="Complaints Received" 
-                type="number" 
-                fullWidth 
-                variant="outlined" 
-                size="small"
-                value={formData.complaintsReceived || 0} 
-                onChange={handleChange}
-                inputProps={{ min: 0, step: 1 }}
-                helperText="Number of complaints received"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: colors.blueAccent[600],
-                      borderWidth: '2px',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: colors.blueAccent[500],
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: colors.greenAccent[500],
-                      borderWidth: '2px',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
-                    fontWeight: 'bold',
-                  },
-                  '& .MuiInputBase-input': {
-                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
-                  },
-                }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField 
-                name="commonFeedback" 
-                label="Common Feedback" 
-                type="text" 
-                fullWidth 
-                multiline 
-                rows={2} 
-                variant="outlined" 
-                size="small"
-                value={formData.commonFeedback || ''} 
-                onChange={handleChange}
-                placeholder="Common feedback or concerns from the public..."
-                helperText="Summary of common feedback received from the public"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: colors.blueAccent[600],
-                      borderWidth: '2px',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: colors.blueAccent[500],
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: colors.greenAccent[500],
-                      borderWidth: '2px',
-                    },
-                  },
-                  '& .MuiInputLabel-root': {
-                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
-                    fontWeight: 'bold',
-                  },
-                  '& .MuiInputBase-input': {
-                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
-                  },
-                }}
-              />
             </Grid>
           </Grid>
         </Paper>

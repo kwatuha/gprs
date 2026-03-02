@@ -37,6 +37,7 @@ const BASE_PROJECT_SELECT_JOINS = `
         p.paidOut,
         p.objective,
         p.expectedOutput,
+        p.principalInvestigator,
         p.expectedOutcome,
         p.status,
         p.statusReason,
@@ -45,9 +46,10 @@ const BASE_PROJECT_SELECT_JOINS = `
         p.createdAt,
         p.updatedAt,
         p.voided,
-        NULL AS piFirstName,
-        NULL AS piLastName,
-        NULL AS piEmail,
+        p.principalInvestigatorStaffId,
+        s.firstName AS piFirstName,
+        s.lastName AS piLastName,
+        s.email AS piEmail,
         p.departmentId,
         cd.name AS departmentName,
         cd.alias AS departmentAlias,
@@ -79,6 +81,8 @@ const BASE_PROJECT_SELECT_JOINS = `
         GROUP_CONCAT(DISTINCT w.name ORDER BY w.name SEPARATOR ', ') AS wardNames
     FROM
         kemri_projects p
+    LEFT JOIN
+        kemri_staff s ON p.principalInvestigatorStaffId = s.staffId
     LEFT JOIN
         kemri_departments cd ON p.departmentId = cd.departmentId AND (cd.voided IS NULL OR cd.voided = 0)
     LEFT JOIN
@@ -131,14 +135,7 @@ const GET_SINGLE_PROJECT_QUERY = (DB_TYPE) => {
                 p.progress->>'status_reason' AS "statusReason",
                 p.progress->>'latest_update_summary' AS "progressSummary",
                 p.data_sources->>'project_ref_num' AS "ProjectRefNum",
-                p.data_sources AS "dataSources",
                 (p.budget->>'contracted')::boolean AS "Contracted",
-                (p.location->>'geocoordinates')::jsonb AS "geocoordinates",
-                (p.location->'geocoordinates'->>'lat') AS "latitude",
-                (p.location->'geocoordinates'->>'lng') AS "longitude",
-                (p.public_engagement->>'feedback_enabled')::boolean AS "feedbackEnabled",
-                p.public_engagement->>'common_feedback' AS "commonFeedback",
-                (p.public_engagement->>'complaints_received')::integer AS "complaintsReceived",
                 p.created_at AS "createdAt",
                 p.updated_at AS "updatedAt",
                 p.voided,
@@ -147,21 +144,21 @@ const GET_SINGLE_PROJECT_QUERY = (DB_TYPE) => {
                 NULL AS "piLastName",
                 NULL AS "piEmail",
                 NULL AS "departmentId",
-                p.ministry AS "ministry",
                 p.ministry AS "departmentName",
+                p.ministry AS "ministry",
                 NULL AS "departmentAlias",
                 NULL AS "sectionId",
-                p.state_department AS "stateDepartment",
                 p.state_department AS "sectionName",
+                p.state_department AS "stateDepartment",
                 NULL AS "finYearId",
                 NULL AS "financialYearName",
                 (p.notes->>'program_id')::integer AS "programId",
-                pr.programme AS "programName",
+                NULL AS "programName",
                 (p.notes->>'subprogram_id')::integer AS "subProgramId",
-                spr."subProgramme" AS "subProgramName",
+                NULL AS "subProgramName",
                 p.category_id AS "categoryId",
+                p.sector AS "categoryName",
                 p.sector AS "sector",
-                cat."categoryName" AS "categoryName",
                 (p.data_sources->>'created_by_user_id')::integer AS "userId",
                 NULL AS "creatorFirstName",
                 NULL AS "creatorLastName",
@@ -176,19 +173,22 @@ const GET_SINGLE_PROJECT_QUERY = (DB_TYPE) => {
                 (p.public_engagement->>'revision_submitted_at')::timestamp AS "revision_submitted_at",
                 (p.progress->>'percentage_complete')::numeric AS "overallProgress",
                 (p.budget->>'budget_id')::integer AS "budgetId",
+                p.location->>'county' AS "county",
+                p.location->>'constituency' AS "constituency",
+                p.location->>'ward' AS "ward",
+                (p.location->'geocoordinates'->>'lat')::numeric AS "latitude",
+                (p.location->'geocoordinates'->>'lng')::numeric AS "longitude",
+                (p.public_engagement->>'feedback_enabled')::boolean AS "feedbackEnabled",
                 NULL AS "countyNames",
                 NULL AS "subcountyNames",
                 NULL AS "wardNames"
             FROM projects p
-            LEFT JOIN programs pr ON (p.notes->>'program_id')::integer = pr."programId" AND (pr.voided IS NULL OR pr.voided = false)
-            LEFT JOIN subprograms spr ON (p.notes->>'subprogram_id')::integer = spr."subProgramId" AND (spr.voided IS NULL OR spr.voided = false)
-            LEFT JOIN categories cat ON p.category_id = cat."categoryId" AND (cat.voided IS NULL OR cat.voided = false)
-            WHERE p.project_id = $1 AND (p.voided IS NULL OR p.voided = false)
+            WHERE p.project_id = $1 AND p.voided = false
         `;
     } else {
         return `
             ${BASE_PROJECT_SELECT_JOINS}
-            WHERE p.id = ? AND (p.voided IS NULL OR p.voided = 0)
+            WHERE p.id = ? AND p.voided = 0
             GROUP BY p.id;
         `;
     }
@@ -214,10 +214,7 @@ const checkProjectExists = async (projectId) => {
     const DB_TYPE = process.env.DB_TYPE || 'mysql';
     const tableName = DB_TYPE === 'postgresql' ? 'projects' : 'kemri_projects';
     const idColumn = DB_TYPE === 'postgresql' ? 'project_id' : 'id';
-    // Only exclude projects where voided = 1/true, include null and false
-    const voidedCondition = DB_TYPE === 'postgresql' 
-        ? '(voided IS NULL OR voided = false)' 
-        : '(voided IS NULL OR voided = 0)';
+    const voidedCondition = DB_TYPE === 'postgresql' ? 'voided = false' : 'voided = 0';
     const query = `SELECT ${idColumn} FROM ${tableName} WHERE ${idColumn} = ? AND ${voidedCondition}`;
     const result = await pool.execute(query, [projectId]);
     const rows = DB_TYPE === 'postgresql' ? (result.rows || result) : (Array.isArray(result) ? result[0] : result);
@@ -282,13 +279,16 @@ const projectHeaderMap = {
     Status: ['status', 'projectstatus', 'currentstatus'],
     budget: ['budget', 'estimatedcost', 'budgetkes', 'projectcost', 'costofproject'],
     amountPaid: ['amountpaid', 'disbursed', 'expenditure', 'paidout', 'amount paid'],
+    Disbursed: ['disbursed', 'amountdisbursed', 'disbursedamount', 'amountpaid', 'paidout', 'amount paid', 'expenditure'],
     financialYear: ['financialyear', 'financial-year', 'financial year', 'fy', 'adp', 'year'],
     department: ['department', 'implementingdepartment'],
     directorate: ['directorate'],
-    sector: ['sector'],
-    agency: ['agency', 'implementingagency', 'implementing_agency', 'implementing agency'],
+    sector: ['sector', 'sectorname', 'category', 'categoryname'],
+    implementing_agency: ['implementingagency', 'implementing agency', 'agency', 'implementingagencyname', 'agency name'],
+    County: ['county', 'countyname', 'county name'],
+    Constituency: ['constituency', 'constituencyname', 'constituency name'],
     'sub-county': ['subcounty', 'subcountyname', 'subcountyid', 'sub-county', 'subcounty_', 'sub county'],
-    ward: ['ward', 'wardname', 'wardid'],
+    ward: ['ward', 'wardname', 'wardid', 'ward name'],
     Contracted: ['contracted', 'contractamount', 'contractedamount', 'contractsum', 'contract value', 'contract value (kes)'],
     StartDate: ['startdate', 'projectstartdate', 'commencementdate', 'start', 'start date'],
     EndDate: ['enddate', 'projectenddate', 'completiondate', 'end', 'end date']
@@ -503,14 +503,7 @@ const mapRowUsingHeaderMap = (headers, row, trackCorrections = false) => {
             }
         }
         
-        // Map amountPaid to Disbursed for display in preview
-        if (canonical === 'amountPaid') {
-            obj['Disbursed'] = value === '' ? null : value;
-            // Also keep amountPaid for internal processing
-            obj['amountPaid'] = value === '' ? null : value;
-        } else {
-            obj[canonical] = value === '' ? null : value;
-        }
+        obj[canonical] = value === '' ? null : value;
     }
     
     if (trackCorrections) {
@@ -602,30 +595,9 @@ router.post('/import-data', upload.single('file'), async (req, res) => {
 
 /**
  * @route POST /api/projects/check-metadata-mapping
- * @description Check metadata mappings for import data (DISABLED - metadata preview not required)
+ * @description Check metadata mappings for import data (departments, directorates, wards, subcounties)
  */
 router.post('/check-metadata-mapping', async (req, res) => {
-    // Metadata preview disabled - return empty mapping summary
-    const { dataToImport } = req.body || {};
-    const totalRows = dataToImport && Array.isArray(dataToImport) ? dataToImport.length : 0;
-    
-    return res.status(200).json({
-        success: true,
-        message: 'Metadata preview is disabled. Import will proceed without metadata validation.',
-        mappingSummary: {
-            departments: { existing: [], new: [], unmatched: [] },
-            directorates: { existing: [], new: [], unmatched: [] },
-            wards: { existing: [], new: [], unmatched: [] },
-            subcounties: { existing: [], new: [], unmatched: [] },
-            financialYears: { existing: [], new: [], unmatched: [] },
-            totalRows: totalRows,
-            rowsWithUnmatchedMetadata: []
-        }
-    });
-});
-
-// Original implementation (disabled - kept for reference)
-router.post('/check-metadata-mapping-old', async (req, res) => {
     const { dataToImport } = req.body || {};
     if (!dataToImport || !Array.isArray(dataToImport) || dataToImport.length === 0) {
         return res.status(400).json({ success: false, message: 'No data provided for metadata mapping check.' });
@@ -1110,16 +1082,21 @@ router.post('/check-metadata-mapping-old', async (req, res) => {
  * @route POST /api/projects/confirm-import-data
  * @description Confirm and import project data
  */
+
+//========================================
 router.post('/confirm-import-data', async (req, res) => {
     const { dataToImport } = req.body || {};
     if (!dataToImport || !Array.isArray(dataToImport) || dataToImport.length === 0) {
         return res.status(400).json({ success: false, message: 'No data provided for import confirmation.' });
     }
 
-    // PostgreSQL only - no MySQL support
-    const DB_TYPE = 'postgresql';
-    const tableName = 'projects';
-    const idColumn = 'project_id';
+    // Debug: log how many rows the backend actually received for confirmation
+    console.log(`[projects/confirm-import-data] Received ${dataToImport.length} rows to import`);
+
+    // PostgreSQL table and column names
+    const projectsTable = 'projects';
+    const projectIdColumn = 'project_id';
+    const voidedCondition = 'voided = false';
 
     const toBool = (v) => {
         if (typeof v === 'number') return v !== 0;
@@ -1158,26 +1135,116 @@ router.post('/confirm-import-data', async (req, res) => {
     };
 
     let connection;
+    const batchProjectMap = new Map(); // Track projects processed in this batch to prevent duplicates
     const summary = { 
         projectsCreated: 0, 
         projectsUpdated: 0, 
+        linksCreated: 0, 
         errors: [],
-        dataCorrections: [] // Track date corrections only
+        dataCorrections: [], // Track date and financial year corrections
+        skippedMetadata: {
+            departments: [],
+            directorates: []
+        }
+    };
+
+    // Helper function to normalize query results for PostgreSQL
+    const getQueryRows = (result) => {
+        return result.rows || [];
+    };
+
+    // Helper function to update project in PostgreSQL with JSONB structure
+    const updateProjectInPostgreSQL = async (connection, projectId, projectPayload, departmentId, sectionId) => {
+        // Get department and section names if IDs are available
+        let ministry = null;
+        let stateDepartment = null;
+        
+        if (departmentId) {
+            const deptResult = await connection.query(
+                'SELECT name FROM kemri_departments WHERE departmentId = $1 AND (voided IS NULL OR voided = false)',
+                [departmentId]
+            );
+            const deptRows = getQueryRows(deptResult);
+            if (deptRows.length > 0) {
+                ministry = deptRows[0].name;
+            }
+        }
+        
+        if (sectionId) {
+            const sectionResult = await connection.query(
+                'SELECT name FROM kemri_sections WHERE sectionId = $1 AND (voided IS NULL OR voided = false)',
+                [sectionId]
+            );
+            const sectionRows = getQueryRows(sectionResult);
+            if (sectionRows.length > 0) {
+                stateDepartment = sectionRows[0].name;
+            }
+        }
+
+        // Build JSONB objects for update
+        const timeline = JSON.stringify({
+            start_date: projectPayload.startDate || null,
+            expected_completion_date: projectPayload.endDate || null
+        });
+
+        const budget = JSON.stringify({
+            allocated_amount_kes: projectPayload.costOfProject || null,
+            disbursed_amount_kes: projectPayload.paidOut || null,
+            contracted: projectPayload.Contracted || null
+        });
+
+        const progress = JSON.stringify({
+            status: projectPayload.status || null,
+            percentage_complete: null
+        });
+
+        const dataSources = JSON.stringify({
+            project_ref_num: projectPayload.ProjectRefNum || null,
+            created_by_user_id: 1 // TODO: Get from authenticated user
+        });
+
+        // Update project using JSONB structure
+        const updateQuery = `
+            UPDATE projects SET
+                name = $1,
+                description = $2,
+                implementing_agency = $3,
+                sector = $4,
+                ministry = $5,
+                state_department = $6,
+                timeline = $7::jsonb,
+                budget = $8::jsonb,
+                progress = $9::jsonb,
+                data_sources = $10::jsonb,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE project_id = $11 AND voided = false
+        `;
+        
+        await connection.query(updateQuery, [
+            projectPayload.projectName,
+            projectPayload.projectDescription,
+            projectPayload.implementing_agency || projectPayload.directorate,
+            projectPayload.sector,
+            ministry,
+            stateDepartment,
+            timeline,
+            budget,
+            progress,
+            dataSources,
+            projectId
+        ]);
     };
 
     try {
-        if (DB_TYPE === 'postgresql') {
-            // PostgreSQL: Use pool.query with BEGIN/COMMIT
-            await pool.query('BEGIN');
-        } else {
-            // MySQL: Use connection transaction
-            connection = await pool.getConnection();
-            await connection.beginTransaction();
-        }
+        connection = await pool.getConnection();
+        await connection.beginTransaction();
 
         for (let i = 0; i < dataToImport.length; i++) {
             const row = dataToImport[i] || {};
+            // Use savepoint for each row so we can rollback just this row if it fails
+            const savepointName = `sp_row_${i}`;
             try {
+                await connection.query(`SAVEPOINT ${savepointName}`);
                 const projectName = normalizeStr(row.projectName || row.Project_Name || row['Project Name']);
                 const projectRef = normalizeStr(row.ProjectRefNum || row.Project_Ref_Num || row['Project Ref Num']);
                 
@@ -1191,7 +1258,119 @@ router.post('/confirm-import-data', async (req, res) => {
                     throw new Error('Missing projectName and ProjectRefNum');
                 }
 
-                // Skip metadata resolution - no department, directorate, financial year, ward, subcounty linking
+                // Resolve departmentId by name or alias (DO NOT create if missing) - case-insensitive
+                const departmentName = normalizeStr(row.department || row.Department);
+                let departmentId = null;
+                if (departmentName) {
+                    // Get all departments and check manually (to handle comma-separated aliases properly)
+                    const deptResult = await connection.query(
+                        `SELECT departmentId, name, alias FROM kemri_departments 
+                         WHERE (voided IS NULL OR voided = false)`
+                    );
+                    const allDepts = getQueryRows(deptResult);
+                    const normalizedDeptName = departmentName.toLowerCase(); // Case-insensitive matching
+                    let found = false;
+                    for (const dept of allDepts) {
+                        // Check name (case-insensitive)
+                        if (dept.name && normalizeStr(dept.name).toLowerCase() === normalizedDeptName) {
+                            departmentId = dept.departmentId;
+                            found = true;
+                            break;
+                        }
+                        // Check alias - both full alias and split parts (case-insensitive)
+                        // Also check with alias normalization (ignoring &, commas, spaces)
+                        if (dept.alias) {
+                            const fullAlias = normalizeStr(dept.alias).toLowerCase();
+                            const normalizedAlias = normalizeAlias(dept.alias);
+                            const normalizedDeptAlias = normalizeAlias(departmentName);
+                            
+                            if (fullAlias === normalizedDeptName || normalizedAlias === normalizedDeptAlias) {
+                                departmentId = dept.departmentId;
+                                found = true;
+                                break;
+                            }
+                            // Check split aliases (case-insensitive)
+                            const aliases = dept.alias.split(',').map(a => normalizeStr(a).toLowerCase());
+                            if (aliases.includes(normalizedDeptName)) {
+                                departmentId = dept.departmentId;
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!found) {
+                        // Track skipped metadata
+                        if (!summary.skippedMetadata.departments.includes(departmentName)) {
+                            summary.skippedMetadata.departments.push(departmentName);
+                        }
+                    }
+                }
+
+                // Resolve sectionId (directorate) by name or alias (DO NOT create if missing) - case-insensitive
+                const directorateName = normalizeStr(row.directorate || row.Directorate);
+                let sectionId = null;
+                if (directorateName) {
+                    // Get all sections and check manually (to handle comma-separated aliases properly)
+                    const sectionResult = await connection.query(
+                        `SELECT sectionId, name, alias, departmentId FROM kemri_sections 
+                         WHERE (voided IS NULL OR voided = false)`
+                    );
+                    const allSections = getQueryRows(sectionResult);
+                    const normalizedDirName = directorateName.toLowerCase(); // Case-insensitive matching
+                    let matchingSections = [];
+                    
+                    for (const section of allSections) {
+                        let matches = false;
+                        // Check name (case-insensitive)
+                        if (section.name && normalizeStr(section.name).toLowerCase() === normalizedDirName) {
+                            matches = true;
+                        }
+                        // Check alias - both full alias and split parts (case-insensitive)
+                        // Also check with alias normalization (ignoring &, commas, spaces)
+                        if (!matches && section.alias) {
+                            const fullAlias = normalizeStr(section.alias).toLowerCase();
+                            const normalizedAlias = normalizeAlias(section.alias);
+                            const normalizedDirAlias = normalizeAlias(directorateName);
+                            
+                            if (fullAlias === normalizedDirName || normalizedAlias === normalizedDirAlias) {
+                                matches = true;
+                            } else {
+                                // Check split aliases (case-insensitive)
+                                const aliases = section.alias.split(',').map(a => normalizeStr(a).toLowerCase());
+                                if (aliases.includes(normalizedDirName)) {
+                                    matches = true;
+                                }
+                            }
+                        }
+                        
+                        if (matches) {
+                            matchingSections.push(section);
+                        }
+                    }
+                    
+                    if (matchingSections.length > 0) {
+                        // If we have a departmentId, prefer sections that belong to that department
+                        if (departmentId) {
+                            const matchingInDept = matchingSections.find(s => s.departmentId === departmentId);
+                            if (matchingInDept) {
+                                sectionId = matchingInDept.sectionId;
+                            } else {
+                                // If no match in department, use the first matching section
+                                sectionId = matchingSections[0].sectionId;
+                            }
+                        } else {
+                            // No departmentId, use the first matching section
+                            sectionId = matchingSections[0].sectionId;
+                        }
+                    } else {
+                        // Track skipped metadata
+                        if (!summary.skippedMetadata.directorates.includes(directorateName)) {
+                            summary.skippedMetadata.directorates.push(directorateName);
+                        }
+                    }
+                }
+
+                // Financial years are no longer saved - removed from template
 
                 // Prepare project payload
                 const toMoney = (v) => {
@@ -1237,12 +1416,14 @@ router.post('/confirm-import-data', async (req, res) => {
                     projectDescription: normalizeStr(row.ProjectDescription || row.Description) || null,
                     status: normalizeStr(row.Status) || null,
                     costOfProject: toMoney(row.budget),
-                    paidOut: toMoney(row.amountPaid),
+                    paidOut: toMoney(row.Disbursed || row.amountPaid), // Support both Disbursed and amountPaid
                     startDate: normalizeDate(row.StartDate, 'StartDate').date,
                     endDate: normalizeDate(row.EndDate, 'EndDate').date,
                     directorate: normalizeStr(row.directorate || row.Directorate) || null,
                     sector: normalizeStr(row.sector || row.Sector) || null,
-                    implementing_agency: normalizeStr(row.agency || row.Agency || row.implementing_agency || row['Implementing Agency'] || row['implementing agency']) || null,
+                    implementing_agency: normalizeStr(row.implementing_agency || row.implementingAgency || row['implementing Agency'] || row['Implementing Agency'] || row.agency || row.Agency) || null,
+                    sectionId: (sectionId != null && !isNaN(sectionId)) ? sectionId : null, // Store sectionId when directorate is resolved
+                    departmentId: (departmentId != null && !isNaN(departmentId)) ? departmentId : null,
                     Contracted: toMoney(row.Contracted),
                 };
                 
@@ -1256,128 +1437,64 @@ router.post('/confirm-import-data', async (req, res) => {
                 });
 
                 // Upsert by ProjectRefNum first, else by projectName
-                let projectId = null;
-                const placeholder = '$';
-                const refNumColumn = 'name'; // PostgreSQL uses name field
-                const nameColumn = 'name';
+                // Check batch map first to avoid duplicate inserts within same batch
+                const batchKey = projectPayload.ProjectRefNum 
+                    ? `ref:${normalizeStr(projectPayload.ProjectRefNum).toLowerCase()}`
+                    : projectPayload.projectName 
+                        ? `name:${normalizeStr(projectPayload.projectName).toLowerCase()}`
+                        : null;
                 
-                if (projectPayload.ProjectRefNum) {
-                    const checkRefQuery = `SELECT project_id FROM ${tableName} WHERE name = $1 AND (voided IS NULL OR voided = false)`;
-                    const checkRefParams = [projectPayload.ProjectRefNum];
-                    const existByRef = await pool.query(checkRefQuery, checkRefParams);
-                    const existByRefRows = existByRef.rows;
-                    
-                    if (existByRefRows && existByRefRows.length > 0) {
-                        projectId = existByRefRows[0][idColumn];
+                let projectId = null;
+                
+                // Check if we've already processed this project in this batch
+                if (batchKey && batchProjectMap.has(batchKey)) {
+                    projectId = batchProjectMap.get(batchKey);
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log(`Row ${i + 2}: Project already processed in this batch (${batchKey}), reusing projectId: ${projectId}`);
+                    }
+                }
+                
+                // Check database if not found in batch map
+                if (!projectId && projectPayload.ProjectRefNum) {
+                    const refColumn = "data_sources->>'project_ref_num'";
+                    const existByRefResult = await connection.query(
+                        `SELECT ${projectIdColumn} FROM ${projectsTable} WHERE ${refColumn} = $1 AND ${voidedCondition}`, 
+                        [projectPayload.ProjectRefNum]
+                    );
+                    const rows = getQueryRows(existByRefResult);
+                    if (rows.length > 0) {
+                        projectId = rows[0][projectIdColumn];
                         // Log payload for debugging if there are issues
                         if (process.env.NODE_ENV === 'development') {
                             console.log(`Row ${i + 2}: Updating project ${projectId} with payload:`, JSON.stringify(projectPayload, null, 2));
                         }
-                        
-                        if (DB_TYPE === 'postgresql') {
-                            // PostgreSQL: Build UPDATE query with JSONB fields
-                            const timeline = JSON.stringify({
-                                start_date: projectPayload.startDate || null,
-                                expected_completion_date: projectPayload.endDate || null,
-                                financial_year: projectPayload.finYearId ? String(projectPayload.finYearId) : null
-                            });
-                            const budget = JSON.stringify({
-                                allocated_amount_kes: projectPayload.costOfProject || 0,
-                                disbursed_amount_kes: projectPayload.paidOut || 0,
-                                contracted: projectPayload.Contracted || false,
-                                budget_id: null,
-                                source: null
-                            });
-                            const progress = JSON.stringify({
-                                status: projectPayload.status || 'Not Started',
-                                status_reason: null,
-                                percentage_complete: 0,
-                                latest_update_summary: null
-                            });
-                            
-                            const updateQuery = `
-                                UPDATE ${tableName} SET
-                                    name = $1,
-                                    description = $2,
-                                    implementing_agency = $3,
-                                    sector = $4,
-                                    timeline = $5::jsonb,
-                                    budget = $6::jsonb,
-                                    progress = $7::jsonb,
-                                    updated_at = CURRENT_TIMESTAMP
-                                WHERE ${idColumn} = $8
-                            `;
-                            await pool.query(updateQuery, [
-                                projectPayload.projectName,
-                                projectPayload.projectDescription,
-                                projectPayload.implementing_agency,
-                                projectPayload.sector,
-                                timeline,
-                                budget,
-                                progress,
-                                projectId
-                            ]);
-                        } else {
-                            await connection.query(`UPDATE ${tableName} SET ? WHERE ${idColumn} = ?`, [projectPayload, projectId]);
-                        }
+                        // Update existing project with JSONB structure
+                        await updateProjectInPostgreSQL(connection, projectId, projectPayload, departmentId, sectionId);
                         summary.projectsUpdated++;
+                        if (batchKey) {
+                            batchProjectMap.set(batchKey, projectId);
+                        }
                     }
                 }
                 if (!projectId && projectPayload.projectName) {
-                    const checkNameQuery = `SELECT project_id FROM ${tableName} WHERE name = $1 AND (voided IS NULL OR voided = false)`;
-                    const checkNameParams = [projectPayload.projectName];
-                    const existByName = await pool.query(checkNameQuery, checkNameParams);
-                    const existByNameRows = existByName.rows;
-                    
-                    if (existByNameRows && existByNameRows.length > 0) {
-                        projectId = existByNameRows[0][idColumn];
+                    const nameColumn = 'name';
+                    const existByNameResult = await connection.query(
+                        `SELECT ${projectIdColumn} FROM ${projectsTable} WHERE ${nameColumn} = $1 AND ${voidedCondition}`, 
+                        [projectPayload.projectName]
+                    );
+                    const rows = getQueryRows(existByNameResult);
+                    if (rows.length > 0) {
+                        projectId = rows[0][projectIdColumn];
                         // Log payload for debugging if there are issues
                         if (process.env.NODE_ENV === 'development') {
                             console.log(`Row ${i + 2}: Updating project ${projectId} with payload:`, JSON.stringify(projectPayload, null, 2));
                         }
-                        
-                        // PostgreSQL: Build UPDATE query with JSONB fields
-                        const timeline = JSON.stringify({
-                            start_date: projectPayload.startDate || null,
-                            expected_completion_date: projectPayload.endDate || null
-                        });
-                        const budget = JSON.stringify({
-                            allocated_amount_kes: projectPayload.costOfProject || 0,
-                            disbursed_amount_kes: projectPayload.paidOut || 0,
-                            contracted: projectPayload.Contracted || false,
-                            budget_id: null,
-                            source: null
-                        });
-                        const progress = JSON.stringify({
-                            status: projectPayload.status || 'Not Started',
-                            status_reason: null,
-                            percentage_complete: 0,
-                            latest_update_summary: null
-                        });
-                        
-                        const updateQuery = `
-                            UPDATE ${tableName} SET
-                                name = $1,
-                                description = $2,
-                                implementing_agency = $3,
-                                sector = $4,
-                                timeline = $5::jsonb,
-                                budget = $6::jsonb,
-                                progress = $7::jsonb,
-                                updated_at = CURRENT_TIMESTAMP
-                            WHERE ${idColumn} = $8
-                        `;
-                        await pool.query(updateQuery, [
-                            projectPayload.projectName,
-                            projectPayload.projectDescription,
-                            projectPayload.implementing_agency,
-                            projectPayload.sector,
-                            timeline,
-                            budget,
-                            progress,
-                            projectId
-                        ]);
+                        // Update existing project with JSONB structure
+                        await updateProjectInPostgreSQL(connection, projectId, projectPayload, departmentId, sectionId);
                         summary.projectsUpdated++;
+                        if (batchKey) {
+                            batchProjectMap.set(batchKey, projectId);
+                        }
                     }
                 }
                 if (!projectId) {
@@ -1385,25 +1502,24 @@ router.post('/confirm-import-data', async (req, res) => {
                     if (process.env.NODE_ENV === 'development') {
                         console.log(`Row ${i + 2}: Inserting new project with payload:`, JSON.stringify(projectPayload, null, 2));
                     }
-                    
-                        // PostgreSQL: Build INSERT query with JSONB fields
+                    try {
+                        // Build JSONB objects for PostgreSQL projects table
                         const timeline = JSON.stringify({
                             start_date: projectPayload.startDate || null,
                             expected_completion_date: projectPayload.endDate || null
                         });
+
                         const budget = JSON.stringify({
-                            allocated_amount_kes: projectPayload.costOfProject || 0,
-                            disbursed_amount_kes: projectPayload.paidOut || 0,
-                            contracted: projectPayload.Contracted || false,
-                            budget_id: null,
-                            source: null
+                            allocated_amount_kes: projectPayload.costOfProject || null,
+                            disbursed_amount_kes: projectPayload.paidOut || null,
+                            contracted: projectPayload.Contracted || null
                         });
+
                         const progress = JSON.stringify({
-                            status: projectPayload.status || 'Not Started',
-                            status_reason: null,
-                            percentage_complete: 0,
-                            latest_update_summary: null
+                            status: projectPayload.status || null,
+                            percentage_complete: null
                         });
+
                         const notes = JSON.stringify({
                             objective: null,
                             expected_output: null,
@@ -1411,10 +1527,12 @@ router.post('/confirm-import-data', async (req, res) => {
                             program_id: null,
                             subprogram_id: null
                         });
+
                         const dataSources = JSON.stringify({
                             project_ref_num: projectPayload.ProjectRefNum || null,
-                            created_by_user_id: 1
+                            created_by_user_id: 1 // TODO: Get from authenticated user
                         });
+
                         const publicEngagement = JSON.stringify({
                             approved_for_public: false,
                             approved_by: null,
@@ -1424,37 +1542,58 @@ router.post('/confirm-import-data', async (req, res) => {
                             revision_notes: null,
                             revision_requested_by: null,
                             revision_requested_at: null,
-                            revision_submitted_at: null,
-                            feedback_enabled: true,
-                            common_feedback: null,
-                            complaints_received: 0
+                            revision_submitted_at: null
                         });
-                        const location = JSON.stringify({
-                            county: null,
-                            constituency: null,
-                            ward: null,
-                            geocoordinates: {
-                                lat: null,
-                                lng: null
-                            }
-                        });
+
+                const location = JSON.stringify({
+                    county: county && county.trim() !== '' ? county.trim() : null,
+                    constituency: constituency && constituency.trim() !== '' ? constituency.trim() : null,
+                    ward: ward && ward.trim() !== '' ? ward.trim() : null
+                });
+
+                        // Get department and section names if IDs are available
+                        let ministry = null;
+                        let stateDepartment = null;
                         
+                        if (departmentId) {
+                            const deptResult = await connection.query(
+                                'SELECT name FROM kemri_departments WHERE departmentId = $1 AND (voided IS NULL OR voided = false)',
+                                [departmentId]
+                            );
+                            const deptRows = getQueryRows(deptResult);
+                            if (deptRows.length > 0) {
+                                ministry = deptRows[0].name;
+                            }
+                        }
+                        
+                        if (sectionId) {
+                            const sectionResult = await connection.query(
+                                'SELECT name FROM kemri_sections WHERE sectionId = $1 AND (voided IS NULL OR voided = false)',
+                                [sectionId]
+                            );
+                            const sectionRows = getQueryRows(sectionResult);
+                            if (sectionRows.length > 0) {
+                                stateDepartment = sectionRows[0].name;
+                            }
+                        }
+
+                        // Insert into PostgreSQL projects table with JSONB structure
                         const insertQuery = `
-                            INSERT INTO ${tableName} (
-                                name, description, implementing_agency, sector, ministry, state_department, category_id,
+                            INSERT INTO projects (
+                                name, description, implementing_agency, sector, ministry, state_department,
                                 timeline, budget, progress, notes, data_sources, public_engagement, location,
                                 created_at, updated_at, voided
-                            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb, $12::jsonb, $13::jsonb, $14::jsonb, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false)
-                            RETURNING ${idColumn}
+                            ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb, $12::jsonb, $13::jsonb, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false)
+                            RETURNING project_id
                         `;
-                        const result = await pool.query(insertQuery, [
+                        console.log('----------------------',insertQuery)
+                        const insertResult = await connection.query(insertQuery, [
                             projectPayload.projectName,
-                            projectPayload.projectDescription || null,
-                            projectPayload.implementing_agency || null,
-                            projectPayload.sector || null,
-                            null, // ministry
-                            null, // state_department
-                            null, // category_id
+                            projectPayload.projectDescription,
+                            projectPayload.implementing_agency || projectPayload.directorate,
+                            projectPayload.sector,
+                            ministry,
+                            stateDepartment,
                             timeline,
                             budget,
                             progress,
@@ -1463,12 +1602,107 @@ router.post('/confirm-import-data', async (req, res) => {
                             publicEngagement,
                             location
                         ]);
-                        projectId = result.rows[0][idColumn];
-                        summary.projectsCreated++;
-                    }
 
-                // Link Subcounty, Ward, Contractor - PostgreSQL: Skip for now (requires junction table implementation)
-                // TODO: Implement these linking features for PostgreSQL
+                        const insertRows = getQueryRows(insertResult);
+                        projectId = insertRows[0]?.project_id;
+                        
+                        if (!projectId) {
+                            throw new Error('Failed to get project_id after insert');
+                        }
+
+                        summary.projectsCreated++;
+                        // Track in batch map
+                        if (batchKey) {
+                            batchProjectMap.set(batchKey, projectId);
+                        }
+                    } catch (insertErr) {
+                        // Handle PostgreSQL duplicate key errors (code 23505)
+                        if (insertErr.code === '23505' || 
+                            (insertErr.message && insertErr.message.includes('duplicate key') && insertErr.message.includes('projects_pkey'))) {
+                            console.warn(`Row ${i + 2}: Duplicate key detected, attempting to find existing project...`);
+                            
+                            // Try to find existing project by name or ref
+                            let findResult = null;
+                            if (projectPayload.ProjectRefNum) {
+                                const refColumn = "data_sources->>'project_ref_num'";
+                                const result = await connection.query(
+                                    `SELECT ${projectIdColumn} FROM ${projectsTable} WHERE ${refColumn} = $1 AND ${voidedCondition} LIMIT 1`, 
+                                    [projectPayload.ProjectRefNum]
+                                );
+                                findResult = getQueryRows(result);
+                            }
+                            if (!findResult || findResult.length === 0) {
+                                if (projectPayload.projectName) {
+                                    const nameColumn = 'name';
+                                    const result = await connection.query(
+                                        `SELECT ${projectIdColumn} FROM ${projectsTable} WHERE ${nameColumn} = $1 AND ${voidedCondition} LIMIT 1`, 
+                                        [projectPayload.projectName]
+                                    );
+                                    findResult = getQueryRows(result);
+                                }
+                            }
+                            
+                            if (findResult && findResult.length > 0) {
+                                projectId = findResult[0][projectIdColumn];
+                                console.log(`Row ${i + 2}: Found existing project ${projectId}, updating instead...`);
+                                
+                                // Update existing project with JSONB structure
+                                await updateProjectInPostgreSQL(connection, projectId, projectPayload, departmentId, sectionId);
+                                summary.projectsUpdated++;
+                                // Track in batch map
+                                if (batchKey) {
+                                    batchProjectMap.set(batchKey, projectId);
+                                }
+                            } else {
+                                // If we can't find it, this might be a sequence issue - log and rethrow
+                                console.error(`Row ${i + 2}: Duplicate key error but could not find existing project. Error: ${insertErr.message}`);
+                                throw new Error(`Duplicate key error on row ${i + 2}: ${insertErr.message}`);
+                            }
+                        } else {
+                            // Re-throw if it's not a duplicate key error
+                            throw insertErr;
+                        }
+                    }
+                }
+
+                // Save location data to project_sites table (county, constituency, ward as text fields)
+                const countyName = normalizeStr(row.County || row.county || row['County Name']);
+                const constituencyName = normalizeStr(row.Constituency || row.constituency || row['Constituency Name']);
+                const wardName = normalizeStr(row.ward || row.Ward || row['Ward Name']);
+                
+                // Only create project_sites entry if we have at least one location field
+                if (countyName || constituencyName || wardName) {
+                    try {
+                        // Check if site already exists for this project with same location
+                        const existingSiteResult = await connection.query(
+                            `SELECT site_id FROM project_sites 
+                             WHERE project_id = $1 AND county = $2 AND constituency = $3 AND ward = $4
+                             LIMIT 1`,
+                            [projectId, countyName || null, constituencyName || null, wardName || null]
+                        );
+                        const existingSites = getQueryRows(existingSiteResult);
+                        
+                        if (existingSites.length === 0) {
+                            // Insert into project_sites table with county, constituency, ward as text
+                            await connection.query(
+                                `INSERT INTO project_sites (project_id, county, constituency, ward, site_name, site_level, created_at, updated_at)
+                                 VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+                                [
+                                    projectId,
+                                    countyName || null,
+                                    constituencyName || null,
+                                    wardName || null,
+                                    projectPayload.projectName || 'Main Site', // Use project name as site name
+                                    'site' // Default site level
+                                ]
+                            );
+                            summary.linksCreated++;
+                        }
+                    } catch (siteErr) {
+                        // Log but don't fail the import if site creation fails
+                        console.warn(`Row ${i + 2}: Could not create project site for project ${projectId}:`, siteErr.message);
+                    }
+                }
 
             } catch (rowErr) {
                 console.error(`Error processing row ${i + 2}:`, rowErr);
@@ -1478,11 +1712,17 @@ router.post('/confirm-import-data', async (req, res) => {
                 if (rowErr.stack) {
                     console.error(`Row ${i + 2} error stack:`, rowErr.stack);
                 }
+                // Rollback to savepoint to undo this row's changes
+                try {
+                    await connection.query(`ROLLBACK TO SAVEPOINT ${savepointName}`);
+                } catch (rollbackErr) {
+                    console.error(`Error rolling back to savepoint for row ${i + 2}:`, rollbackErr);
+                }
             }
         }
 
         if (summary.errors.length > 0) {
-            await pool.query('ROLLBACK');
+            await connection.rollback();
             console.error('Import failed with errors:', summary.errors);
             // Show first few errors in the main message for better visibility
             const errorPreview = summary.errors.slice(0, 5).join('; ');
@@ -1498,21 +1738,34 @@ router.post('/confirm-import-data', async (req, res) => {
                     totalRows: dataToImport.length,
                     summary: {
                         projectsCreated: summary.projectsCreated,
-                        projectsUpdated: summary.projectsUpdated
+                        projectsUpdated: summary.projectsUpdated,
+                        linksCreated: summary.linksCreated
                     }
                 } 
             });
         }
 
-        await pool.query('COMMIT');
+        await connection.commit();
         
-        return res.status(200).json({ 
-            success: true, 
-            message: 'Projects imported successfully',
-            details: summary 
-        });
+        // Build a message about skipped metadata
+        const skippedMessages = [];
+        if (summary.skippedMetadata.departments.length > 0) {
+            skippedMessages.push(`${summary.skippedMetadata.departments.length} department(s): ${summary.skippedMetadata.departments.join(', ')}`);
+        }
+        if (summary.skippedMetadata.directorates.length > 0) {
+            skippedMessages.push(`${summary.skippedMetadata.directorates.length} directorate(s): ${summary.skippedMetadata.directorates.join(', ')}`);
+        }
+        
+        let message = 'Projects imported successfully';
+        if (skippedMessages.length > 0) {
+            message += `. Note: Some metadata was not found and was skipped: ${skippedMessages.join('; ')}. Please create these in Metadata Management.`;
+        }
+        
+        return res.status(200).json({ success: true, message, details: summary });
     } catch (err) {
-        await pool.query('ROLLBACK');
+        if (connection) {
+            await connection.rollback();
+        }
         console.error('Project import confirmation error:', err);
         return res.status(500).json({ 
             success: false, 
@@ -1520,10 +1773,10 @@ router.post('/confirm-import-data', async (req, res) => {
             details: { error: err.message, stack: process.env.NODE_ENV === 'development' ? err.stack : undefined }
         });
     } finally {
-        // No connection to release for PostgreSQL (using pool)
+        if (connection) connection.release();
     }
 });
-
+//===========================================================================
 /**
  * @route GET /api/projects/template
  * @description Download project import template
@@ -1839,7 +2092,7 @@ router.get('/funding-overview', async (req, res) => {
                 SUM(p.paidOut) AS totalPaid,
                 COUNT(p.id) AS projectCount
             FROM kemri_projects p
-            WHERE (p.voided IS NULL OR p.voided = 0) AND p.status IS NOT NULL
+            WHERE p.voided = 0 AND p.status IS NOT NULL
             GROUP BY p.status
             ORDER BY p.status
         `);
@@ -1853,12 +2106,20 @@ router.get('/funding-overview', async (req, res) => {
 /**
  * @route GET /api/projects/pi-counts
  * @description Get count of projects by principal investigator
- * @deprecated This endpoint is deprecated as principalInvestigator field was removed during database harmonization
  */
 router.get('/pi-counts', async (req, res) => {
     try {
-        // Return empty array as principalInvestigator field no longer exists
-        res.status(200).json([]);
+        const [rows] = await pool.query(`
+            SELECT
+                p.principalInvestigator AS pi,
+                COUNT(p.id) AS count
+            FROM kemri_projects p
+            WHERE p.voided = 0 AND p.principalInvestigator IS NOT NULL
+            GROUP BY p.principalInvestigator
+            ORDER BY count DESC
+            LIMIT 10
+        `);
+        res.status(200).json(rows);
     } catch (error) {
         console.error('Error fetching project PI counts:', error);
         res.status(500).json({ message: 'Error fetching project PI counts', error: error.message });
@@ -1877,7 +2138,7 @@ router.get('/participants-per-project', async (req, res) => {
                 COUNT(pp.participantId) AS participantCount
             FROM kemri_projects p
             LEFT JOIN kemri_project_participants pp ON p.id = pp.projectId
-            WHERE (p.voided IS NULL OR p.voided = 0)
+            WHERE p.voided = 0
             GROUP BY p.id, p.projectName
             ORDER BY participantCount DESC
             LIMIT 10
@@ -2110,41 +2371,9 @@ router.get('/', async (req, res) => {
         // Get DB_TYPE first
         const DB_TYPE = process.env.DB_TYPE || 'mysql';
         
-        // Check if programs and subprograms tables exist (for PostgreSQL)
-        let programsTableExists = false;
-        let subprogramsTableExists = false;
-        if (DB_TYPE === 'postgresql') {
-            try {
-                const programsCheck = await pool.query(`
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.tables 
-                        WHERE table_schema = 'public' 
-                        AND table_name = 'programs'
-                    )
-                `);
-                programsTableExists = programsCheck.rows[0].exists;
-                
-                const subprogramsCheck = await pool.query(`
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.tables 
-                        WHERE table_schema = 'public' 
-                        AND table_name = 'subprograms'
-                    )
-                `);
-                subprogramsTableExists = subprogramsCheck.rows[0].exists;
-            } catch (checkError) {
-                console.warn('Could not check for programs/subprograms tables:', checkError.message);
-                // Continue without joins if check fails
-            }
-        }
-        
         // Query using new JSONB structure for PostgreSQL
-        // Build SELECT with conditional joins based on table existence
-        const programNameSelect = programsTableExists ? 'pr."programme"' : 'NULL';
-        const subProgramNameSelect = subprogramsTableExists ? 'spr."subProgramme"' : 'NULL';
-        
-        const BASE_PROJECT_SELECT = DB_TYPE === 'postgresql' ? 
-            `SELECT
+        const BASE_PROJECT_SELECT = DB_TYPE === 'postgresql' ? `
+            SELECT
                 p.project_id AS id,
                 p.name AS "projectName",
                 p.description AS "projectDescription",
@@ -2162,14 +2391,7 @@ router.get('/', async (req, res) => {
                 p.progress->>'status_reason' AS "statusReason",
                 p.progress->>'latest_update_summary' AS "progressSummary",
                 p.data_sources->>'project_ref_num' AS "ProjectRefNum",
-                p.data_sources AS "dataSources",
                 (p.budget->>'contracted')::boolean AS "Contracted",
-                (p.location->>'geocoordinates')::jsonb AS "geocoordinates",
-                (p.location->'geocoordinates'->>'lat') AS "latitude",
-                (p.location->'geocoordinates'->>'lng') AS "longitude",
-                (p.public_engagement->>'feedback_enabled')::boolean AS "feedbackEnabled",
-                p.public_engagement->>'common_feedback' AS "commonFeedback",
-                (p.public_engagement->>'complaints_received')::integer AS "complaintsReceived",
                 p.created_at AS "createdAt",
                 p.updated_at AS "updatedAt",
                 p.voided,
@@ -2178,21 +2400,21 @@ router.get('/', async (req, res) => {
                 NULL AS piLastName,
                 NULL AS piEmail,
                 NULL AS "departmentId",
-                p.ministry AS "ministry",
                 p.ministry AS departmentName,
+                p.ministry AS "ministry",
                 NULL AS departmentAlias,
                 NULL AS "sectionId",
-                p.state_department AS "stateDepartment",
                 p.state_department AS sectionName,
+                p.state_department AS "stateDepartment",
                 NULL AS "finYearId",
                 NULL AS financialYearName,
                 (p.notes->>'program_id')::integer AS "programId",
-                ` + programNameSelect + ` AS "programName",
+                NULL AS programName,
                 (p.notes->>'subprogram_id')::integer AS "subProgramId",
-                ` + subProgramNameSelect + ` AS "subProgramName",
+                NULL AS subProgramName,
                 p.category_id AS "categoryId",
+                p.sector AS categoryName,
                 p.sector AS "sector",
-                cat."categoryName" AS "categoryName",
                 (p.data_sources->>'created_by_user_id')::integer AS "userId",
                 NULL AS creatorFirstName,
                 NULL AS creatorLastName,
@@ -2207,9 +2429,12 @@ router.get('/', async (req, res) => {
                 (p.public_engagement->>'revision_submitted_at')::timestamp AS revision_submitted_at,
                 (p.progress->>'percentage_complete')::numeric AS "overallProgress",
                 (p.budget->>'budget_id')::integer AS budgetId,
-                NULL AS countyNames,
-                NULL AS subcountyNames,
-                NULL AS wardNames
+                (p.location->'geocoordinates'->>'lat')::numeric AS "latitude",
+                (p.location->'geocoordinates'->>'lng')::numeric AS "longitude",
+                (p.public_engagement->>'feedback_enabled')::boolean AS "feedbackEnabled",
+                STRING_AGG(DISTINCT ps.county, ', ') AS "countyNames",
+                STRING_AGG(DISTINCT ps.constituency, ', ') AS "constituencyNames",
+                STRING_AGG(DISTINCT ps.ward, ', ') AS "wardNames"
         ` : `
             SELECT
                 p.id,
@@ -2222,6 +2447,7 @@ router.get('/', async (req, res) => {
                 p.paidOut,
                 p.objective,
                 p.expectedOutput,
+                p.principalInvestigator,
                 p.expectedOutcome,
                 p.status,
                 p.statusReason,
@@ -2230,6 +2456,7 @@ router.get('/', async (req, res) => {
                 p.createdAt,
                 p.updatedAt,
                 p.voided,
+                p.principalInvestigatorStaffId,
                 NULL AS piFirstName,
                 NULL AS piLastName,
                 NULL AS piEmail,
@@ -2266,18 +2493,17 @@ router.get('/', async (req, res) => {
         `;
         
         // This part dynamically builds the query.
-        // Add LEFT JOINs for programs and subprograms (only if tables exist)
+        // Include LEFT JOIN to project_sites for PostgreSQL to get County, Constituency, Ward
         let fromAndJoinClauses = DB_TYPE === 'postgresql' ? `
             FROM
                 projects p
-            ${programsTableExists ? `LEFT JOIN programs pr ON (p.notes->>'program_id')::integer = pr."programId" AND (pr.voided IS NULL OR pr.voided = false)` : ''}
-            ${subprogramsTableExists ? `LEFT JOIN subprograms spr ON (p.notes->>'subprogram_id')::integer = spr."subProgramId" AND (spr.voided IS NULL OR spr.voided = false)` : ''}
+            LEFT JOIN programs pr ON (p.notes->>'program_id')::integer = pr."programId" AND (pr.voided IS NULL OR pr.voided = false)
+            LEFT JOIN subprograms spr ON (p.notes->>'subprogram_id')::integer = spr."subProgramId" AND (spr.voided IS NULL OR spr.voided = false)
             LEFT JOIN categories cat ON p.category_id = cat."categoryId" AND (cat.voided IS NULL OR cat.voided = false)
+            LEFT JOIN project_sites ps ON p.project_id = ps.project_id
         ` : `
             FROM
                 projects p
-            LEFT JOIN programs pr ON p.programId = pr.programId AND (pr.voided IS NULL OR pr.voided = 0)
-            LEFT JOIN subprograms spr ON p.subProgramId = spr.subProgramId AND (spr.voided IS NULL OR spr.voided = 0)
         `;
 
         let queryParams = [];
@@ -2377,10 +2603,10 @@ router.get('/', async (req, res) => {
             }
         }
         if (categoryId) { 
-            // Filter by category_id column
+            // Category is now sector text field
             if (DB_TYPE === 'postgresql') {
-                whereConditions.push('p.category_id = ?');
-                queryParams.push(parseInt(categoryId));
+                whereConditions.push('p.sector ILIKE ?');
+                queryParams.push(`%${categoryId}%`);
             } else {
                 whereConditions.push('p.categoryId = ?'); 
                 queryParams.push(parseInt(categoryId)); 
@@ -2400,17 +2626,18 @@ router.get('/', async (req, res) => {
         // Build the final query (no location select clauses needed - already in BASE_PROJECT_SELECT as NULL)
         let query = `${BASE_PROJECT_SELECT} ${fromAndJoinClauses}`;
 
-        // Add voided condition - only exclude projects where voided = 1/true, include null and false
-        const voidedCondition = DB_TYPE === 'postgresql' 
-            ? '(p.voided IS NULL OR p.voided = false)'
-            : '(p.voided IS NULL OR p.voided = 0)';
-        
         if (whereConditions.length > 0) {
-            query += ` WHERE ${voidedCondition} AND ${whereConditions.join(' AND ')}`;
-        } else {
-            query += ` WHERE ${voidedCondition}`;
+            query += ` WHERE ${whereConditions.join(' AND ')}`;
         }
-        // No GROUP BY needed since we're not using aggregations
+        // GROUP BY needed for PostgreSQL when using STRING_AGG
+        // Must include all non-aggregated columns from SELECT
+        if (DB_TYPE === 'postgresql') {
+            query += ` GROUP BY 
+                p.project_id, p.name, p.description, p.implementing_agency, 
+                p.timeline, p.budget, p.progress, p.notes, p.data_sources, 
+                p.public_engagement, p.created_at, p.updated_at, p.voided, 
+                p.sector, p.ministry, p.state_department`;
+        }
         query += ` ORDER BY ${DB_TYPE === 'postgresql' ? 'p.project_id' : 'p.id'}`;
 
         // Convert MySQL ? placeholders to PostgreSQL $1, $2, etc. if needed
@@ -2419,19 +2646,12 @@ router.get('/', async (req, res) => {
             query = query.replace(/\?/g, () => `$${paramIndex++}`);
         }
         
-        // Log query for debugging (first 500 chars)
-        console.log('Executing projects query (first 500 chars):', query.substring(0, 500));
-        console.log('Query params:', queryParams);
-        
         // Use execute for PostgreSQL to handle placeholder conversion
         const result = await pool.execute(query, queryParams);
         const rows = DB_TYPE === 'postgresql' ? (result.rows || result) : (Array.isArray(result) ? result[0] : result);
-        console.log('Projects query returned', rows?.length || 0, 'rows');
         res.status(200).json(rows);
     } catch (error) {
         console.error('Error fetching projects:', error);
-        console.error('Error stack:', error.stack);
-        console.error('Query that failed (first 500 chars):', query?.substring(0, 500));
         res.status(500).json({ message: 'Error fetching projects', error: error.message });
     }
 });
@@ -2463,7 +2683,6 @@ router.put('/:id/approval', async (req, res) => {
     }
     
     try {
-        const DB_TYPE = process.env.DB_TYPE || 'mysql';
         const { id } = req.params;
         const { 
             approved_for_public, 
@@ -2476,154 +2695,94 @@ router.put('/:id/approval', async (req, res) => {
             revision_requested_at
         } = req.body;
 
-        if (DB_TYPE === 'postgresql') {
-            // PostgreSQL: Update JSONB field
-            // First, get the current public_engagement JSONB
-            const getCurrentQuery = 'SELECT public_engagement FROM projects WHERE project_id = $1 AND voided = false';
-            const currentResult = await pool.query(getCurrentQuery, [id]);
+        // Build update query dynamically
+        let updateFields = [];
+        let updateValues = [];
+
+        if (revision_requested !== undefined) {
+            updateFields.push('revision_requested = ?');
+            updateValues.push(revision_requested ? 1 : 0);
             
-            if (currentResult.rows.length === 0) {
-                return res.status(404).json({ error: 'Project not found' });
-            }
-            
-            // Get current public_engagement or initialize empty object
-            let publicEngagement = currentResult.rows[0].public_engagement || {};
-            
-            // Update the JSONB object
-            if (revision_requested !== undefined) {
-                publicEngagement.revision_requested = revision_requested;
-                
-                if (revision_requested) {
-                    publicEngagement.revision_notes = revision_notes || null;
-                    publicEngagement.revision_requested_by = revision_requested_by || req.user.id || req.user.userId;
-                    const revisionRequestedAt = revision_requested_at ? new Date(revision_requested_at) : new Date();
-                    publicEngagement.revision_requested_at = revisionRequestedAt.toISOString();
-                    // Reset approval when revision is requested
-                    publicEngagement.approved_for_public = false;
-                } else {
-                    // Clear revision fields
-                    publicEngagement.revision_notes = null;
-                    publicEngagement.revision_requested_by = null;
-                    publicEngagement.revision_requested_at = null;
-                }
-            }
-            
-            if (approved_for_public !== undefined) {
-                publicEngagement.approved_for_public = approved_for_public;
-                publicEngagement.approval_notes = approval_notes || null;
-                publicEngagement.approved_by = approved_by || req.user.id || req.user.userId;
-                const approvedAt = approved_at ? new Date(approved_at) : new Date();
-                publicEngagement.approved_at = approvedAt.toISOString();
-                
-                // Clear revision request when approving/rejecting
-                if (revision_requested === undefined) {
-                    publicEngagement.revision_requested = false;
-                    publicEngagement.revision_notes = null;
-                }
-            }
-            
-            // Update the JSONB field
-            const updateQuery = `
-                UPDATE projects
-                SET public_engagement = $1, updated_at = NOW()
-                WHERE project_id = $2 AND voided = false
-            `;
-            
-            const updateResult = await pool.query(updateQuery, [JSON.stringify(publicEngagement), id]);
-            
-            console.log('=== PROJECT APPROVAL UPDATE (PostgreSQL) ===');
-            console.log('Project ID:', id);
-            console.log('Updated public_engagement:', JSON.stringify(publicEngagement, null, 2));
-            console.log('Rows affected:', updateResult.rowCount);
-            console.log('==========================================');
-            
-            if (updateResult.rowCount === 0) {
-                return res.status(404).json({ error: 'Project not found' });
-            }
-            
-            let message = 'Project updated successfully';
             if (revision_requested) {
-                message = 'Revision requested successfully';
-            } else if (approved_for_public !== undefined) {
-                message = `Project ${approved_for_public ? 'approved' : 'revoked'} for public viewing`;
+                updateFields.push('revision_notes = ?');
+                updateFields.push('revision_requested_by = ?');
+                updateFields.push('revision_requested_at = ?');
+                updateValues.push(revision_notes || null);
+                updateValues.push(revision_requested_by || req.user.userId);
+                // Convert ISO string to MySQL datetime format (YYYY-MM-DD HH:MM:SS)
+                const revisionRequestedAt = revision_requested_at ? new Date(revision_requested_at) : new Date();
+                updateValues.push(revisionRequestedAt.toISOString().slice(0, 19).replace('T', ' '));
+                // Reset approval when revision is requested
+                updateFields.push('approved_for_public = 0');
+            } else {
+                // Clear revision fields
+                updateFields.push('revision_notes = NULL');
+                updateFields.push('revision_requested_by = NULL');
+                updateFields.push('revision_requested_at = NULL');
             }
-            
-            res.json({
-                success: true,
-                message
-            });
-        } else {
-            // MySQL: Update direct columns
-            let updateFields = [];
-            let updateValues = [];
-
-            if (revision_requested !== undefined) {
-                updateFields.push('revision_requested = ?');
-                updateValues.push(revision_requested ? 1 : 0);
-                
-                if (revision_requested) {
-                    updateFields.push('revision_notes = ?');
-                    updateFields.push('revision_requested_by = ?');
-                    updateFields.push('revision_requested_at = ?');
-                    updateValues.push(revision_notes || null);
-                    updateValues.push(revision_requested_by || req.user.userId);
-                    const revisionRequestedAt = revision_requested_at ? new Date(revision_requested_at) : new Date();
-                    updateValues.push(revisionRequestedAt.toISOString().slice(0, 19).replace('T', ' '));
-                    updateFields.push('approved_for_public = 0');
-                } else {
-                    updateFields.push('revision_notes = NULL');
-                    updateFields.push('revision_requested_by = NULL');
-                    updateFields.push('revision_requested_at = NULL');
-                }
-            }
-
-            if (approved_for_public !== undefined) {
-                updateFields.push('approved_for_public = ?');
-                updateFields.push('approval_notes = ?');
-                updateFields.push('approved_by = ?');
-                updateFields.push('approved_at = ?');
-                updateValues.push(approved_for_public ? 1 : 0);
-                updateValues.push(approval_notes || null);
-                updateValues.push(approved_by || req.user.userId);
-                const approvedAt = approved_at ? new Date(approved_at) : new Date();
-                updateValues.push(approvedAt.toISOString().slice(0, 19).replace('T', ' '));
-                
-                if (revision_requested === undefined) {
-                    updateFields.push('revision_requested = 0');
-                    updateFields.push('revision_notes = NULL');
-                }
-            }
-
-            if (updateFields.length === 0) {
-                return res.status(400).json({ error: 'No update fields provided' });
-            }
-
-            updateValues.push(id);
-
-            const query = `
-                UPDATE kemri_projects
-                SET ${updateFields.join(', ')}
-                WHERE id = ? AND voided = 0
-            `;
-
-            const [result] = await pool.query(query, updateValues);
-
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ error: 'Project not found' });
-            }
-
-            let message = 'Project updated successfully';
-            if (revision_requested) {
-                message = 'Revision requested successfully';
-            } else if (approved_for_public !== undefined) {
-                message = `Project ${approved_for_public ? 'approved' : 'revoked'} for public viewing`;
-            }
-
-            res.json({
-                success: true,
-                message
-            });
         }
+
+        if (approved_for_public !== undefined) {
+            updateFields.push('approved_for_public = ?');
+            updateFields.push('approval_notes = ?');
+            updateFields.push('approved_by = ?');
+            updateFields.push('approved_at = ?');
+            updateValues.push(approved_for_public ? 1 : 0);
+            updateValues.push(approval_notes || null);
+            updateValues.push(approved_by || req.user.userId);
+            // Convert ISO string to MySQL datetime format (YYYY-MM-DD HH:MM:SS)
+            const approvedAt = approved_at ? new Date(approved_at) : new Date();
+            updateValues.push(approvedAt.toISOString().slice(0, 19).replace('T', ' '));
+            
+            // Clear revision request when approving/rejecting
+            if (revision_requested === undefined) {
+                updateFields.push('revision_requested = 0');
+                updateFields.push('revision_notes = NULL');
+            }
+        }
+
+        if (updateFields.length === 0) {
+            return res.status(400).json({ error: 'No update fields provided' });
+        }
+
+        updateValues.push(id);
+
+        const query = `
+            UPDATE kemri_projects
+            SET ${updateFields.join(', ')}
+            WHERE id = ? AND voided = 0
+        `;
+
+        console.log('=== PROJECT APPROVAL UPDATE ===');
+        console.log('Project ID:', id);
+        console.log('Update query:', query);
+        console.log('Update values:', updateValues);
+        console.log('Request body:', JSON.stringify(req.body, null, 2));
+        console.log('User:', JSON.stringify(req.user, null, 2));
+        console.log('Update fields count:', updateFields.length);
+        console.log('Update values count:', updateValues.length);
+
+        const [result] = await pool.query(query, updateValues);
+
+        console.log('Update result:', JSON.stringify(result, null, 2));
+        console.log('Affected rows:', result.affectedRows);
+        console.log('==============================');
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Project not found' });
+        }
+
+        let message = 'Project updated successfully';
+        if (revision_requested) {
+            message = 'Revision requested successfully';
+        } else if (approved_for_public !== undefined) {
+            message = `Project ${approved_for_public ? 'approved' : 'revoked'} for public viewing`;
+        }
+
+        res.json({
+            success: true,
+            message
+        });
     } catch (error) {
         console.error('=== ERROR UPDATING PROJECT APPROVAL ===');
         console.error('Error:', error);
@@ -2808,15 +2967,17 @@ router.post('/', validateProject, async (req, res) => {
                     programId,
                     subProgramId,
                     overallProgress,
+                    county,
+                    constituency,
+                    ward,
                     budgetSource,
                     progressSummary,
                     latitude,
                     longitude,
-                    feedbackEnabled,
-                    commonFeedback,
-                    complaintsReceived,
-                    dataSources
+                    feedbackEnabled
                 } = projectData;
+                
+                // categoryId was extracted separately from req.body, use it here
 
                 // Build JSONB objects
                 const timeline = JSON.stringify({
@@ -2830,14 +2991,14 @@ router.post('/', validateProject, async (req, res) => {
                     disbursed_amount_kes: paidOut || 0,
                     contracted: Contracted || false,
                     budget_id: null,
-                    source: budgetSource || null
+                    source: budgetSource && budgetSource.trim() !== '' ? budgetSource.trim() : null
                 });
 
                 const progress = JSON.stringify({
                     status: status || 'Not Started',
                     status_reason: statusReason || null,
                     percentage_complete: overallProgress || 0,
-                    latest_update_summary: progressSummary || null
+                    latest_update_summary: progressSummary && progressSummary.trim() !== '' ? progressSummary.trim() : null
                 });
 
                 const notes = JSON.stringify({
@@ -2848,16 +3009,10 @@ router.post('/', validateProject, async (req, res) => {
                     subprogram_id: subProgramId || null
                 });
 
-                // Handle dataSources - can be array or object
-                let dataSourcesJson;
-                if (dataSources && Array.isArray(dataSources) && dataSources.length > 0) {
-                    dataSourcesJson = JSON.stringify(dataSources);
-                } else {
-                    dataSourcesJson = JSON.stringify({
-                        project_ref_num: ProjectRefNum || null,
-                        created_by_user_id: userId
-                    });
-                }
+                const dataSources = JSON.stringify({
+                    project_ref_num: ProjectRefNum || null,
+                    created_by_user_id: userId
+                });
 
                 const publicEngagement = JSON.stringify({
                     approved_for_public: false,
@@ -2869,18 +3024,16 @@ router.post('/', validateProject, async (req, res) => {
                     revision_requested_by: null,
                     revision_requested_at: null,
                     revision_submitted_at: null,
-                    feedback_enabled: feedbackEnabled !== undefined ? feedbackEnabled : true,
-                    common_feedback: commonFeedback || null,
-                    complaints_received: complaintsReceived || 0
+                    feedback_enabled: feedbackEnabled !== undefined ? (feedbackEnabled === true || feedbackEnabled === 'true' || feedbackEnabled === 1) : true
                 });
 
                 const location = JSON.stringify({
-                    county: null,
-                    constituency: null,
-                    ward: null,
+                    county: county && county.trim() !== '' ? county.trim() : null,
+                    constituency: constituency && constituency.trim() !== '' ? constituency.trim() : null,
+                    ward: ward && ward.trim() !== '' ? ward.trim() : null,
                     geocoordinates: {
-                        lat: latitude || null,
-                        lng: longitude || null
+                        lat: latitude && latitude !== '' ? parseFloat(latitude) : null,
+                        lng: longitude && longitude !== '' ? parseFloat(longitude) : null
                     }
                 });
 
@@ -2898,15 +3051,15 @@ router.post('/', validateProject, async (req, res) => {
                     projectName,
                     projectDescription || null,
                     directorate || null,
-                    sector || null,
+                    sector !== undefined ? (sector || null) : null,
                     ministry || null,
                     stateDepartment || null,
-                    categoryId || null,
+                    categoryId ? parseInt(categoryId, 10) : null,
                     timeline,
                     budget,
                     progress,
                     notes,
-                    dataSourcesJson,
+                    dataSources,
                     publicEngagement,
                     location
                 ]);
@@ -2925,55 +3078,30 @@ router.post('/', validateProject, async (req, res) => {
             }
 
             // NEW: Automatically create milestones from the category template
-            if (categoryId) {
-                const milestoneQuery = DB_TYPE === 'postgresql' 
-                    ? 'SELECT "milestoneName", description, "sequenceOrder" FROM category_milestones WHERE "categoryId" = $1'
-                    : 'SELECT milestoneName, description, sequenceOrder FROM category_milestones WHERE categoryId = ?';
-                
-                const milestoneResult = DB_TYPE === 'postgresql' 
-                    ? await pool.query(milestoneQuery, [categoryId])
-                    : await connection.query(milestoneQuery, [categoryId]);
-                
-                const milestoneTemplates = DB_TYPE === 'postgresql' 
-                    ? milestoneResult.rows 
-                    : (Array.isArray(milestoneResult) ? milestoneResult[0] : milestoneResult);
+            // NOTE: PostgreSQL production schema currently does not have the expected milestone_name/sequence_order columns.
+            // To avoid 500 errors when creating projects, we only run the legacy MySQL milestone template logic for now.
+            if (categoryId && DB_TYPE !== 'postgresql') {
+                const milestoneQuery =
+                    'SELECT milestoneName, description, sequenceOrder FROM category_milestones WHERE categoryId = ?';
+
+                const milestoneResult = await connection.query(milestoneQuery, [categoryId]);
+                const milestoneTemplates = Array.isArray(milestoneResult) ? milestoneResult[0] : milestoneResult;
 
                 if (milestoneTemplates && milestoneTemplates.length > 0) {
-                    if (DB_TYPE === 'postgresql') {
-                        // PostgreSQL: Insert milestones
-                        // Note: category_milestones uses camelCase (milestoneName), project_milestones uses snake_case (milestone_name)
-                        for (const m of milestoneTemplates) {
-                            await pool.query(
-                                `INSERT INTO project_milestones (
-                                    project_id, milestone_name, description, sequence_order, status, user_id, created_at
-                                ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)`,
-                                [
-                                    newProjectId,
-                                    m.milestoneName || m.milestone_name, // Handle both camelCase and snake_case
-                                    m.description || null,
-                                    m.sequenceOrder || m.sequence_order, // Handle both camelCase and snake_case
-                                    'Not Started',
-                                    userId
-                                ]
-                            );
-                        }
-                    } else {
-                        // MySQL: Insert milestones
-                        const milestoneValues = milestoneTemplates.map(m => [
-                            newProjectId,
-                            m.milestoneName || m.milestone_name,
-                            m.description,
-                            m.sequenceOrder || m.sequence_order,
-                            'Not Started',
-                            userId,
-                            new Date().toISOString().slice(0, 19).replace('T', ' ')
-                        ]);
+                    const milestoneValues = milestoneTemplates.map(m => [
+                        newProjectId,
+                        m.milestoneName,
+                        m.description,
+                        m.sequenceOrder,
+                        'Not Started',
+                        userId,
+                        new Date().toISOString().slice(0, 19).replace('T', ' ')
+                    ]);
 
-                        await connection.query(
-                            'INSERT INTO kemri_project_milestones (projectId, milestoneName, description, sequenceOrder, status, userId, createdAt) VALUES ?',
-                            [milestoneValues]
-                        );
-                    }
+                    await connection.query(
+                        'INSERT INTO kemri_project_milestones (projectId, milestoneName, description, sequenceOrder, status, userId, createdAt) VALUES ?',
+                        [milestoneValues]
+                    );
                 }
             }
 
@@ -3092,11 +3220,12 @@ router.put('/:id', validateProject, async (req, res) => {
     const projectData = { ...req.body };
     delete projectData.id;
     
-    const DB_TYPE = process.env.DB_TYPE || 'mysql';
-    
     try {
-        if (DB_TYPE === 'postgresql') {
-            // PostgreSQL: Update JSONB fields
+        // PostgreSQL: Use pool.query with BEGIN/COMMIT
+        await pool.query('BEGIN');
+        
+        try {
+            // Map incoming fields to PostgreSQL JSONB structure
             const {
                 projectName,
                 projectDescription,
@@ -3115,162 +3244,236 @@ router.put('/:id', validateProject, async (req, res) => {
                 ministry,
                 stateDepartment,
                 sector,
+                categoryId,
                 finYearId,
                 programId,
                 subProgramId,
                 overallProgress,
+                county,
+                constituency,
+                ward,
                 budgetSource,
                 progressSummary,
                 latitude,
                 longitude,
-                feedbackEnabled,
-                commonFeedback,
-                complaintsReceived,
-                dataSources,
-                categoryId
+                feedbackEnabled
             } = projectData;
 
-            // Build JSONB objects (merge with existing data if needed)
+            // Debug logging for sector, ministry, stateDepartment
+            console.log('=== UPDATE PROJECT DEBUG ===');
+            console.log('Project ID:', id);
+            console.log('Sector value:', sector, 'Type:', typeof sector, 'Undefined:', sector === undefined);
+            console.log('Ministry value:', ministry, 'Type:', typeof ministry, 'Undefined:', ministry === undefined);
+            console.log('StateDepartment value:', stateDepartment, 'Type:', typeof stateDepartment, 'Undefined:', stateDepartment === undefined);
+            console.log('Full projectData keys:', Object.keys(projectData));
+            console.log('Full projectData:', JSON.stringify(projectData, null, 2));
+
+            // Build JSONB objects for update
+            // First, fetch existing project to merge with existing JSONB data
+            const existingResult = await pool.query(
+                'SELECT timeline, budget, progress, notes, data_sources, public_engagement, location FROM projects WHERE project_id = $1 AND voided = false',
+                [id]
+            );
+
+            if (existingResult.rows.length === 0) {
+                await pool.query('ROLLBACK');
+                return res.status(404).json({ message: 'Project not found or already deleted' });
+            }
+
+            const existing = existingResult.rows[0];
+            
+            // Merge existing JSONB data with new values
+            const existingTimeline = existing.timeline || {};
+            const existingBudget = existing.budget || {};
+            const existingProgress = existing.progress || {};
+            const existingNotes = existing.notes || {};
+            const existingDataSources = existing.data_sources || {};
+            const existingPublicEngagement = existing.public_engagement || {};
+            const existingLocation = existing.location || {};
+            const existingGeocoordinates = existingLocation.geocoordinates || {};
+
+            // Convert empty strings to null for dates
+            const normalizedStartDate = startDate !== undefined 
+                ? (startDate === '' || startDate === null ? null : startDate)
+                : (existingTimeline.start_date || null);
+            const normalizedEndDate = endDate !== undefined 
+                ? (endDate === '' || endDate === null ? null : endDate)
+                : (existingTimeline.expected_completion_date || null);
+
             const timeline = JSON.stringify({
-                start_date: startDate || null,
-                expected_completion_date: endDate || null,
-                financial_year: finYearId ? String(finYearId) : null
+                start_date: normalizedStartDate,
+                expected_completion_date: normalizedEndDate,
+                financial_year: finYearId !== undefined ? (finYearId ? String(finYearId) : null) : (existingTimeline.financial_year || null)
             });
 
             const budget = JSON.stringify({
-                allocated_amount_kes: costOfProject || 0,
-                disbursed_amount_kes: paidOut || 0,
-                contracted: Contracted || false,
-                budget_id: null,
-                source: budgetSource || null
+                allocated_amount_kes: costOfProject !== undefined ? (costOfProject || 0) : (existingBudget.allocated_amount_kes || 0),
+                disbursed_amount_kes: paidOut !== undefined ? (paidOut || 0) : (existingBudget.disbursed_amount_kes || 0),
+                contracted: Contracted !== undefined ? Contracted : (existingBudget.contracted || false),
+                budget_id: existingBudget.budget_id || null,
+                source: budgetSource !== undefined 
+                    ? (budgetSource && budgetSource.trim() !== '' ? budgetSource.trim() : null)
+                    : (existingBudget.source || null)
             });
 
             const progress = JSON.stringify({
-                status: status || 'Not Started',
-                status_reason: statusReason || null,
-                percentage_complete: overallProgress || 0,
-                latest_update_summary: progressSummary || null
+                status: status !== undefined ? status : (existingProgress.status || 'Not Started'),
+                status_reason: statusReason !== undefined ? statusReason : (existingProgress.status_reason || null),
+                percentage_complete: overallProgress !== undefined ? (overallProgress || 0) : (existingProgress.percentage_complete || 0),
+                latest_update_summary: progressSummary !== undefined
+                    ? (progressSummary && progressSummary.trim() !== '' ? progressSummary.trim() : null)
+                    : (existingProgress.latest_update_summary || null)
             });
 
             const notes = JSON.stringify({
-                objective: objective || null,
-                expected_output: expectedOutput || null,
-                expected_outcome: expectedOutcome || null,
-                program_id: programId || null,
-                subprogram_id: subProgramId || null
+                objective: objective !== undefined ? objective : (existingNotes.objective || null),
+                expected_output: expectedOutput !== undefined ? expectedOutput : (existingNotes.expected_output || null),
+                expected_outcome: expectedOutcome !== undefined ? expectedOutcome : (existingNotes.expected_outcome || null),
+                program_id: programId !== undefined ? programId : (existingNotes.program_id || null),
+                subprogram_id: subProgramId !== undefined ? subProgramId : (existingNotes.subprogram_id || null)
             });
 
-            // Handle dataSources - can be array or object
-            let dataSourcesJson;
-            if (dataSources && Array.isArray(dataSources) && dataSources.length > 0) {
-                dataSourcesJson = JSON.stringify(dataSources);
-            } else {
-                dataSourcesJson = JSON.stringify({
-                    project_ref_num: ProjectRefNum || null
-                });
-            }
+            const dataSources = JSON.stringify({
+                project_ref_num: ProjectRefNum !== undefined ? ProjectRefNum : (existingDataSources.project_ref_num || null),
+                created_by_user_id: existingDataSources.created_by_user_id || 1
+            });
 
+            // Build publicEngagement JSONB object
             const publicEngagement = JSON.stringify({
-                approved_for_public: false,
-                approved_by: null,
-                approved_at: null,
-                approval_notes: null,
-                revision_requested: false,
-                revision_notes: null,
-                revision_requested_by: null,
-                revision_requested_at: null,
-                revision_submitted_at: null,
-                feedback_enabled: feedbackEnabled !== undefined ? feedbackEnabled : true,
-                common_feedback: commonFeedback || null,
-                complaints_received: complaintsReceived || 0
+                approved_for_public: existingPublicEngagement.approved_for_public || false,
+                approved_by: existingPublicEngagement.approved_by || null,
+                approved_at: existingPublicEngagement.approved_at || null,
+                approval_notes: existingPublicEngagement.approval_notes || null,
+                revision_requested: existingPublicEngagement.revision_requested || false,
+                revision_notes: existingPublicEngagement.revision_notes || null,
+                revision_requested_by: existingPublicEngagement.revision_requested_by || null,
+                revision_requested_at: existingPublicEngagement.revision_requested_at || null,
+                revision_submitted_at: existingPublicEngagement.revision_submitted_at || null,
+                feedback_enabled: feedbackEnabled !== undefined 
+                    ? (feedbackEnabled === true || feedbackEnabled === 'true' || feedbackEnabled === 1)
+                    : (existingPublicEngagement.feedback_enabled !== undefined ? existingPublicEngagement.feedback_enabled : true)
             });
 
+            // Build location JSONB object with county, constituency, ward, and geocoordinates
             const location = JSON.stringify({
-                county: null,
-                constituency: null,
-                ward: null,
+                county: county !== undefined ? (county && county.trim() !== '' ? county.trim() : null) : (existingLocation.county || null),
+                constituency: constituency !== undefined ? (constituency && constituency.trim() !== '' ? constituency.trim() : null) : (existingLocation.constituency || null),
+                ward: ward !== undefined ? (ward && ward.trim() !== '' ? ward.trim() : null) : (existingLocation.ward || null),
                 geocoordinates: {
-                    lat: latitude || null,
-                    lng: longitude || null
+                    lat: latitude !== undefined 
+                        ? (latitude && latitude !== '' ? parseFloat(latitude) : null)
+                        : (existingGeocoordinates.lat || null),
+                    lng: longitude !== undefined
+                        ? (longitude && longitude !== '' ? parseFloat(longitude) : null)
+                        : (existingGeocoordinates.lng || null)
                 }
             });
 
-            // Update PostgreSQL with JSONB structure
+            // Build dynamic update query - only update fields that are provided
+            const updateFields = [];
+            const updateValues = [];
+            let paramIndex = 1;
+
+            if (projectName !== undefined) {
+                updateFields.push(`name = $${paramIndex++}`);
+                updateValues.push(projectName);
+            }
+            if (projectDescription !== undefined) {
+                updateFields.push(`description = $${paramIndex++}`);
+                updateValues.push(projectDescription);
+            }
+            if (directorate !== undefined) {
+                updateFields.push(`implementing_agency = $${paramIndex++}`);
+                updateValues.push(directorate);
+            }
+            // Use 'in' operator to check if key exists in projectData, even if value is empty string or undefined
+            if ('sector' in projectData) {
+                console.log('Adding sector to update:', sector, 'Type:', typeof sector, 'Raw value:', projectData.sector);
+                updateFields.push(`sector = $${paramIndex++}`);
+                // Preserve the value if it's a non-empty string, otherwise set to null
+                const sectorValue = (sector && typeof sector === 'string' && sector.trim() !== '') ? sector.trim() : null;
+                console.log('Sector value to save:', sectorValue);
+                updateValues.push(sectorValue);
+            } else {
+                console.log('Sector not in projectData, skipping update');
+            }
+            if ('ministry' in projectData) {
+                console.log('Adding ministry to update:', ministry, 'Raw value:', projectData.ministry);
+                updateFields.push(`ministry = $${paramIndex++}`);
+                const ministryValue = (ministry && typeof ministry === 'string' && ministry.trim() !== '') ? ministry.trim() : null;
+                console.log('Ministry value to save:', ministryValue);
+                updateValues.push(ministryValue);
+            } else {
+                console.log('Ministry not in projectData, skipping update');
+            }
+            if ('stateDepartment' in projectData) {
+                console.log('Adding stateDepartment to update:', stateDepartment, 'Raw value:', projectData.stateDepartment);
+                updateFields.push(`state_department = $${paramIndex++}`);
+                const stateDeptValue = (stateDepartment && typeof stateDepartment === 'string' && stateDepartment.trim() !== '') ? stateDepartment.trim() : null;
+                console.log('StateDepartment value to save:', stateDeptValue);
+                updateValues.push(stateDeptValue);
+            } else {
+                console.log('StateDepartment not in projectData, skipping update');
+            }
+            if ('categoryId' in projectData) {
+                console.log('Adding categoryId to update:', categoryId, 'Raw value:', projectData.categoryId);
+                updateFields.push(`category_id = $${paramIndex++}`);
+                const categoryIdValue = (categoryId && categoryId !== '') ? parseInt(categoryId, 10) : null;
+                console.log('CategoryId value to save:', categoryIdValue);
+                updateValues.push(categoryIdValue);
+            } else {
+                console.log('CategoryId not in projectData, skipping update');
+            }
+
+            // Always update JSONB fields (they merge with existing data)
+            updateFields.push(`timeline = $${paramIndex++}::jsonb`);
+            updateValues.push(timeline);
+            updateFields.push(`budget = $${paramIndex++}::jsonb`);
+            updateValues.push(budget);
+            updateFields.push(`progress = $${paramIndex++}::jsonb`);
+            updateValues.push(progress);
+            updateFields.push(`notes = $${paramIndex++}::jsonb`);
+            updateValues.push(notes);
+            updateFields.push(`data_sources = $${paramIndex++}::jsonb`);
+            updateValues.push(dataSources);
+            updateFields.push(`public_engagement = $${paramIndex++}::jsonb`);
+            updateValues.push(publicEngagement);
+            updateFields.push(`location = $${paramIndex++}::jsonb`);
+            updateValues.push(location);
+
+            updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+
+            // Add the project_id parameter for WHERE clause
+            const whereParamIndex = paramIndex;
+            updateValues.push(id);
+
             const updateQuery = `
-                UPDATE projects 
-                SET 
-                    name = $1,
-                    description = $2,
-                    implementing_agency = $3,
-                    sector = $4,
-                    ministry = $5,
-                    state_department = $6,
-                    category_id = $7,
-                    timeline = $8::jsonb,
-                    budget = $9::jsonb,
-                    progress = $10::jsonb,
-                    notes = $11::jsonb,
-                    data_sources = $12::jsonb,
-                    public_engagement = $13::jsonb,
-                    location = $14::jsonb,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE project_id = $15 AND voided = false
-                RETURNING project_id
+                UPDATE projects SET
+                    ${updateFields.join(', ')}
+                WHERE project_id = $${whereParamIndex} AND voided = false
             `;
             
-            const result = await pool.query(updateQuery, [
-                projectName,
-                projectDescription || null,
-                directorate || null,
-                sector || null,
-                ministry || null,
-                stateDepartment || null,
-                categoryId || null,
-                timeline,
-                budget,
-                progress,
-                notes,
-                dataSourcesJson,
-                publicEngagement,
-                location,
-                id
-            ]);
-            
-            if (result.rows.length === 0) {
+            const updateResult = await pool.query(updateQuery, updateValues);
+
+            if (updateResult.rowCount === 0) {
+                await pool.query('ROLLBACK');
                 return res.status(404).json({ message: 'Project not found or already deleted' });
             }
+
+            // Fetch the updated project
+            const query = GET_SINGLE_PROJECT_QUERY('postgresql');
+            const result = await pool.query(query, [id]);
+            const project = result.rows && result.rows.length > 0 ? result.rows[0] : null;
             
-            // Fetch updated project
-            const query = GET_SINGLE_PROJECT_QUERY(DB_TYPE);
-            const result2 = await pool.query(query, [id]);
-            const projectRows = DB_TYPE === 'postgresql' ? result2.rows : result2[0];
-            res.status(200).json(projectRows[0] || projectRows);
-        } else {
-            // MySQL: Use old structure
-            const connection = await pool.getConnection();
-            try {
-                await connection.beginTransaction();
-                const [result] = await connection.query('UPDATE kemri_projects SET ? WHERE id = ? AND voided = 0', [projectData, id]);
-                if (result.affectedRows === 0) {
-                    await connection.rollback();
-                    return res.status(404).json({ message: 'Project not found or already deleted' });
-                }
-                const query = GET_SINGLE_PROJECT_QUERY(DB_TYPE);
-                const [rows] = await connection.query(query, [id]);
-                await connection.commit();
-                res.status(200).json(rows[0]);
-            } catch (error) {
-                await connection.rollback();
-                throw error;
-            } finally {
-                connection.release();
-            }
+            await pool.query('COMMIT');
+            res.status(200).json(project);
+        } catch (error) {
+            await pool.query('ROLLBACK');
+            throw error;
         }
     } catch (error) {
         console.error('Error updating project:', error);
-        console.error('Error stack:', error.stack);
-        console.error('Project data received:', JSON.stringify(projectData, null, 2));
-        res.status(500).json({ message: 'Error updating project', error: error.message, details: error.stack });
+        res.status(500).json({ message: 'Error updating project', error: error.message });
     }
 });
 
@@ -3492,334 +3695,6 @@ router.delete('/:wardId', async (req, res) => {
     {
         console.error('Error deleting project ward association:', error);
         res.status(500).json({ message: 'Error deleting project ward association', error: error.message });
-    }
-});
-
-// ============================================
-// PROJECT SITES ROUTES
-// ============================================
-
-/**
- * @route GET /api/projects/:projectId/sites
- * @description Get all sites for a project
- * @access Private
- */
-router.get('/:projectId/sites', async (req, res) => {
-    const { projectId } = req.params;
-    const DB_TYPE = process.env.DB_TYPE || 'mysql';
-    
-    if (isNaN(parseInt(projectId))) {
-        return res.status(400).json({ message: 'Invalid project ID' });
-    }
-
-    try {
-        let query;
-        if (DB_TYPE === 'postgresql') {
-            // First check if project exists (only exclude projects where voided = true/1)
-            const projectCheck = await pool.query(
-                'SELECT project_id FROM projects WHERE project_id = $1 AND (voided IS NULL OR voided = false)',
-                [projectId]
-            );
-            
-            if (projectCheck.rows.length === 0) {
-                return res.status(404).json({ message: 'Project not found' });
-            }
-            
-            query = `
-                SELECT 
-                    ps.site_id, ps.project_id, ps.site_level, ps.region, ps.county, ps.constituency, ps.ward,
-                    ps.site_name, ps.status_raw, ps.status_norm, ps.percent_complete,
-                    ps.contract_sum_kes, ps.approved_cost_kes, ps.amount_disbursed_kes,
-                    ps.units, ps.stalls, ps.bed_capacity, ps.acreage,
-                    ps.connected_by, ps.categorization, ps.reason_for_outage,
-                    ps.start_date, ps.end_date, ps.remarks, ps.key_issues, ps.suggested_solutions,
-                    ps.extra, ps.loaded_at
-                FROM projects p
-                LEFT JOIN project_sites ps ON p.project_id = ps.project_id
-                WHERE p.project_id = $1 AND (p.voided IS NULL OR p.voided = false) AND ps.site_id IS NOT NULL
-                ORDER BY ps.site_id ASC
-            `;
-            const result = await pool.query(query, [projectId]);
-            return res.status(200).json(result.rows || []);
-        } else {
-            // First check if project exists (only exclude projects where voided = 1/true)
-            const [projectCheck] = await pool.query(
-                'SELECT id FROM kemri_projects WHERE id = ? AND (voided IS NULL OR voided = 0)',
-                [projectId]
-            );
-            
-            if (projectCheck.length === 0) {
-                return res.status(404).json({ message: 'Project not found' });
-            }
-            
-            query = `
-                SELECT 
-                    ps.site_id, ps.project_id, ps.site_level, ps.region, ps.county, ps.constituency, ps.ward,
-                    ps.site_name, ps.status_raw, ps.status_norm, ps.percent_complete,
-                    ps.contract_sum_kes, ps.approved_cost_kes, ps.amount_disbursed_kes,
-                    ps.units, ps.stalls, ps.bed_capacity, ps.acreage,
-                    ps.connected_by, ps.categorization, ps.reason_for_outage,
-                    ps.start_date, ps.end_date, ps.remarks, ps.key_issues, ps.suggested_solutions,
-                    ps.extra, ps.loaded_at
-                FROM kemri_projects p
-                LEFT JOIN project_sites ps ON p.id = ps.project_id
-                WHERE p.id = ? AND (p.voided IS NULL OR p.voided = 0) AND ps.site_id IS NOT NULL
-                ORDER BY ps.site_id ASC
-            `;
-            const [rows] = await pool.query(query, [projectId]);
-            return res.status(200).json(rows || []);
-        }
-    } catch (error) {
-        console.error('Error fetching project sites:', error);
-        res.status(500).json({ message: 'Error fetching project sites', error: error.message });
-    }
-});
-
-/**
- * @route POST /api/projects/:projectId/sites
- * @description Create a new site for a project
- * @access Private
- */
-router.post('/:projectId/sites', async (req, res) => {
-    const { projectId } = req.params;
-    const DB_TYPE = process.env.DB_TYPE || 'mysql';
-    const siteData = req.body;
-    
-    if (isNaN(parseInt(projectId))) {
-        return res.status(400).json({ message: 'Invalid project ID' });
-    }
-
-    try {
-        // Verify project exists
-        if (DB_TYPE === 'postgresql') {
-            const projectCheckQuery = 'SELECT project_id FROM projects WHERE project_id = $1 AND voided = false';
-            const projectCheck = await pool.query(projectCheckQuery, [projectId]);
-            if (projectCheck.rows.length === 0) {
-                return res.status(404).json({ message: 'Project not found' });
-            }
-        } else {
-            const projectCheckQuery = 'SELECT id FROM projects WHERE id = ? AND voided = 0';
-            const [projectRows] = await pool.query(projectCheckQuery, [projectId]);
-            if (projectRows.length === 0) {
-                return res.status(404).json({ message: 'Project not found' });
-            }
-        }
-
-        // Prepare site data
-        const {
-            site_level = 'site',
-            region, county, constituency, ward,
-            site_name, status_raw, status_norm = 'Not Started',
-            percent_complete = 0,
-            contract_sum_kes, approved_cost_kes, amount_disbursed_kes,
-            units, stalls, bed_capacity, acreage,
-            connected_by, categorization, reason_for_outage,
-            start_date, end_date, remarks, key_issues, suggested_solutions,
-            extra
-        } = siteData;
-
-        if (DB_TYPE === 'postgresql') {
-            const insertQuery = `
-                INSERT INTO project_sites (
-                    project_id, site_level, region, county, constituency, ward,
-                    site_name, status_raw, status_norm, percent_complete,
-                    contract_sum_kes, approved_cost_kes, amount_disbursed_kes,
-                    units, stalls, bed_capacity, acreage,
-                    connected_by, categorization, reason_for_outage,
-                    start_date, end_date, remarks, key_issues, suggested_solutions,
-                    extra, loaded_at
-                ) VALUES (
-                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-                    $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-                    $21, $22, $23, $24, $25, $26, $27, CURRENT_TIMESTAMP
-                )
-                RETURNING site_id, project_id, site_level, region, county, constituency, ward,
-                    site_name, status_raw, status_norm, percent_complete,
-                    contract_sum_kes, approved_cost_kes, amount_disbursed_kes,
-                    units, stalls, bed_capacity, acreage,
-                    connected_by, categorization, reason_for_outage,
-                    start_date, end_date, remarks, key_issues, suggested_solutions,
-                    extra, loaded_at
-            `;
-            
-            const extraJson = extra ? JSON.stringify(extra) : null;
-            const result = await pool.query(insertQuery, [
-                projectId, site_level, region || null, county || null, constituency || null, ward || null,
-                site_name || null, status_raw || null, status_norm, percent_complete,
-                contract_sum_kes || null, approved_cost_kes || null, amount_disbursed_kes || null,
-                units || null, stalls || null, bed_capacity || null, acreage || null,
-                connected_by || null, categorization || null, reason_for_outage || null,
-                start_date || null, end_date || null, remarks || null, key_issues || null, suggested_solutions || null,
-                extraJson
-            ]);
-            
-            return res.status(201).json(result.rows[0]);
-        } else {
-            const insertQuery = `
-                INSERT INTO project_sites (
-                    project_id, site_level, region, county, constituency, ward,
-                    site_name, status_raw, status_norm, percent_complete,
-                    contract_sum_kes, approved_cost_kes, amount_disbursed_kes,
-                    units, stalls, bed_capacity, acreage,
-                    connected_by, categorization, reason_for_outage,
-                    start_date, end_date, remarks, key_issues, suggested_solutions,
-                    extra, loaded_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-            `;
-            
-            const extraJson = extra ? JSON.stringify(extra) : null;
-            const [result] = await pool.query(insertQuery, [
-                projectId, site_level, region || null, county || null, constituency || null, ward || null,
-                site_name || null, status_raw || null, status_norm, percent_complete,
-                contract_sum_kes || null, approved_cost_kes || null, amount_disbursed_kes || null,
-                units || null, stalls || null, bed_capacity || null, acreage || null,
-                connected_by || null, categorization || null, reason_for_outage || null,
-                start_date || null, end_date || null, remarks || null, key_issues || null, suggested_solutions || null,
-                extraJson
-            ]);
-            
-            // Fetch the created site
-            const [rows] = await pool.query('SELECT * FROM project_sites WHERE site_id = ?', [result.insertId]);
-            return res.status(201).json(rows[0]);
-        }
-    } catch (error) {
-        console.error('Error creating project site:', error);
-        res.status(500).json({ message: 'Error creating project site', error: error.message });
-    }
-});
-
-/**
- * @route PUT /api/projects/:projectId/sites/:siteId
- * @description Update a project site
- * @access Private
- */
-router.put('/:projectId/sites/:siteId', async (req, res) => {
-    const { projectId, siteId } = req.params;
-    const DB_TYPE = process.env.DB_TYPE || 'mysql';
-    const siteData = req.body;
-    
-    if (isNaN(parseInt(projectId)) || isNaN(parseInt(siteId))) {
-        return res.status(400).json({ message: 'Invalid project ID or site ID' });
-    }
-
-    try {
-        const {
-            site_level, region, county, constituency, ward,
-            site_name, status_raw, status_norm,
-            percent_complete,
-            contract_sum_kes, approved_cost_kes, amount_disbursed_kes,
-            units, stalls, bed_capacity, acreage,
-            connected_by, categorization, reason_for_outage,
-            start_date, end_date, remarks, key_issues, suggested_solutions,
-            extra
-        } = siteData;
-
-        if (DB_TYPE === 'postgresql') {
-            const updateQuery = `
-                UPDATE project_sites SET
-                    site_level = $1, region = $2, county = $3, constituency = $4, ward = $5,
-                    site_name = $6, status_raw = $7, status_norm = $8, percent_complete = $9,
-                    contract_sum_kes = $10, approved_cost_kes = $11, amount_disbursed_kes = $12,
-                    units = $13, stalls = $14, bed_capacity = $15, acreage = $16,
-                    connected_by = $17, categorization = $18, reason_for_outage = $19,
-                    start_date = $20, end_date = $21, remarks = $22, key_issues = $23, suggested_solutions = $24,
-                    extra = $25
-                WHERE project_id = $26 AND site_id = $27
-                RETURNING *
-            `;
-            
-            const extraJson = extra ? JSON.stringify(extra) : null;
-            const result = await pool.query(updateQuery, [
-                site_level, region || null, county || null, constituency || null, ward || null,
-                site_name || null, status_raw || null, status_norm, percent_complete,
-                contract_sum_kes || null, approved_cost_kes || null, amount_disbursed_kes || null,
-                units || null, stalls || null, bed_capacity || null, acreage || null,
-                connected_by || null, categorization || null, reason_for_outage || null,
-                start_date || null, end_date || null, remarks || null, key_issues || null, suggested_solutions || null,
-                extraJson,
-                projectId, siteId
-            ]);
-            
-            if (result.rows.length === 0) {
-                return res.status(404).json({ message: 'Project site not found' });
-            }
-            
-            return res.status(200).json(result.rows[0]);
-        } else {
-            const updateQuery = `
-                UPDATE project_sites SET
-                    site_level = ?, region = ?, county = ?, constituency = ?, ward = ?,
-                    site_name = ?, status_raw = ?, status_norm = ?, percent_complete = ?,
-                    contract_sum_kes = ?, approved_cost_kes = ?, amount_disbursed_kes = ?,
-                    units = ?, stalls = ?, bed_capacity = ?, acreage = ?,
-                    connected_by = ?, categorization = ?, reason_for_outage = ?,
-                    start_date = ?, end_date = ?, remarks = ?, key_issues = ?, suggested_solutions = ?,
-                    extra = ?
-                WHERE project_id = ? AND site_id = ?
-            `;
-            
-            const extraJson = extra ? JSON.stringify(extra) : null;
-            const [result] = await pool.query(updateQuery, [
-                site_level, region || null, county || null, constituency || null, ward || null,
-                site_name || null, status_raw || null, status_norm, percent_complete,
-                contract_sum_kes || null, approved_cost_kes || null, amount_disbursed_kes || null,
-                units || null, stalls || null, bed_capacity || null, acreage || null,
-                connected_by || null, categorization || null, reason_for_outage || null,
-                start_date || null, end_date || null, remarks || null, key_issues || null, suggested_solutions || null,
-                extraJson,
-                projectId, siteId
-            ]);
-            
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ message: 'Project site not found' });
-            }
-            
-            // Fetch the updated site
-            const [rows] = await pool.query('SELECT * FROM project_sites WHERE project_id = ? AND site_id = ?', [projectId, siteId]);
-            return res.status(200).json(rows[0]);
-        }
-    } catch (error) {
-        console.error('Error updating project site:', error);
-        res.status(500).json({ message: 'Error updating project site', error: error.message });
-    }
-});
-
-/**
- * @route DELETE /api/projects/:projectId/sites/:siteId
- * @description Delete a project site
- * @access Private
- */
-router.delete('/:projectId/sites/:siteId', async (req, res) => {
-    const { projectId, siteId } = req.params;
-    const DB_TYPE = process.env.DB_TYPE || 'mysql';
-    
-    if (isNaN(parseInt(projectId)) || isNaN(parseInt(siteId))) {
-        return res.status(400).json({ message: 'Invalid project ID or site ID' });
-    }
-
-    try {
-        if (DB_TYPE === 'postgresql') {
-            const deleteQuery = 'DELETE FROM project_sites WHERE project_id = $1 AND site_id = $2';
-            const result = await pool.query(deleteQuery, [projectId, siteId]);
-            
-            if (result.rowCount === 0) {
-                return res.status(404).json({ message: 'Project site not found' });
-            }
-            
-            return res.status(204).send();
-        } else {
-            const deleteQuery = 'DELETE FROM project_sites WHERE project_id = ? AND site_id = ?';
-            const [result] = await pool.query(deleteQuery, [projectId, siteId]);
-            
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ message: 'Project site not found' });
-            }
-            
-            return res.status(204).send();
-        }
-    } catch (error) {
-        console.error('Error deleting project site:', error);
-        res.status(500).json({ message: 'Error deleting project site', error: error.message });
     }
 });
 

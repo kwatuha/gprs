@@ -114,6 +114,7 @@ function ProjectManagementPage() {
         project.programName || '',
         project.subProgramName || '',
         project.countyNames || '',
+        project.constituencyNames || '',
         project.subcountyNames || '',
         project.wardNames || '',
         project.directorate || '',
@@ -621,15 +622,22 @@ function ProjectManagementPage() {
       try {
         const fullProjectData = await apiService.projects.getProjectById(project.id);
         setCurrentProject(fullProjectData);
+        // Wait a tick to ensure state is set before opening dialog
+        setTimeout(() => {
+          setOpenFormDialog(true);
+        }, 0);
       } catch (error) {
         console.error('Error fetching full project details:', error);
         // Fallback to using the row data if fetch fails
         setCurrentProject(project);
+        setTimeout(() => {
+          setOpenFormDialog(true);
+        }, 0);
       }
     } else {
-      setCurrentProject(project);
+      setCurrentProject(null);
+      setOpenFormDialog(true);
     }
-    setOpenFormDialog(true);
   };
 
   const handleCloseFormDialog = () => {
@@ -1298,6 +1306,15 @@ function ProjectManagementPage() {
         };
         dataGridColumn.renderCell = (params) => {
           const value = params?.row?.countyNames;
+          return value || 'N/A';
+        };
+        break;
+      case 'constituencyNames':
+        dataGridColumn.valueGetter = (params) => {
+          return params?.row?.constituencyNames || '';
+        };
+        dataGridColumn.renderCell = (params) => {
+          const value = params?.row?.constituencyNames;
           return value || 'N/A';
         };
         break;
@@ -2500,37 +2517,32 @@ function ProjectManagementPage() {
             : undefined
         }
       >
+        {selectedProjectForContextMenu && checkUserPrivilege(user, 'project.update') && (
+          <MenuItem onClick={() => {
+            handleOpenFormDialog(selectedProjectForContextMenu);
+            handleContextMenuClose();
+          }}>
+            <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Edit Project</ListItemText>
+          </MenuItem>
+        )}
+        {selectedProjectForContextMenu && checkUserPrivilege(user, 'project.delete') && (
+          <MenuItem onClick={() => {
+            handleDeleteProject(selectedProjectForContextMenu);
+            handleContextMenuClose();
+          }}>
+            <ListItemIcon><DeleteIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>Delete Project</ListItemText>
+          </MenuItem>
+        )}
         {selectedProjectForContextMenu && (
-          <>
-            {/* Assign Contractors - Removed */}
-            {/* View Gantt Chart - Removed */}
-            {checkUserPrivilege(user, 'project.update') && (
-              <MenuItem onClick={() => {
-                handleOpenFormDialog(selectedProjectForContextMenu);
-                handleContextMenuClose();
-              }}>
-                <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
-                <ListItemText>Edit Project</ListItemText>
-              </MenuItem>
-            )}
-            {checkUserPrivilege(user, 'project.delete') && (
-              <MenuItem onClick={() => {
-                handleDeleteProject(selectedProjectForContextMenu);
-                handleContextMenuClose();
-              }}>
-                <ListItemIcon><DeleteIcon fontSize="small" /></ListItemIcon>
-                <ListItemText>Delete Project</ListItemText>
-              </MenuItem>
-            )}
-            <MenuItem onClick={() => {
-              handleViewDetails(selectedProjectForContextMenu.id);
-              handleContextMenuClose();
-            }}>
-              <ListItemIcon><ViewDetailsIcon fontSize="small" /></ListItemIcon>
-              <ListItemText>View Details</ListItemText>
-            </MenuItem>
-            {/* View KDSP Details - Removed */}
-          </>
+          <MenuItem onClick={() => {
+            handleViewDetails(selectedProjectForContextMenu.id);
+            handleContextMenuClose();
+          }}>
+            <ListItemIcon><ViewDetailsIcon fontSize="small" /></ListItemIcon>
+            <ListItemText>View Details</ListItemText>
+          </MenuItem>
         )}
       </Menu>
 
@@ -2551,59 +2563,46 @@ function ProjectManagementPage() {
           horizontal: 'right',
         }}
       >
-        {selectedRow && (() => {
-          const canUpdate = checkUserPrivilege(user, 'project.update');
-          const canDelete = checkUserPrivilege(user, 'project.delete');
-          // Removed: canAssignContractor, canViewGantt, canViewKdsp
-          
-          return (
-            <>
-              {/* Assign Contractors - Removed */}
-              <MenuItem 
-                onClick={() => {
-                  if (canUpdate) {
-                    handleOpenFormDialog(selectedRow);
-                    setRowActionMenuAnchor(null);
-                    setSelectedRow(null);
-                  }
-                }}
-                disabled={!canUpdate}
-              >
-                <ListItemIcon>
-                  <EditIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Edit</ListItemText>
-              </MenuItem>
-              <MenuItem 
-                onClick={() => {
-                  if (canDelete) {
-                    handleDeleteProject(selectedRow);
-                    setRowActionMenuAnchor(null);
-                    setSelectedRow(null);
-                  }
-                }}
-                disabled={!canDelete}
-              >
-                <ListItemIcon>
-                  <DeleteIcon fontSize="small" sx={{ color: ui.danger }} />
-                </ListItemIcon>
-                <ListItemText>Delete</ListItemText>
-              </MenuItem>
-              {/* Gantt Chart - Removed */}
-              <MenuItem onClick={() => {
-                handleViewDetails(selectedRow.id);
-                setRowActionMenuAnchor(null);
-                setSelectedRow(null);
-              }}>
-                <ListItemIcon>
-                  <ViewDetailsIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>View Details</ListItemText>
-              </MenuItem>
-              {/* View KDSP Details - Removed */}
-            </>
-          );
-        })()}
+        {selectedRow && checkUserPrivilege(user, 'project.update') && (
+          <MenuItem 
+            onClick={() => {
+              handleOpenFormDialog(selectedRow);
+              setRowActionMenuAnchor(null);
+              setSelectedRow(null);
+            }}
+          >
+            <ListItemIcon>
+              <EditIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Edit</ListItemText>
+          </MenuItem>
+        )}
+        {selectedRow && checkUserPrivilege(user, 'project.delete') && (
+          <MenuItem 
+            onClick={() => {
+              handleDeleteProject(selectedRow);
+              setRowActionMenuAnchor(null);
+              setSelectedRow(null);
+            }}
+          >
+            <ListItemIcon>
+              <DeleteIcon fontSize="small" sx={{ color: ui.danger }} />
+            </ListItemIcon>
+            <ListItemText>Delete</ListItemText>
+          </MenuItem>
+        )}
+        {selectedRow && (
+          <MenuItem onClick={() => {
+            handleViewDetails(selectedRow.id);
+            setRowActionMenuAnchor(null);
+            setSelectedRow(null);
+          }}>
+            <ListItemIcon>
+              <ViewDetailsIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>View Details</ListItemText>
+          </MenuItem>
+        )}
       </Menu>
 
       <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>

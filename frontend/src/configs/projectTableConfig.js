@@ -11,13 +11,14 @@ const projectTableColumns = [
   { id: 'Contracted', label: 'Contracted', minWidth: 150, show: true, sortable: true },   // Added sortable
   { id: 'paidOut', label: 'Disbursed', minWidth: 100, show: false, sortable: true },     // Added sortable
   { id: 'overallProgress', label: 'Progress', minWidth: 160, width: 160, show: true, sortable: true },
-  { id: 'departmentName', label: 'Department', minWidth: 145, show: false, sortable: true },
+  { id: 'countyNames', label: 'County', minWidth: 150, show: true, sortable: false }, // From project_sites - Default visible
+  { id: 'constituencyNames', label: 'Constituency', minWidth: 150, show: true, sortable: false }, // From project_sites - Default visible
+  { id: 'wardNames', label: 'Ward', minWidth: 150, show: true, sortable: false }, // From project_sites - Default visible
+  { id: 'departmentName', label: 'Department', minWidth: 145, show: false, sortable: true }, // Optional - hidden by default
   { id: 'financialYearName', label: 'Fin. Year', minWidth: 125, show: false, sortable: true },
   { id: 'programName', label: 'Program', minWidth: 150, show: false, sortable: true },
   { id: 'subProgramName', label: 'Sub-Program', minWidth: 150, show: false, sortable: true },
-  { id: 'countyNames', label: 'Counties', minWidth: 180, show: false, sortable: false }, // Typically not sortable
-  { id: 'subcountyNames', label: 'Sub-County', minWidth: 160, show: false, sortable: false }, // Typically not sortable
-  { id: 'wardNames', label: 'Ward', minWidth: 180, show: false, sortable: false }, 
+  { id: 'subcountyNames', label: 'Sub-County', minWidth: 160, show: false, sortable: false }, // Legacy - kept for backward compatibility 
   { id: 'principalInvestigator', label: 'Project Manager', minWidth: 150, show: true, sortable: true },
   { id: 'actions', label: 'Actions', minWidth: 50, width: 50, show: true, sticky: 'right', sortable: false },
 ];

@@ -58,16 +58,17 @@ const IMPORT_TYPES = [
   //   templateEndpoint: '/strategy/template',
   //   color: 'secondary'
   // },
-  {
-    id: 'map-data',
-    name: 'Map Data',
-    description: 'Import geographic data for projects and resources',
-    icon: <MapIcon />,
-    privilege: 'maps.import',
-    endpoint: '/maps/import-data',
-    templateEndpoint: '/maps/template',
-    color: 'success'
-  },
+  // Map Data - Hidden for now
+  // {
+  //   id: 'map-data',
+  //   name: 'Map Data',
+  //   description: 'Import geographic data for projects and resources',
+  //   icon: <MapIcon />,
+  //   privilege: 'maps.import',
+  //   endpoint: '/maps/import-data',
+  //   templateEndpoint: '/maps/template',
+  //   color: 'success'
+  // },
   // Participants - Hidden
   // {
   //   id: 'participants',
@@ -90,16 +91,17 @@ const IMPORT_TYPES = [
   //   templateEndpoint: '/comprehensive-projects/template',
   //   color: 'info'
   // },
-  {
-    id: 'budgets',
-    name: 'Budgets',
-    description: 'Import budget items including projects, departments, wards, and subcounties',
-    icon: <AccountBalanceIcon />,
-    privilege: 'budget.create',
-    endpoint: '/budgets/import-data',
-    templateEndpoint: '/budgets/template',
-    color: 'success'
-  }
+  // Budgets - Hidden for now
+  // {
+  //   id: 'budgets',
+  //   name: 'Budgets',
+  //   description: 'Import budget items including projects, departments, wards, and subcounties',
+  //   icon: <AccountBalanceIcon />,
+  //   privilege: 'budget.create',
+  //   endpoint: '/budgets/import-data',
+  //   templateEndpoint: '/budgets/template',
+  //   color: 'success'
+  // }
 ];
 
 // Optional static template paths (served from backend api/templates/)
@@ -116,10 +118,11 @@ const TEMPLATE_HEADERS = {
     'ProjectDescription',
     'Status',
     'budget',
-    'amountPaid',
+    'Disbursed',
     'financialYear',
     'department',
-    'sub-county',
+    'County',
+    'Constituency',
     'ward',
     'Contracted',
     'StartDate',
@@ -149,10 +152,11 @@ const TEMPLATE_HEADER_VARIANTS = {
     ProjectDescription: ['Description', 'Project Description', 'Details'],
     Status: ['Project Status', 'Current Status'],
     budget: ['Budget', 'Estimated Cost', 'Budget (KES)'],
-    amountPaid: ['Disbursed', 'Amount Disbursed', 'Disbursed Amount', 'Amount Paid', 'Expenditure'],
+    Disbursed: ['Disbursed', 'Amount Disbursed', 'Disbursed Amount', 'Amount Paid', 'Expenditure', 'amountPaid'],
     financialYear: ['FY', 'Financial Year', 'Year'],
     department: ['Department', 'Implementing Department', 'Directorate'],
-    'sub-county': ['Subcounty', 'Sub County', 'Sub-County'],
+    County: ['County', 'County Name'],
+    Constituency: ['Constituency', 'Constituency Name'],
     ward: ['Ward', 'Ward Name'],
     Contracted: ['Is Contracted', 'Contracted?', 'Contract Status'],
     StartDate: ['Start Date', 'Project Start Date', 'Commencement Date'],

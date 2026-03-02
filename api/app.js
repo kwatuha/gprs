@@ -139,7 +139,9 @@ app.use((err, req, res, next) => {
 require('./socket/chatSocket')(io);
 
 server.listen(port, () => {
-    console.log(`IMPES API listening at http://165.22.227.234:${port}`);
+    // Use local/container host in logs; avoid hard-coding any production IPs here.
+    const host = process.env.API_HOST || 'localhost';
+    console.log(`IMPES API listening at http://${host}:${port}`);
     console.log(`Socket.IO server initialized`);
     console.log(`CORS enabled for all origins during development.`);
 });

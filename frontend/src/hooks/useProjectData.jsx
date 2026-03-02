@@ -96,12 +96,9 @@ const useProjectData = (user, authLoading, filterState) => {
       if (filterState.programId) {
         newMetadata.subPrograms = await apiService.metadata.programs.getSubProgramsByProgram(filterState.programId);
       }
-      if (filterState.countyId) {
-        newMetadata.subcounties = await apiService.metadata.counties.getSubcountiesByCounty(filterState.countyId);
-      }
-      if (filterState.subcountyId) {
-        newMetadata.wards = await apiService.metadata.subcounties.getWardsBySubcounty(filterState.subcountyId);
-      }
+      // NOTE: We no longer rely on relational subcounties/wards metadata in this app.
+      // Location is handled via project_sites (county/constituency/ward as text),
+      // so we intentionally skip loading subcounties and wards metadata here.
       
       setAllMetadata(newMetadata);
 

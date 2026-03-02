@@ -12,6 +12,7 @@ const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar)
     ministry: '', stateDepartment: '', sector: '', // New fields replacing departmentId, sectionId, categoryId
     categoryId: '', // Project category/type - determines which site fields are shown
     countyIds: [], subcountyIds: [], wardIds: [],
+    county: '', constituency: '', ward: '', // Free text fields for location
     sites: [], // Array of project sites for multilocation support - REQUIRED (at least one)
     // Additional JSONB fields from original database structure
     budgetSource: '', // Budget JSONB: source
@@ -19,8 +20,6 @@ const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar)
     latitude: '', // Location JSONB: geocoordinates.lat
     longitude: '', // Location JSONB: geocoordinates.lng
     feedbackEnabled: true, // Public Engagement JSONB: feedback_enabled
-    commonFeedback: '', // Public Engagement JSONB: common_feedback
-    complaintsReceived: 0, // Public Engagement JSONB: complaints_received
     dataSources: [], // Data Sources JSONB: array of {type, links, retrieved_from, verification_status}
   });
   const [formErrors, setFormErrors] = useState({});
@@ -33,6 +32,7 @@ const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar)
   const [missingFinancialYear, setMissingFinancialYear] = useState(null); // For financial years not in metadata
 
   const [initialAssociations, setInitialAssociations] = useState({
+    // Junction IDs (county/subcounty/ward) are not used in the new flow; location comes from project_sites.
     countyIds: [],
     subcountyIds: [],
     wardIds: [],
@@ -40,21 +40,29 @@ const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar)
   });
 
   useEffect(() => {
-    if (currentProject) {
-      console.log('Loading project for editing:', currentProject);
+    // Only run if we have a currentProject with an id (editing mode)
+    // Use a more specific check to ensure we reload when project changes
+    const projectId = currentProject?.id;
+    
+    if (projectId) {
+      console.log('Loading project for editing:', currentProject, 'Project ID:', projectId);
       setLoading(true);
       const fetchAssociations = async () => {
         try {
-          const [countiesRes, subcountiesRes, wardsRes, sitesRes] = await Promise.all([
-            apiService.junctions.getProjectCounties(currentProject.id),
-            apiService.junctions.getProjectSubcounties(currentProject.id),
-            apiService.junctions.getProjectWards(currentProject.id),
-            apiService.projects.getProjectSites(currentProject.id).catch(() => []), // Fetch sites, default to empty array if not available
-          ]);
-          const countyIds = countiesRes.map(c => String(c.countyId));
-          const subcountyIds = subcountiesRes.map(sc => String(sc.subcountyId));
-          const wardIds = wardsRes.map(w => String(w.wardId));
-          const sites = sitesRes || [];
+          // In the new model we only care about project sites for location; legacy junction tables can be ignored.
+          // Safely fetch sites with error handling
+          let sites = [];
+          if (apiService.projects && typeof apiService.projects.getProjectSites === 'function') {
+            try {
+              const sitesRes = await apiService.projects.getProjectSites(projectId);
+              sites = sitesRes || [];
+            } catch (err) {
+              console.warn('Failed to fetch project sites:', err);
+              sites = [];
+            }
+          } else {
+            console.warn('getProjectSites is not available on apiService.projects');
+          }
 
           const formDataToSet = {
             projectName: currentProject.projectName || '',
@@ -72,25 +80,28 @@ const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar)
             stateDepartment: currentProject.stateDepartment || '',
             sector: currentProject.sector || '',
             categoryId: currentProject.categoryId ? String(currentProject.categoryId) : '',
-            countyIds,
-            subcountyIds,
-            wardIds,
+            // Junction IDs are unused in this flow; leave arrays empty and rely on sites.
+            countyIds: [],
+            subcountyIds: [],
+            wardIds: [],
             sites,
+            // Location fields from location JSONB
+            county: currentProject.county || '',
+            constituency: currentProject.constituency || '',
+            ward: currentProject.ward || '',
             // Additional JSONB fields
             budgetSource: currentProject.budgetSource || '',
             progressSummary: currentProject.progressSummary || '',
             latitude: currentProject.latitude || '',
             longitude: currentProject.longitude || '',
             feedbackEnabled: currentProject.feedbackEnabled !== undefined ? currentProject.feedbackEnabled : true,
-            commonFeedback: currentProject.commonFeedback || '',
-            complaintsReceived: currentProject.complaintsReceived || 0,
             dataSources: currentProject.dataSources ? (Array.isArray(currentProject.dataSources) ? currentProject.dataSources : []) : [],
           };
           
           console.log('Form data to set:', formDataToSet);
           setFormData(formDataToSet);
 
-          setInitialAssociations({ countyIds, subcountyIds, wardIds, sites });
+          setInitialAssociations({ countyIds: [], subcountyIds: [], wardIds: [], sites });
 
         } catch (err) {
           setSnackbar({ open: true, message: 'Failed to load project associations for editing.', severity: 'error' });
@@ -100,7 +111,8 @@ const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar)
         }
       };
       fetchAssociations();
-    } else {
+    } else if (!currentProject) {
+      // Reset form when no project (new project mode)
       // For new projects, default to the configured default county (Kisumu)
       let defaultCountyIds = [];
       if (allMetadata?.counties) {
@@ -138,89 +150,20 @@ const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar)
         latitude: '',
         longitude: '',
         feedbackEnabled: true,
-        commonFeedback: '',
-        complaintsReceived: 0,
         dataSources: [],
       });
       setInitialAssociations({ countyIds: defaultCountyIds, subcountyIds: [], wardIds: [], sites: [] });
       setLoading(false);
     }
-  }, [currentProject, setSnackbar, allMetadata]);
+  }, [currentProject?.id, setSnackbar, allMetadata]); // Use currentProject?.id to ensure it re-runs when project changes
 
 
   useEffect(() => {
     const fetchFormDropdowns = async () => {
-        // Load sub-counties from all selected counties
-        if (formData.countyIds && formData.countyIds.length > 0) {
-            try {
-                // Fetch subcounties for all selected counties and merge them
-                const subcountyPromises = formData.countyIds.map(countyId => 
-                    apiService.metadata.counties.getSubcountiesByCounty(countyId).catch(() => [])
-                );
-                const subcountyArrays = await Promise.all(subcountyPromises);
-                // Flatten and deduplicate by subcountyId
-                const allSubcounties = subcountyArrays.flat();
-                const uniqueSubcounties = Array.from(
-                    new Map(allSubcounties.map(sc => [sc.subcountyId, sc])).values()
-                );
-                setFormSubcounties(uniqueSubcounties);
-            } catch (err) { 
-                console.error("Error fetching form sub-counties:", err); 
-                setFormSubcounties([]); 
-            }
-        } else {
-            // If no counties selected, use default county for subcounty loading
-            let defaultCountyId = null;
-            if (allMetadata?.counties) {
-                if (DEFAULT_COUNTY.countyId) {
-                    const countyById = allMetadata.counties.find(c => c.countyId === DEFAULT_COUNTY.countyId);
-                    if (countyById) {
-                        defaultCountyId = String(countyById.countyId);
-                    }
-                }
-                if (!defaultCountyId && DEFAULT_COUNTY.name) {
-                    const countyByName = allMetadata.counties.find(c => 
-                        c.name?.toLowerCase().includes(DEFAULT_COUNTY.name.toLowerCase())
-                    );
-                    if (countyByName) {
-                        defaultCountyId = String(countyByName.countyId);
-                    }
-                }
-            }
-            
-            if (defaultCountyId) {
-                try { 
-                    setFormSubcounties(await apiService.metadata.counties.getSubcountiesByCounty(defaultCountyId)); 
-                } catch (err) { 
-                    console.error("Error fetching form sub-counties:", err); 
-                    setFormSubcounties([]); 
-                }
-            } else {
-                setFormSubcounties([]);
-            }
-        }
-        
-        // Load wards from all selected subcounties
-        if (formData.subcountyIds && formData.subcountyIds.length > 0) {
-            try {
-                // Fetch wards for all selected subcounties and merge them
-                const wardPromises = formData.subcountyIds.map(subcountyId => 
-                    apiService.metadata.subcounties.getWardsBySubcounty(subcountyId).catch(() => [])
-                );
-                const wardArrays = await Promise.all(wardPromises);
-                // Flatten and deduplicate by wardId
-                const allWards = wardArrays.flat();
-                const uniqueWards = Array.from(
-                    new Map(allWards.map(w => [w.wardId, w])).values()
-                );
-                setFormWards(uniqueWards);
-            } catch (err) { 
-                console.error("Error fetching form wards:", err); 
-                setFormWards([]); 
-            }
-        } else { 
-            setFormWards([]); 
-        }
+        // Subcounty/ward dropdowns are no longer loaded from metadata in this flow.
+        // Location is captured via project_sites (free-text county/constituency/ward on sites).
+        setFormSubcounties([]);
+        setFormWards([]);
     };
 
     fetchFormDropdowns();
@@ -329,11 +272,6 @@ const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar)
       if (dataToSubmit[key] === '' || dataToSubmit[key] === null) { dataToSubmit[key] = null; } else if (typeof dataToSubmit[key] === 'string') { const parsed = parseFloat(dataToSubmit[key]); dataToSubmit[key] = isNaN(parsed) ? null : parsed; }
     }
     
-    // Handle complaintsReceived as integer
-    if (dataToSubmit.complaintsReceived !== undefined && dataToSubmit.complaintsReceived !== null) {
-      dataToSubmit.complaintsReceived = parseInt(dataToSubmit.complaintsReceived, 10) || 0;
-    }
-
     // Handle geographical coverage - convert to integers and filter invalid values
     let countyIdsToSave = (dataToSubmit.countyIds || []).map(id => parseInt(id, 10)).filter(id => !isNaN(id));
     const subcountyIdsToSave = (dataToSubmit.subcountyIds || []).map(id => parseInt(id, 10)).filter(id => !isNaN(id));
@@ -368,6 +306,14 @@ const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar)
     
     // Sites are no longer handled during project creation - they will be managed on project details page
     delete dataToSubmit.countyIds; delete dataToSubmit.subcountyIds; delete dataToSubmit.wardIds; delete dataToSubmit.sites;
+
+    // Debug logging for sector, ministry, stateDepartment
+    console.log('=== FORM SUBMISSION DEBUG ===');
+    console.log('Sector value in formData:', formData.sector, 'in dataToSubmit:', dataToSubmit.sector);
+    console.log('Ministry value in formData:', formData.ministry, 'in dataToSubmit:', dataToSubmit.ministry);
+    console.log('StateDepartment value in formData:', formData.stateDepartment, 'in dataToSubmit:', dataToSubmit.stateDepartment);
+    console.log('Full dataToSubmit keys:', Object.keys(dataToSubmit));
+    console.log('Full dataToSubmit:', JSON.stringify(dataToSubmit, null, 2));
 
     let projectId = currentProject ? currentProject.id : null;
 

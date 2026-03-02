@@ -3864,28 +3864,28 @@ function ProjectDetailsPage() {
                             }}
                         >
                             {selectedRow && (
-                                <>
-                                    <MenuItem onClick={() => {
-                                        handleEditTeam(selectedRow);
-                                        setRowActionMenuAnchor(null);
-                                        setSelectedRow(null);
-                                    }}>
-                                        <ListItemIcon>
-                                            <EditIcon fontSize="small" />
-                                        </ListItemIcon>
-                                        <ListItemText>Edit</ListItemText>
-                                    </MenuItem>
-                                    <MenuItem onClick={() => {
-                                        handleDeleteTeam(selectedRow.teamMemberId);
-                                        setRowActionMenuAnchor(null);
-                                        setSelectedRow(null);
-                                    }}>
-                                        <ListItemIcon>
-                                            <DeleteIcon fontSize="small" sx={{ color: 'error.main' }} />
-                                        </ListItemIcon>
-                                        <ListItemText>Delete</ListItemText>
-                                    </MenuItem>
-                                </>
+                                <MenuItem onClick={() => {
+                                    handleEditTeam(selectedRow);
+                                    setRowActionMenuAnchor(null);
+                                    setSelectedRow(null);
+                                }}>
+                                    <ListItemIcon>
+                                        <EditIcon fontSize="small" />
+                                    </ListItemIcon>
+                                    <ListItemText>Edit</ListItemText>
+                                </MenuItem>
+                            )}
+                            {selectedRow && (
+                                <MenuItem onClick={() => {
+                                    handleDeleteTeam(selectedRow.teamMemberId);
+                                    setRowActionMenuAnchor(null);
+                                    setSelectedRow(null);
+                                }}>
+                                    <ListItemIcon>
+                                        <DeleteIcon fontSize="small" sx={{ color: 'error.main' }} />
+                                    </ListItemIcon>
+                                    <ListItemText>Delete</ListItemText>
+                                </MenuItem>
                             )}
                         </Menu>
                     </Box>

@@ -177,24 +177,20 @@ const PublicApprovalManagementPage = () => {
     }
   }, [projects, countyProjects, citizenProposals, announcements]);
 
-  useEffect(() => {
-    if (activeTab === 4) {
-      fetchModerationData();
-      fetchModerationStats();
-    }
-  }, [activeTab, moderationPage, moderationFilter, moderationSearch]);
+  // Moderation tab (tab 4) is temporarily disabled - only Projects tab is active
+  // useEffect(() => {
+  //   if (activeTab === 4) {
+  //     fetchModerationData();
+  //     fetchModerationStats();
+  //   }
+  // }, [activeTab, moderationPage, moderationFilter, moderationSearch]);
 
   const fetchAllData = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch all items regardless of approval status (admin view)
-      const [projectsRes, countyProjectsRes, proposalsRes, announcementsRes] = await Promise.all([
-        axiosInstance.get('/projects'),
-        axiosInstance.get('/county-proposed-projects'),
-        axiosInstance.get('/citizen-proposals'),
-        axiosInstance.get('/project-announcements')
-      ]);
+      // Only fetch projects for now - other tabs are temporarily disabled
+      const projectsRes = await axiosInstance.get('/projects');
       
       // Handle different response structures
       const projectsData = Array.isArray(projectsRes.data?.projects) 
@@ -202,27 +198,16 @@ const PublicApprovalManagementPage = () => {
         : Array.isArray(projectsRes.data) 
           ? projectsRes.data 
           : [];
-      const countyProjectsData = Array.isArray(countyProjectsRes.data?.projects) 
-        ? countyProjectsRes.data.projects 
-        : Array.isArray(countyProjectsRes.data) 
-          ? countyProjectsRes.data 
-          : [];
-      const proposals = Array.isArray(proposalsRes.data?.proposals) 
-        ? proposalsRes.data.proposals 
-        : Array.isArray(proposalsRes.data) 
-          ? proposalsRes.data 
-          : [];
-      const announcements = Array.isArray(announcementsRes.data?.announcements) 
-        ? announcementsRes.data.announcements 
-        : Array.isArray(announcementsRes.data) 
-          ? announcementsRes.data 
-          : [];
       
-      console.log('Fetched data:', { 
-        projects: projectsData.length, 
-        countyProjects: countyProjectsData.length,
-        proposals: proposals.length, 
-        announcements: announcements.length
+      console.log('Fetched projects data:', { 
+        projects: projectsData.length
+      });
+      console.log('Projects data sample:', projectsData.slice(0, 2));
+      console.log('Projects response structure:', {
+        hasProjects: !!projectsRes.data?.projects,
+        isArray: Array.isArray(projectsRes.data),
+        dataType: typeof projectsRes.data,
+        keys: projectsRes.data ? Object.keys(projectsRes.data) : []
       });
       
       // Normalize approval and revision fields to be 0 or 1 (handle null/undefined/boolean/number)
@@ -263,12 +248,15 @@ const PublicApprovalManagementPage = () => {
       };
       
       setProjects(normalizeApproval(projectsData));
-      setCountyProjects(normalizeApproval(countyProjectsData));
-      setCitizenProposals(normalizeApproval(proposals));
-      setAnnouncements(normalizeApproval(announcements));
+      // Set empty arrays for other tabs (temporarily disabled)
+      setCountyProjects([]);
+      setCitizenProposals([]);
+      setAnnouncements([]);
     } catch (err) {
       console.error('Error fetching data:', err);
-      const errorMessage = err.response?.data?.error || err.message || 'Failed to load data. Please try again.';
+      console.error('Error response:', err.response);
+      console.error('Error response data:', err.response?.data);
+      const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to load data. Please try again.';
       setError(errorMessage);
       // Set empty arrays on error to prevent further issues
       setProjects([]);
@@ -1583,25 +1571,10 @@ const PublicApprovalManagementPage = () => {
     }
   ];
 
-  // Filter data based on search and filters
+  // Filter data based on search and filters - only Projects tab is enabled
   const filterData = useMemo(() => {
-    let data = [];
-    switch (activeTab) {
-      case 0:
-        data = projects;
-        break;
-      case 1:
-        data = countyProjects;
-        break;
-      case 2:
-        data = citizenProposals;
-        break;
-      case 3:
-        data = announcements;
-        break;
-      default:
-        return [];
-    }
+    // Only use projects data since other tabs are temporarily disabled
+    let data = projects;
 
     // Apply global search
     if (globalSearch.trim()) {
@@ -1658,23 +1631,11 @@ const PublicApprovalManagementPage = () => {
     }
 
     return data;
-  }, [projects, countyProjects, citizenProposals, announcements, activeTab, globalSearch, statusFilter, approvalStatusFilter, departmentFilter, categoryFilter]);
+  }, [projects, globalSearch, statusFilter, approvalStatusFilter, departmentFilter, categoryFilter]);
 
   const getCurrentData = () => {
-    switch (activeTab) {
-      case 0:
-        return { data: filterData, columns: projectsColumns, title: 'Projects (Gallery)' };
-      case 1:
-        return { data: filterData, columns: countyProjectsColumns, title: 'County Proposed Projects' };
-      case 2:
-        return { data: filterData, columns: citizenProposalsColumns, title: 'Citizen Proposals' };
-      case 3:
-        return { data: filterData, columns: announcementsColumns, title: 'Project Announcements' };
-      case 4:
-        return { data: [], columns: [], title: 'Feedback Moderation' };
-      default:
-        return { data: [], columns: [], title: '' };
-    }
+    // Only Projects tab is enabled - other tabs temporarily disabled
+    return { data: filterData, columns: projectsColumns, title: 'Projects (Gallery)' };
   };
 
   const currentData = getCurrentData();
@@ -1732,11 +1693,13 @@ const PublicApprovalManagementPage = () => {
         }}
       >
         <Tabs
-          value={activeTab}
+          value={0}
           onChange={(e, newValue) => {
-            setActiveTab(newValue);
-            // Clear selection when switching tabs
-            setSelectedRows([]);
+            // Only allow Projects tab (index 0) - other tabs temporarily disabled
+            if (newValue === 0) {
+              setActiveTab(newValue);
+              setSelectedRows([]);
+            }
           }}
           sx={{ 
             borderBottom: 1, 
@@ -1761,16 +1724,17 @@ const PublicApprovalManagementPage = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <span style={{ fontSize: '0.875rem' }}>Projects</span>
                 <Chip 
-                  label={activeTab === 0 && hasActiveFilters ? filterData.length : projects.length} 
+                  label={hasActiveFilters ? filterData.length : projects.length} 
                   size="small" 
-                  color={activeTab === 0 && hasActiveFilters ? "primary" : "default"}
+                  color={hasActiveFilters ? "primary" : "default"}
                   sx={{ height: '18px', fontSize: '0.65rem', minWidth: '24px' }}
                 />
               </Box>
             }
             sx={{ minHeight: 40, py: 1 }}
           />
-          <Tab 
+          {/* Temporarily disabled tabs - uncomment when needed */}
+          {/* <Tab 
             label={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <span style={{ fontSize: '0.875rem' }}>County</span>
@@ -1783,6 +1747,7 @@ const PublicApprovalManagementPage = () => {
               </Box>
             }
             sx={{ minHeight: 40, py: 1 }}
+            disabled
           />
           <Tab 
             label={
@@ -1797,6 +1762,7 @@ const PublicApprovalManagementPage = () => {
               </Box>
             }
             sx={{ minHeight: 40, py: 1 }}
+            disabled
           />
           <Tab 
             label={
@@ -1811,6 +1777,7 @@ const PublicApprovalManagementPage = () => {
               </Box>
             }
             sx={{ minHeight: 40, py: 1 }}
+            disabled
           />
           <Tab 
             label={
@@ -1828,12 +1795,13 @@ const PublicApprovalManagementPage = () => {
               </Box>
             }
             sx={{ minHeight: 40, py: 1 }}
-          />
+            disabled
+          /> */}
         </Tabs>
 
         <Box sx={{ p: 2 }}>
-          {/* Global Search and Filters - Show for tabs 0-3 (DataGrid tabs) */}
-          {activeTab !== 4 && (
+          {/* Global Search and Filters - Only show for Projects tab (activeTab === 0) */}
+          {activeTab === 0 && (
             <Paper 
               elevation={1}
               sx={{ 

@@ -39,7 +39,14 @@ module.exports = function (req, res, next) {
             return res.status(401).json({ msg: 'Invalid token structure' });
         }
         
-        console.log('Authenticated user:', req.user); // Debug log
+        // Log user info for debugging (without sensitive data)
+        console.log('Authenticated user:', {
+            id: req.user.id,
+            username: req.user.username,
+            roleName: req.user.roleName || req.user.role,
+            privilegesCount: req.user.privileges ? req.user.privileges.length : 0,
+            hasPrivileges: !!req.user.privileges
+        });
         next(); // Proceed to the next middleware/route handler
     } catch (err) {
         // If token is invalid (e.g., expired, tampered)

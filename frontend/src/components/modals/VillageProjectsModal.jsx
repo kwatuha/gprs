@@ -295,7 +295,7 @@ const VillageProjectsModal = ({ open, onClose, village }) => {
                             { id: 'status', label: 'Status', minWidth: 100, type: 'text' },
                             { id: 'percentCompleted', label: 'Progress', minWidth: 100, type: 'percentage' },
                             { id: 'allocatedBudget', label: 'Budget', minWidth: 120, type: 'currency' },
-                            { id: 'amountPaid', label: 'Paid', minWidth: 120, type: 'currency' },
+                            { id: 'amountPaid', label: 'Disbursed', minWidth: 120, type: 'currency' },
                             { id: 'absorptionRate', label: 'Absorption', minWidth: 100, type: 'percentage' }
                         ]}
                         title=""

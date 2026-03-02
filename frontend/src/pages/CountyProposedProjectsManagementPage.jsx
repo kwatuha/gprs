@@ -341,7 +341,7 @@ const CountyProposedProjectsManagementPage = () => {
       <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
           <Typography variant="h4" fontWeight="bold" gutterBottom>
-            County Proposed Projects
+            Proposed Projects
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Manage projects proposed by the County Government

@@ -37,7 +37,6 @@ const BASE_PROJECT_SELECT_JOINS = `
         p.paidOut,
         p.objective,
         p.expectedOutput,
-        p.principalInvestigator,
         p.expectedOutcome,
         p.status,
         p.statusReason,
@@ -46,10 +45,9 @@ const BASE_PROJECT_SELECT_JOINS = `
         p.createdAt,
         p.updatedAt,
         p.voided,
-        p.principalInvestigatorStaffId,
-        s.firstName AS piFirstName,
-        s.lastName AS piLastName,
-        s.email AS piEmail,
+        NULL AS piFirstName,
+        NULL AS piLastName,
+        NULL AS piEmail,
         p.departmentId,
         cd.name AS departmentName,
         cd.alias AS departmentAlias,
@@ -81,8 +79,6 @@ const BASE_PROJECT_SELECT_JOINS = `
         GROUP_CONCAT(DISTINCT w.name ORDER BY w.name SEPARATOR ', ') AS wardNames
     FROM
         kemri_projects p
-    LEFT JOIN
-        kemri_staff s ON p.principalInvestigatorStaffId = s.staffId
     LEFT JOIN
         kemri_departments cd ON p.departmentId = cd.departmentId AND (cd.voided IS NULL OR cd.voided = 0)
     LEFT JOIN
@@ -126,14 +122,23 @@ const GET_SINGLE_PROJECT_QUERY = (DB_TYPE) => {
                 (p.timeline->>'expected_completion_date')::date AS "endDate",
                 (p.budget->>'allocated_amount_kes')::numeric AS "costOfProject",
                 (p.budget->>'disbursed_amount_kes')::numeric AS "paidOut",
+                p.budget->>'source' AS "budgetSource",
                 p.notes->>'objective' AS "objective",
                 p.notes->>'expected_output' AS "expectedOutput",
                 NULL AS "principalInvestigator",
                 p.notes->>'expected_outcome' AS "expectedOutcome",
                 p.progress->>'status' AS "status",
                 p.progress->>'status_reason' AS "statusReason",
+                p.progress->>'latest_update_summary' AS "progressSummary",
                 p.data_sources->>'project_ref_num' AS "ProjectRefNum",
+                p.data_sources AS "dataSources",
                 (p.budget->>'contracted')::boolean AS "Contracted",
+                (p.location->>'geocoordinates')::jsonb AS "geocoordinates",
+                (p.location->'geocoordinates'->>'lat') AS "latitude",
+                (p.location->'geocoordinates'->>'lng') AS "longitude",
+                (p.public_engagement->>'feedback_enabled')::boolean AS "feedbackEnabled",
+                p.public_engagement->>'common_feedback' AS "commonFeedback",
+                (p.public_engagement->>'complaints_received')::integer AS "complaintsReceived",
                 p.created_at AS "createdAt",
                 p.updated_at AS "updatedAt",
                 p.voided,
@@ -142,18 +147,21 @@ const GET_SINGLE_PROJECT_QUERY = (DB_TYPE) => {
                 NULL AS "piLastName",
                 NULL AS "piEmail",
                 NULL AS "departmentId",
+                p.ministry AS "ministry",
                 p.ministry AS "departmentName",
                 NULL AS "departmentAlias",
                 NULL AS "sectionId",
+                p.state_department AS "stateDepartment",
                 p.state_department AS "sectionName",
                 NULL AS "finYearId",
                 NULL AS "financialYearName",
                 (p.notes->>'program_id')::integer AS "programId",
-                NULL AS "programName",
+                pr.programme AS "programName",
                 (p.notes->>'subprogram_id')::integer AS "subProgramId",
-                NULL AS "subProgramName",
-                NULL AS "categoryId",
-                p.sector AS "categoryName",
+                spr."subProgramme" AS "subProgramName",
+                p.category_id AS "categoryId",
+                p.sector AS "sector",
+                cat."categoryName" AS "categoryName",
                 (p.data_sources->>'created_by_user_id')::integer AS "userId",
                 NULL AS "creatorFirstName",
                 NULL AS "creatorLastName",
@@ -172,12 +180,15 @@ const GET_SINGLE_PROJECT_QUERY = (DB_TYPE) => {
                 NULL AS "subcountyNames",
                 NULL AS "wardNames"
             FROM projects p
-            WHERE p.project_id = $1 AND p.voided = false
+            LEFT JOIN programs pr ON (p.notes->>'program_id')::integer = pr."programId" AND (pr.voided IS NULL OR pr.voided = false)
+            LEFT JOIN subprograms spr ON (p.notes->>'subprogram_id')::integer = spr."subProgramId" AND (spr.voided IS NULL OR spr.voided = false)
+            LEFT JOIN categories cat ON p.category_id = cat."categoryId" AND (cat.voided IS NULL OR cat.voided = false)
+            WHERE p.project_id = $1 AND (p.voided IS NULL OR p.voided = false)
         `;
     } else {
         return `
             ${BASE_PROJECT_SELECT_JOINS}
-            WHERE p.id = ? AND p.voided = 0
+            WHERE p.id = ? AND (p.voided IS NULL OR p.voided = 0)
             GROUP BY p.id;
         `;
     }
@@ -203,7 +214,10 @@ const checkProjectExists = async (projectId) => {
     const DB_TYPE = process.env.DB_TYPE || 'mysql';
     const tableName = DB_TYPE === 'postgresql' ? 'projects' : 'kemri_projects';
     const idColumn = DB_TYPE === 'postgresql' ? 'project_id' : 'id';
-    const voidedCondition = DB_TYPE === 'postgresql' ? 'voided = false' : 'voided = 0';
+    // Only exclude projects where voided = 1/true, include null and false
+    const voidedCondition = DB_TYPE === 'postgresql' 
+        ? '(voided IS NULL OR voided = false)' 
+        : '(voided IS NULL OR voided = 0)';
     const query = `SELECT ${idColumn} FROM ${tableName} WHERE ${idColumn} = ? AND ${voidedCondition}`;
     const result = await pool.execute(query, [projectId]);
     const rows = DB_TYPE === 'postgresql' ? (result.rows || result) : (Array.isArray(result) ? result[0] : result);
@@ -271,6 +285,8 @@ const projectHeaderMap = {
     financialYear: ['financialyear', 'financial-year', 'financial year', 'fy', 'adp', 'year'],
     department: ['department', 'implementingdepartment'],
     directorate: ['directorate'],
+    sector: ['sector'],
+    agency: ['agency', 'implementingagency', 'implementing_agency', 'implementing agency'],
     'sub-county': ['subcounty', 'subcountyname', 'subcountyid', 'sub-county', 'subcounty_', 'sub county'],
     ward: ['ward', 'wardname', 'wardid'],
     Contracted: ['contracted', 'contractamount', 'contractedamount', 'contractsum', 'contract value', 'contract value (kes)'],
@@ -487,7 +503,14 @@ const mapRowUsingHeaderMap = (headers, row, trackCorrections = false) => {
             }
         }
         
-        obj[canonical] = value === '' ? null : value;
+        // Map amountPaid to Disbursed for display in preview
+        if (canonical === 'amountPaid') {
+            obj['Disbursed'] = value === '' ? null : value;
+            // Also keep amountPaid for internal processing
+            obj['amountPaid'] = value === '' ? null : value;
+        } else {
+            obj[canonical] = value === '' ? null : value;
+        }
     }
     
     if (trackCorrections) {
@@ -579,9 +602,30 @@ router.post('/import-data', upload.single('file'), async (req, res) => {
 
 /**
  * @route POST /api/projects/check-metadata-mapping
- * @description Check metadata mappings for import data (departments, directorates, wards, subcounties)
+ * @description Check metadata mappings for import data (DISABLED - metadata preview not required)
  */
 router.post('/check-metadata-mapping', async (req, res) => {
+    // Metadata preview disabled - return empty mapping summary
+    const { dataToImport } = req.body || {};
+    const totalRows = dataToImport && Array.isArray(dataToImport) ? dataToImport.length : 0;
+    
+    return res.status(200).json({
+        success: true,
+        message: 'Metadata preview is disabled. Import will proceed without metadata validation.',
+        mappingSummary: {
+            departments: { existing: [], new: [], unmatched: [] },
+            directorates: { existing: [], new: [], unmatched: [] },
+            wards: { existing: [], new: [], unmatched: [] },
+            subcounties: { existing: [], new: [], unmatched: [] },
+            financialYears: { existing: [], new: [], unmatched: [] },
+            totalRows: totalRows,
+            rowsWithUnmatchedMetadata: []
+        }
+    });
+});
+
+// Original implementation (disabled - kept for reference)
+router.post('/check-metadata-mapping-old', async (req, res) => {
     const { dataToImport } = req.body || {};
     if (!dataToImport || !Array.isArray(dataToImport) || dataToImport.length === 0) {
         return res.status(400).json({ success: false, message: 'No data provided for metadata mapping check.' });
@@ -1072,6 +1116,11 @@ router.post('/confirm-import-data', async (req, res) => {
         return res.status(400).json({ success: false, message: 'No data provided for import confirmation.' });
     }
 
+    // PostgreSQL only - no MySQL support
+    const DB_TYPE = 'postgresql';
+    const tableName = 'projects';
+    const idColumn = 'project_id';
+
     const toBool = (v) => {
         if (typeof v === 'number') return v !== 0;
         if (typeof v === 'boolean') return v;
@@ -1112,21 +1161,19 @@ router.post('/confirm-import-data', async (req, res) => {
     const summary = { 
         projectsCreated: 0, 
         projectsUpdated: 0, 
-        linksCreated: 0, 
         errors: [],
-        dataCorrections: [], // Track date and financial year corrections
-        skippedMetadata: {
-            departments: [],
-            directorates: [],
-            wards: [],
-            subcounties: [],
-            financialYears: []
-        }
+        dataCorrections: [] // Track date corrections only
     };
 
     try {
-        connection = await pool.getConnection();
-        await connection.beginTransaction();
+        if (DB_TYPE === 'postgresql') {
+            // PostgreSQL: Use pool.query with BEGIN/COMMIT
+            await pool.query('BEGIN');
+        } else {
+            // MySQL: Use connection transaction
+            connection = await pool.getConnection();
+            await connection.beginTransaction();
+        }
 
         for (let i = 0; i < dataToImport.length; i++) {
             const row = dataToImport[i] || {};
@@ -1144,212 +1191,7 @@ router.post('/confirm-import-data', async (req, res) => {
                     throw new Error('Missing projectName and ProjectRefNum');
                 }
 
-                // Resolve departmentId by name or alias (DO NOT create if missing) - case-insensitive
-                const departmentName = normalizeStr(row.department || row.Department);
-                let departmentId = null;
-                if (departmentName) {
-                    // Get all departments and check manually (to handle comma-separated aliases properly)
-                    const [allDepts] = await connection.query(
-                        `SELECT departmentId, name, alias FROM kemri_departments 
-                         WHERE (voided IS NULL OR voided = 0)`
-                    );
-                    const normalizedDeptName = departmentName.toLowerCase(); // Case-insensitive matching
-                    let found = false;
-                    for (const dept of allDepts) {
-                        // Check name (case-insensitive)
-                        if (dept.name && normalizeStr(dept.name).toLowerCase() === normalizedDeptName) {
-                            departmentId = dept.departmentId;
-                            found = true;
-                            break;
-                        }
-                        // Check alias - both full alias and split parts (case-insensitive)
-                        // Also check with alias normalization (ignoring &, commas, spaces)
-                        if (dept.alias) {
-                            const fullAlias = normalizeStr(dept.alias).toLowerCase();
-                            const normalizedAlias = normalizeAlias(dept.alias);
-                            const normalizedDeptAlias = normalizeAlias(departmentName);
-                            
-                            if (fullAlias === normalizedDeptName || normalizedAlias === normalizedDeptAlias) {
-                                departmentId = dept.departmentId;
-                                found = true;
-                                break;
-                            }
-                            // Check split aliases (case-insensitive)
-                            const aliases = dept.alias.split(',').map(a => normalizeStr(a).toLowerCase());
-                            if (aliases.includes(normalizedDeptName)) {
-                                departmentId = dept.departmentId;
-                                found = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (!found) {
-                        // Track skipped metadata
-                        if (!summary.skippedMetadata.departments.includes(departmentName)) {
-                            summary.skippedMetadata.departments.push(departmentName);
-                        }
-                    }
-                }
-
-                // Resolve sectionId (directorate) by name or alias (DO NOT create if missing) - case-insensitive
-                const directorateName = normalizeStr(row.directorate || row.Directorate);
-                let sectionId = null;
-                if (directorateName) {
-                    // Get all sections and check manually (to handle comma-separated aliases properly)
-                    const [allSections] = await connection.query(
-                        `SELECT sectionId, name, alias, departmentId FROM kemri_sections 
-                         WHERE (voided IS NULL OR voided = 0)`
-                    );
-                    const normalizedDirName = directorateName.toLowerCase(); // Case-insensitive matching
-                    let matchingSections = [];
-                    
-                    for (const section of allSections) {
-                        let matches = false;
-                        // Check name (case-insensitive)
-                        if (section.name && normalizeStr(section.name).toLowerCase() === normalizedDirName) {
-                            matches = true;
-                        }
-                        // Check alias - both full alias and split parts (case-insensitive)
-                        // Also check with alias normalization (ignoring &, commas, spaces)
-                        if (!matches && section.alias) {
-                            const fullAlias = normalizeStr(section.alias).toLowerCase();
-                            const normalizedAlias = normalizeAlias(section.alias);
-                            const normalizedDirAlias = normalizeAlias(directorateName);
-                            
-                            if (fullAlias === normalizedDirName || normalizedAlias === normalizedDirAlias) {
-                                matches = true;
-                            } else {
-                                // Check split aliases (case-insensitive)
-                                const aliases = section.alias.split(',').map(a => normalizeStr(a).toLowerCase());
-                                if (aliases.includes(normalizedDirName)) {
-                                    matches = true;
-                                }
-                            }
-                        }
-                        
-                        if (matches) {
-                            matchingSections.push(section);
-                        }
-                    }
-                    
-                    if (matchingSections.length > 0) {
-                        // If we have a departmentId, prefer sections that belong to that department
-                        if (departmentId) {
-                            const matchingInDept = matchingSections.find(s => s.departmentId === departmentId);
-                            if (matchingInDept) {
-                                sectionId = matchingInDept.sectionId;
-                            } else {
-                                // If no match in department, use the first matching section
-                                sectionId = matchingSections[0].sectionId;
-                            }
-                        } else {
-                            // No departmentId, use the first matching section
-                            sectionId = matchingSections[0].sectionId;
-                        }
-                    } else {
-                        // Track skipped metadata
-                        if (!summary.skippedMetadata.directorates.includes(directorateName)) {
-                            summary.skippedMetadata.directorates.push(directorateName);
-                        }
-                    }
-                }
-
-                // Resolve financial year id by name (DO NOT create if missing) - with flexible matching
-                const finYearName = normalizeStr(row.financialYear || row.FinancialYear || row['Financial Year'] || row.ADP || row.Year);
-                let finYearId = null;
-                if (finYearName) {
-                    // Normalize financial year name: strip FY prefix, normalize separators, handle concatenated years
-                    const normalizeFinancialYear = (name, trackCorrections = false) => {
-                        if (!name) return trackCorrections ? { normalized: '', corrected: false, originalValue: '' } : '';
-                        
-                        const originalValue = String(name).trim();
-                        let strValue = '';
-                        if (typeof name === 'string') {
-                            strValue = name.trim();
-                        } else {
-                            strValue = String(name || '').trim();
-                        }
-                        
-                        if (!strValue) return trackCorrections ? { normalized: '', corrected: false, originalValue: originalValue } : '';
-                        
-                        let normalized = normalizeStr(strValue).toLowerCase();
-                        let wasCorrected = false;
-                        
-                        // Check for concatenated years like "20232024" (8 digits)
-                        const concatenatedMatch = normalized.match(/^(\d{4})(\d{4})$/);
-                        if (concatenatedMatch) {
-                            const year1 = concatenatedMatch[1];
-                            const year2 = concatenatedMatch[2];
-                            const y1 = parseInt(year1, 10);
-                            const y2 = parseInt(year2, 10);
-                            if (y1 >= 1900 && y1 <= 2100 && y2 >= 1900 && y2 <= 2100 && y2 === y1 + 1) {
-                                normalized = `${year1}/${year2}`;
-                                wasCorrected = true;
-                            }
-                        }
-                        
-                        // Remove FY or fy prefix (with optional space)
-                        normalized = normalized.replace(/^fy\s*/i, '');
-                        // Normalize all separators (space, dash) to slash
-                        normalized = normalized.replace(/[\s\-]/g, '/');
-                        // Remove any extra slashes
-                        normalized = normalized.replace(/\/+/g, '/');
-                        const finalNormalized = normalized.trim();
-                        
-                        if (trackCorrections && wasCorrected) {
-                            return {
-                                normalized: finalNormalized,
-                                corrected: true,
-                                originalValue: originalValue,
-                                correctionMessage: `Financial year corrected from "${originalValue}" to "${finalNormalized}" (concatenated years split)`
-                            };
-                        }
-                        
-                        return trackCorrections ? {
-                            normalized: finalNormalized,
-                            corrected: false,
-                            originalValue: originalValue
-                        } : finalNormalized;
-                    };
-                    
-                    const fyResult = normalizeFinancialYear(finYearName, true);
-                    const normalizedFYName = fyResult.normalized || fyResult;
-                    
-                    if (fyResult.corrected) {
-                        summary.dataCorrections.push({
-                            row: i + 2,
-                            field: 'financialYear',
-                            originalValue: fyResult.originalValue,
-                            correctedValue: normalizedFYName,
-                            message: fyResult.correctionMessage
-                        });
-                    }
-                    
-                    // Fetch all financial years and match using normalized names
-                    const [allFYs] = await connection.query(
-                        'SELECT finYearId, finYearName FROM kemri_financialyears WHERE (voided IS NULL OR voided = 0)'
-                    );
-                    
-                    let fyRows = [];
-                    for (const fy of allFYs) {
-                        if (fy.finYearName) {
-                            const dbNormalized = normalizeFinancialYear(fy.finYearName, false);
-                            if (dbNormalized === normalizedFYName) {
-                                fyRows = [{ finYearId: fy.finYearId }];
-                                break;
-                            }
-                        }
-                    }
-                    
-                    if (fyRows.length > 0) {
-                        finYearId = fyRows[0].finYearId;
-                    } else {
-                        // Track skipped metadata
-                        if (!summary.skippedMetadata.financialYears.includes(finYearName)) {
-                            summary.skippedMetadata.financialYears.push(finYearName);
-                        }
-                    }
-                }
+                // Skip metadata resolution - no department, directorate, financial year, ward, subcounty linking
 
                 // Prepare project payload
                 const toMoney = (v) => {
@@ -1399,9 +1241,8 @@ router.post('/confirm-import-data', async (req, res) => {
                     startDate: normalizeDate(row.StartDate, 'StartDate').date,
                     endDate: normalizeDate(row.EndDate, 'EndDate').date,
                     directorate: normalizeStr(row.directorate || row.Directorate) || null,
-                    sectionId: (sectionId != null && !isNaN(sectionId)) ? sectionId : null, // Store sectionId when directorate is resolved
-                    departmentId: (departmentId != null && !isNaN(departmentId)) ? departmentId : null,
-                    finYearId: (finYearId != null && !isNaN(finYearId)) ? finYearId : null,
+                    sector: normalizeStr(row.sector || row.Sector) || null,
+                    implementing_agency: normalizeStr(row.agency || row.Agency || row.implementing_agency || row['Implementing Agency'] || row['implementing agency']) || null,
                     Contracted: toMoney(row.Contracted),
                 };
                 
@@ -1416,27 +1257,126 @@ router.post('/confirm-import-data', async (req, res) => {
 
                 // Upsert by ProjectRefNum first, else by projectName
                 let projectId = null;
+                const placeholder = '$';
+                const refNumColumn = 'name'; // PostgreSQL uses name field
+                const nameColumn = 'name';
+                
                 if (projectPayload.ProjectRefNum) {
-                    const [existByRef] = await connection.query('SELECT id FROM kemri_projects WHERE ProjectRefNum = ?', [projectPayload.ProjectRefNum]);
-                    if (existByRef.length > 0) {
-                        projectId = existByRef[0].id;
+                    const checkRefQuery = `SELECT project_id FROM ${tableName} WHERE name = $1 AND (voided IS NULL OR voided = false)`;
+                    const checkRefParams = [projectPayload.ProjectRefNum];
+                    const existByRef = await pool.query(checkRefQuery, checkRefParams);
+                    const existByRefRows = existByRef.rows;
+                    
+                    if (existByRefRows && existByRefRows.length > 0) {
+                        projectId = existByRefRows[0][idColumn];
                         // Log payload for debugging if there are issues
                         if (process.env.NODE_ENV === 'development') {
                             console.log(`Row ${i + 2}: Updating project ${projectId} with payload:`, JSON.stringify(projectPayload, null, 2));
                         }
-                        await connection.query('UPDATE kemri_projects SET ? WHERE id = ?', [projectPayload, projectId]);
+                        
+                        if (DB_TYPE === 'postgresql') {
+                            // PostgreSQL: Build UPDATE query with JSONB fields
+                            const timeline = JSON.stringify({
+                                start_date: projectPayload.startDate || null,
+                                expected_completion_date: projectPayload.endDate || null,
+                                financial_year: projectPayload.finYearId ? String(projectPayload.finYearId) : null
+                            });
+                            const budget = JSON.stringify({
+                                allocated_amount_kes: projectPayload.costOfProject || 0,
+                                disbursed_amount_kes: projectPayload.paidOut || 0,
+                                contracted: projectPayload.Contracted || false,
+                                budget_id: null,
+                                source: null
+                            });
+                            const progress = JSON.stringify({
+                                status: projectPayload.status || 'Not Started',
+                                status_reason: null,
+                                percentage_complete: 0,
+                                latest_update_summary: null
+                            });
+                            
+                            const updateQuery = `
+                                UPDATE ${tableName} SET
+                                    name = $1,
+                                    description = $2,
+                                    implementing_agency = $3,
+                                    sector = $4,
+                                    timeline = $5::jsonb,
+                                    budget = $6::jsonb,
+                                    progress = $7::jsonb,
+                                    updated_at = CURRENT_TIMESTAMP
+                                WHERE ${idColumn} = $8
+                            `;
+                            await pool.query(updateQuery, [
+                                projectPayload.projectName,
+                                projectPayload.projectDescription,
+                                projectPayload.implementing_agency,
+                                projectPayload.sector,
+                                timeline,
+                                budget,
+                                progress,
+                                projectId
+                            ]);
+                        } else {
+                            await connection.query(`UPDATE ${tableName} SET ? WHERE ${idColumn} = ?`, [projectPayload, projectId]);
+                        }
                         summary.projectsUpdated++;
                     }
                 }
                 if (!projectId && projectPayload.projectName) {
-                    const [existByName] = await connection.query('SELECT id FROM kemri_projects WHERE projectName = ?', [projectPayload.projectName]);
-                    if (existByName.length > 0) {
-                        projectId = existByName[0].id;
+                    const checkNameQuery = `SELECT project_id FROM ${tableName} WHERE name = $1 AND (voided IS NULL OR voided = false)`;
+                    const checkNameParams = [projectPayload.projectName];
+                    const existByName = await pool.query(checkNameQuery, checkNameParams);
+                    const existByNameRows = existByName.rows;
+                    
+                    if (existByNameRows && existByNameRows.length > 0) {
+                        projectId = existByNameRows[0][idColumn];
                         // Log payload for debugging if there are issues
                         if (process.env.NODE_ENV === 'development') {
                             console.log(`Row ${i + 2}: Updating project ${projectId} with payload:`, JSON.stringify(projectPayload, null, 2));
                         }
-                        await connection.query('UPDATE kemri_projects SET ? WHERE id = ?', [projectPayload, projectId]);
+                        
+                        // PostgreSQL: Build UPDATE query with JSONB fields
+                        const timeline = JSON.stringify({
+                            start_date: projectPayload.startDate || null,
+                            expected_completion_date: projectPayload.endDate || null
+                        });
+                        const budget = JSON.stringify({
+                            allocated_amount_kes: projectPayload.costOfProject || 0,
+                            disbursed_amount_kes: projectPayload.paidOut || 0,
+                            contracted: projectPayload.Contracted || false,
+                            budget_id: null,
+                            source: null
+                        });
+                        const progress = JSON.stringify({
+                            status: projectPayload.status || 'Not Started',
+                            status_reason: null,
+                            percentage_complete: 0,
+                            latest_update_summary: null
+                        });
+                        
+                        const updateQuery = `
+                            UPDATE ${tableName} SET
+                                name = $1,
+                                description = $2,
+                                implementing_agency = $3,
+                                sector = $4,
+                                timeline = $5::jsonb,
+                                budget = $6::jsonb,
+                                progress = $7::jsonb,
+                                updated_at = CURRENT_TIMESTAMP
+                            WHERE ${idColumn} = $8
+                        `;
+                        await pool.query(updateQuery, [
+                            projectPayload.projectName,
+                            projectPayload.projectDescription,
+                            projectPayload.implementing_agency,
+                            projectPayload.sector,
+                            timeline,
+                            budget,
+                            progress,
+                            projectId
+                        ]);
                         summary.projectsUpdated++;
                     }
                 }
@@ -1445,224 +1385,90 @@ router.post('/confirm-import-data', async (req, res) => {
                     if (process.env.NODE_ENV === 'development') {
                         console.log(`Row ${i + 2}: Inserting new project with payload:`, JSON.stringify(projectPayload, null, 2));
                     }
-                    const [insProj] = await connection.query('INSERT INTO kemri_projects SET ?', projectPayload);
-                    projectId = insProj.insertId;
-                    summary.projectsCreated++;
-                }
-
-                // Link Subcounty (DO NOT create if missing) - case-insensitive matching with flexible space/slash/word-order handling
-                const subCountyName = normalizeStr(row['sub-county'] || row.SubCounty || row['Sub County'] || row.Subcounty);
-                if (subCountyName) {
-                    // Strip "SC" or "Subcounty" or "Sub County" suffix if present (case-insensitive)
-                    let cleanedSubCountyName = normalizeStr(subCountyName).toLowerCase();
-                    cleanedSubCountyName = cleanedSubCountyName.replace(/\s+sc\s*$/i, '').trim();
-                    cleanedSubCountyName = cleanedSubCountyName.replace(/\s+subcounty\s*$/i, '').trim();
-                    cleanedSubCountyName = cleanedSubCountyName.replace(/\s+sub\s+county\s*$/i, '').trim();
                     
-                    // Use case-insensitive matching with normalized spaces around slashes and apostrophes
-                    const normalizedSubCountyName = cleanedSubCountyName;
-                    // Split into words and create sorted word set for order-independent matching
-                    const inputWords = normalizedSubCountyName.split(/[\s\/]+/).filter(w => w.length > 0).sort();
-                    const inputWordSet = inputWords.join(' ');
-                    
-                    // Try exact match first, then try with space/slash variations, then word-order independent
-                    const normalizedDbName = `LOWER(REPLACE(REPLACE(REPLACE(REPLACE(TRIM(name), ' / ', '/'), ' /', '/'), '/ ', '/'), '''', ''))`;
-                    
-                    // For word-order matching, we need to fetch and check in JavaScript
-                    const [scRows] = await connection.query(
-                        `SELECT subcountyId, ${normalizedDbName} as normalized_name FROM kemri_subcounties 
-                         WHERE (${normalizedDbName} = ? OR ${normalizedDbName} = REPLACE(?, ' ', '/') OR ${normalizedDbName} = REPLACE(?, '/', ' '))
-                         AND (voided IS NULL OR voided = 0)`, 
-                        [normalizedSubCountyName, normalizedSubCountyName, normalizedSubCountyName]
-                    );
-                    
-                    // If no exact match, try word-order independent matching
-                    let matchedRow = scRows[0];
-                    if (!matchedRow) {
-                        const [allScRows] = await connection.query(
-                            `SELECT subcountyId, ${normalizedDbName} as normalized_name FROM kemri_subcounties 
-                             WHERE (voided IS NULL OR voided = 0)`
-                        );
-                        for (const row of allScRows) {
-                            if (row.normalized_name) {
-                                const dbWords = row.normalized_name.split(/[\s\/]+/).filter(w => w.length > 0).sort().join(' ');
-                                if (dbWords === inputWordSet) {
-                                    matchedRow = row;
-                                    break;
-                                }
+                        // PostgreSQL: Build INSERT query with JSONB fields
+                        const timeline = JSON.stringify({
+                            start_date: projectPayload.startDate || null,
+                            expected_completion_date: projectPayload.endDate || null
+                        });
+                        const budget = JSON.stringify({
+                            allocated_amount_kes: projectPayload.costOfProject || 0,
+                            disbursed_amount_kes: projectPayload.paidOut || 0,
+                            contracted: projectPayload.Contracted || false,
+                            budget_id: null,
+                            source: null
+                        });
+                        const progress = JSON.stringify({
+                            status: projectPayload.status || 'Not Started',
+                            status_reason: null,
+                            percentage_complete: 0,
+                            latest_update_summary: null
+                        });
+                        const notes = JSON.stringify({
+                            objective: null,
+                            expected_output: null,
+                            expected_outcome: null,
+                            program_id: null,
+                            subprogram_id: null
+                        });
+                        const dataSources = JSON.stringify({
+                            project_ref_num: projectPayload.ProjectRefNum || null,
+                            created_by_user_id: 1
+                        });
+                        const publicEngagement = JSON.stringify({
+                            approved_for_public: false,
+                            approved_by: null,
+                            approved_at: null,
+                            approval_notes: null,
+                            revision_requested: false,
+                            revision_notes: null,
+                            revision_requested_by: null,
+                            revision_requested_at: null,
+                            revision_submitted_at: null,
+                            feedback_enabled: true,
+                            common_feedback: null,
+                            complaints_received: 0
+                        });
+                        const location = JSON.stringify({
+                            county: null,
+                            constituency: null,
+                            ward: null,
+                            geocoordinates: {
+                                lat: null,
+                                lng: null
                             }
-                        }
-                    }
-                    if (matchedRow) {
-                        const subcountyId = matchedRow.subcountyId;
-                        await connection.query('INSERT IGNORE INTO kemri_project_subcounties (projectId, subcountyId) VALUES (?, ?)', [projectId, subcountyId]);
-                        summary.linksCreated++;
-                    } else {
-                        // Track skipped metadata
-                        if (!summary.skippedMetadata.subcounties.includes(subCountyName)) {
-                            summary.skippedMetadata.subcounties.push(subCountyName);
-                        }
-                    }
-                }
-
-                // Link Ward (DO NOT create if missing) - case-insensitive matching with flexible space/slash/word-order handling
-                const wardName = normalizeStr(row.ward || row.Ward || row['Ward Name']);
-                if (wardName) {
-                    // Strip "Ward" suffix if present (case-insensitive)
-                    let cleanedWardName = normalizeStr(wardName).toLowerCase();
-                    cleanedWardName = cleanedWardName.replace(/\s+ward\s*$/i, '').trim();
-                    
-                    // Use case-insensitive matching with normalized spaces around slashes and apostrophes
-                    const normalizedWardName = cleanedWardName;
-                    // Split into words and create sorted word set for order-independent matching
-                    const inputWords = normalizedWardName.split(/[\s\/]+/).filter(w => w.length > 0).sort();
-                    const inputWordSet = inputWords.join(' ');
-                    
-                    // Try exact match first, then try with space/slash variations, then word-order independent
-                    const normalizedDbName = `LOWER(REPLACE(REPLACE(REPLACE(REPLACE(TRIM(name), ' / ', '/'), ' /', '/'), '/ ', '/'), '''', ''))`;
-                    
-                    // For word-order matching, we need to fetch and check in JavaScript
-                    const [wRows] = await connection.query(
-                        `SELECT wardId, ${normalizedDbName} as normalized_name FROM kemri_wards 
-                         WHERE (${normalizedDbName} = ? OR ${normalizedDbName} = REPLACE(?, ' ', '/') OR ${normalizedDbName} = REPLACE(?, '/', ' '))
-                         AND (voided IS NULL OR voided = 0)`, 
-                        [normalizedWardName, normalizedWardName, normalizedWardName]
-                    );
-                    
-                    // If no exact match, try word-order independent matching
-                    let matchedRow = wRows[0];
-                    if (!matchedRow) {
-                        const [allWRows] = await connection.query(
-                            `SELECT wardId, ${normalizedDbName} as normalized_name FROM kemri_wards 
-                             WHERE (voided IS NULL OR voided = 0)`
-                        );
-                        for (const row of allWRows) {
-                            if (row.normalized_name) {
-                                const dbWords = row.normalized_name.split(/[\s\/]+/).filter(w => w.length > 0).sort().join(' ');
-                                if (dbWords === inputWordSet) {
-                                    matchedRow = row;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if (matchedRow) {
-                        const wardId = matchedRow.wardId;
-                        await connection.query('INSERT IGNORE INTO kemri_project_wards (projectId, wardId) VALUES (?, ?)', [projectId, wardId]);
-                        summary.linksCreated++;
-                    } else {
-                        // Track skipped metadata
-                        if (!summary.skippedMetadata.wards.includes(wardName)) {
-                            summary.skippedMetadata.wards.push(wardName);
-                        }
-                    }
-                }
-
-                // Link Contractor (AUTO-CREATE if not exists) - with careful validation
-                const contractorName = normalizeStr(row.contractor || row.Contractor || row.contractorName || row['Contractor Name']);
-                if (contractorName) {
-                    // Validate contractor name is not empty after normalization
-                    if (!contractorName.trim()) {
-                        console.warn(`Row ${i + 2}: Contractor name is empty after normalization, skipping contractor assignment`);
-                    } else {
-                        // Check if contractor exists by companyName (case-insensitive, normalized)
-                        const normalizedContractorName = normalizeStr(contractorName).trim();
-                        const [existingContractors] = await connection.query(
-                            `SELECT contractorId, companyName, email FROM kemri_contractors 
-                             WHERE LOWER(TRIM(REPLACE(REPLACE(companyName, '''', ''), ' ', ''))) = LOWER(REPLACE(REPLACE(?, '''', ''), ' ', ''))
-                             AND (voided IS NULL OR voided = 0)
-                             LIMIT 1`,
-                            [normalizedContractorName]
-                        );
+                        });
                         
-                        let contractorId = null;
-                        
-                        if (existingContractors.length > 0) {
-                            // Contractor exists, use it
-                            contractorId = existingContractors[0].contractorId;
-                        } else {
-                            // Contractor doesn't exist, create it with validation
-                            // Validate companyName is not empty
-                            if (!normalizedContractorName || normalizedContractorName.length < 2) {
-                                console.warn(`Row ${i + 2}: Contractor name "${contractorName}" is too short, skipping contractor creation`);
-                            } else {
-                                // Extract optional fields from import data
-                                const contractorEmail = normalizeStr(row.contractorEmail || row['Contractor Email'] || row.contractor_email);
-                                const contractorPhone = normalizeStr(row.contractorPhone || row['Contractor Phone'] || row.contractor_phone);
-                                const contactPerson = normalizeStr(row.contactPerson || row['Contact Person'] || row.contact_person);
-                                
-                                // Generate email if not provided (based on companyName)
-                                let finalEmail = contractorEmail;
-                                if (!finalEmail || !finalEmail.trim()) {
-                                    // Generate a safe email from company name
-                                    const emailBase = normalizedContractorName
-                                        .toLowerCase()
-                                        .replace(/[^a-z0-9]/g, '')
-                                        .substring(0, 50); // Limit length
-                                    finalEmail = `${emailBase}@contractor.local`;
-                                } else {
-                                    finalEmail = finalEmail.trim().toLowerCase();
-                                }
-                                
-                                // Check if email already exists (email has unique constraint)
-                                const [emailCheck] = await connection.query(
-                                    'SELECT contractorId FROM kemri_contractors WHERE email = ? AND (voided IS NULL OR voided = 0) LIMIT 1',
-                                    [finalEmail]
-                                );
-                                
-                                if (emailCheck.length > 0) {
-                                    // Email exists, use that contractor instead
-                                    contractorId = emailCheck[0].contractorId;
-                                    console.log(`Row ${i + 2}: Email "${finalEmail}" already exists, using existing contractor ID ${contractorId}`);
-                                } else {
-                                    // Create new contractor
-                                    const userId = 1; // TODO: Get from authenticated user
-                                    try {
-                                        const [insertResult] = await connection.query(
-                                            'INSERT INTO kemri_contractors (companyName, contactPerson, email, phone, userId) VALUES (?, ?, ?, ?, ?)',
-                                            [normalizedContractorName, contactPerson || null, finalEmail, contractorPhone || null, userId]
-                                        );
-                                        contractorId = insertResult.insertId;
-                                        console.log(`Row ${i + 2}: Created new contractor "${normalizedContractorName}" with ID ${contractorId}`);
-                                    } catch (createErr) {
-                                        // Handle unique constraint violation or other errors
-                                        if (createErr.code === 'ER_DUP_ENTRY') {
-                                            // Email or companyName might be duplicate, try to find existing
-                                            const [duplicateCheck] = await connection.query(
-                                                'SELECT contractorId FROM kemri_contractors WHERE companyName = ? AND (voided IS NULL OR voided = 0) LIMIT 1',
-                                                [normalizedContractorName]
-                                            );
-                                            if (duplicateCheck.length > 0) {
-                                                contractorId = duplicateCheck[0].contractorId;
-                                                console.log(`Row ${i + 2}: Found duplicate contractor "${normalizedContractorName}", using ID ${contractorId}`);
-                                            } else {
-                                                console.error(`Row ${i + 2}: Error creating contractor "${normalizedContractorName}":`, createErr.message);
-                                                // Continue without contractor assignment
-                                            }
-                                        } else {
-                                            console.error(`Row ${i + 2}: Error creating contractor "${normalizedContractorName}":`, createErr.message);
-                                            // Continue without contractor assignment
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // Link contractor to project if we have a contractorId
-                        if (contractorId) {
-                            try {
-                                await connection.query(
-                                    'INSERT IGNORE INTO kemri_project_contractor_assignments (projectId, contractorId, assignmentDate, voided) VALUES (?, ?, NOW(), 0)',
-                                    [projectId, contractorId]
-                                );
-                                summary.linksCreated++;
-                            } catch (linkErr) {
-                                // Log but don't fail the import if linking fails
-                                console.warn(`Row ${i + 2}: Could not link contractor ${contractorId} to project ${projectId}:`, linkErr.message);
-                            }
-                        }
+                        const insertQuery = `
+                            INSERT INTO ${tableName} (
+                                name, description, implementing_agency, sector, ministry, state_department, category_id,
+                                timeline, budget, progress, notes, data_sources, public_engagement, location,
+                                created_at, updated_at, voided
+                            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb, $12::jsonb, $13::jsonb, $14::jsonb, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false)
+                            RETURNING ${idColumn}
+                        `;
+                        const result = await pool.query(insertQuery, [
+                            projectPayload.projectName,
+                            projectPayload.projectDescription || null,
+                            projectPayload.implementing_agency || null,
+                            projectPayload.sector || null,
+                            null, // ministry
+                            null, // state_department
+                            null, // category_id
+                            timeline,
+                            budget,
+                            progress,
+                            notes,
+                            dataSources,
+                            publicEngagement,
+                            location
+                        ]);
+                        projectId = result.rows[0][idColumn];
+                        summary.projectsCreated++;
                     }
-                }
+
+                // Link Subcounty, Ward, Contractor - PostgreSQL: Skip for now (requires junction table implementation)
+                // TODO: Implement these linking features for PostgreSQL
 
             } catch (rowErr) {
                 console.error(`Error processing row ${i + 2}:`, rowErr);
@@ -1676,7 +1482,7 @@ router.post('/confirm-import-data', async (req, res) => {
         }
 
         if (summary.errors.length > 0) {
-            await connection.rollback();
+            await pool.query('ROLLBACK');
             console.error('Import failed with errors:', summary.errors);
             // Show first few errors in the main message for better visibility
             const errorPreview = summary.errors.slice(0, 5).join('; ');
@@ -1692,40 +1498,21 @@ router.post('/confirm-import-data', async (req, res) => {
                     totalRows: dataToImport.length,
                     summary: {
                         projectsCreated: summary.projectsCreated,
-                        projectsUpdated: summary.projectsUpdated,
-                        linksCreated: summary.linksCreated
+                        projectsUpdated: summary.projectsUpdated
                     }
                 } 
             });
         }
 
-        await connection.commit();
+        await pool.query('COMMIT');
         
-        // Build a message about skipped metadata
-        const skippedMessages = [];
-        if (summary.skippedMetadata.departments.length > 0) {
-            skippedMessages.push(`${summary.skippedMetadata.departments.length} department(s): ${summary.skippedMetadata.departments.join(', ')}`);
-        }
-        if (summary.skippedMetadata.wards.length > 0) {
-            skippedMessages.push(`${summary.skippedMetadata.wards.length} ward(s): ${summary.skippedMetadata.wards.join(', ')}`);
-        }
-        if (summary.skippedMetadata.subcounties.length > 0) {
-            skippedMessages.push(`${summary.skippedMetadata.subcounties.length} sub-county(ies): ${summary.skippedMetadata.subcounties.join(', ')}`);
-        }
-        if (summary.skippedMetadata.financialYears.length > 0) {
-            skippedMessages.push(`${summary.skippedMetadata.financialYears.length} financial year(s): ${summary.skippedMetadata.financialYears.join(', ')}`);
-        }
-        
-        let message = 'Projects imported successfully';
-        if (skippedMessages.length > 0) {
-            message += `. Note: Some metadata was not found and was skipped: ${skippedMessages.join('; ')}. Please create these in Metadata Management.`;
-        }
-        
-        return res.status(200).json({ success: true, message, details: summary });
+        return res.status(200).json({ 
+            success: true, 
+            message: 'Projects imported successfully',
+            details: summary 
+        });
     } catch (err) {
-        if (connection) {
-            await connection.rollback();
-        }
+        await pool.query('ROLLBACK');
         console.error('Project import confirmation error:', err);
         return res.status(500).json({ 
             success: false, 
@@ -1733,7 +1520,7 @@ router.post('/confirm-import-data', async (req, res) => {
             details: { error: err.message, stack: process.env.NODE_ENV === 'development' ? err.stack : undefined }
         });
     } finally {
-        if (connection) connection.release();
+        // No connection to release for PostgreSQL (using pool)
     }
 });
 
@@ -2052,7 +1839,7 @@ router.get('/funding-overview', async (req, res) => {
                 SUM(p.paidOut) AS totalPaid,
                 COUNT(p.id) AS projectCount
             FROM kemri_projects p
-            WHERE p.voided = 0 AND p.status IS NOT NULL
+            WHERE (p.voided IS NULL OR p.voided = 0) AND p.status IS NOT NULL
             GROUP BY p.status
             ORDER BY p.status
         `);
@@ -2066,20 +1853,12 @@ router.get('/funding-overview', async (req, res) => {
 /**
  * @route GET /api/projects/pi-counts
  * @description Get count of projects by principal investigator
+ * @deprecated This endpoint is deprecated as principalInvestigator field was removed during database harmonization
  */
 router.get('/pi-counts', async (req, res) => {
     try {
-        const [rows] = await pool.query(`
-            SELECT
-                p.principalInvestigator AS pi,
-                COUNT(p.id) AS count
-            FROM kemri_projects p
-            WHERE p.voided = 0 AND p.principalInvestigator IS NOT NULL
-            GROUP BY p.principalInvestigator
-            ORDER BY count DESC
-            LIMIT 10
-        `);
-        res.status(200).json(rows);
+        // Return empty array as principalInvestigator field no longer exists
+        res.status(200).json([]);
     } catch (error) {
         console.error('Error fetching project PI counts:', error);
         res.status(500).json({ message: 'Error fetching project PI counts', error: error.message });
@@ -2098,7 +1877,7 @@ router.get('/participants-per-project', async (req, res) => {
                 COUNT(pp.participantId) AS participantCount
             FROM kemri_projects p
             LEFT JOIN kemri_project_participants pp ON p.id = pp.projectId
-            WHERE p.voided = 0
+            WHERE (p.voided IS NULL OR p.voided = 0)
             GROUP BY p.id, p.projectName
             ORDER BY participantCount DESC
             LIMIT 10
@@ -2331,9 +2110,41 @@ router.get('/', async (req, res) => {
         // Get DB_TYPE first
         const DB_TYPE = process.env.DB_TYPE || 'mysql';
         
+        // Check if programs and subprograms tables exist (for PostgreSQL)
+        let programsTableExists = false;
+        let subprogramsTableExists = false;
+        if (DB_TYPE === 'postgresql') {
+            try {
+                const programsCheck = await pool.query(`
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'programs'
+                    )
+                `);
+                programsTableExists = programsCheck.rows[0].exists;
+                
+                const subprogramsCheck = await pool.query(`
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'subprograms'
+                    )
+                `);
+                subprogramsTableExists = subprogramsCheck.rows[0].exists;
+            } catch (checkError) {
+                console.warn('Could not check for programs/subprograms tables:', checkError.message);
+                // Continue without joins if check fails
+            }
+        }
+        
         // Query using new JSONB structure for PostgreSQL
-        const BASE_PROJECT_SELECT = DB_TYPE === 'postgresql' ? `
-            SELECT
+        // Build SELECT with conditional joins based on table existence
+        const programNameSelect = programsTableExists ? 'pr."programme"' : 'NULL';
+        const subProgramNameSelect = subprogramsTableExists ? 'spr."subProgramme"' : 'NULL';
+        
+        const BASE_PROJECT_SELECT = DB_TYPE === 'postgresql' ? 
+            `SELECT
                 p.project_id AS id,
                 p.name AS "projectName",
                 p.description AS "projectDescription",
@@ -2342,14 +2153,23 @@ router.get('/', async (req, res) => {
                 (p.timeline->>'expected_completion_date')::date AS "endDate",
                 (p.budget->>'allocated_amount_kes')::numeric AS "costOfProject",
                 (p.budget->>'disbursed_amount_kes')::numeric AS "paidOut",
+                p.budget->>'source' AS "budgetSource",
                 p.notes->>'objective' AS objective,
                 p.notes->>'expected_output' AS "expectedOutput",
                 NULL AS "principalInvestigator",
                 p.notes->>'expected_outcome' AS "expectedOutcome",
                 p.progress->>'status' AS status,
                 p.progress->>'status_reason' AS "statusReason",
+                p.progress->>'latest_update_summary' AS "progressSummary",
                 p.data_sources->>'project_ref_num' AS "ProjectRefNum",
+                p.data_sources AS "dataSources",
                 (p.budget->>'contracted')::boolean AS "Contracted",
+                (p.location->>'geocoordinates')::jsonb AS "geocoordinates",
+                (p.location->'geocoordinates'->>'lat') AS "latitude",
+                (p.location->'geocoordinates'->>'lng') AS "longitude",
+                (p.public_engagement->>'feedback_enabled')::boolean AS "feedbackEnabled",
+                p.public_engagement->>'common_feedback' AS "commonFeedback",
+                (p.public_engagement->>'complaints_received')::integer AS "complaintsReceived",
                 p.created_at AS "createdAt",
                 p.updated_at AS "updatedAt",
                 p.voided,
@@ -2358,18 +2178,21 @@ router.get('/', async (req, res) => {
                 NULL AS piLastName,
                 NULL AS piEmail,
                 NULL AS "departmentId",
+                p.ministry AS "ministry",
                 p.ministry AS departmentName,
                 NULL AS departmentAlias,
                 NULL AS "sectionId",
+                p.state_department AS "stateDepartment",
                 p.state_department AS sectionName,
                 NULL AS "finYearId",
                 NULL AS financialYearName,
                 (p.notes->>'program_id')::integer AS "programId",
-                NULL AS programName,
+                ` + programNameSelect + ` AS "programName",
                 (p.notes->>'subprogram_id')::integer AS "subProgramId",
-                NULL AS subProgramName,
-                NULL AS "categoryId",
-                p.sector AS categoryName,
+                ` + subProgramNameSelect + ` AS "subProgramName",
+                p.category_id AS "categoryId",
+                p.sector AS "sector",
+                cat."categoryName" AS "categoryName",
                 (p.data_sources->>'created_by_user_id')::integer AS "userId",
                 NULL AS creatorFirstName,
                 NULL AS creatorLastName,
@@ -2399,7 +2222,6 @@ router.get('/', async (req, res) => {
                 p.paidOut,
                 p.objective,
                 p.expectedOutput,
-                p.principalInvestigator,
                 p.expectedOutcome,
                 p.status,
                 p.statusReason,
@@ -2408,7 +2230,6 @@ router.get('/', async (req, res) => {
                 p.createdAt,
                 p.updatedAt,
                 p.voided,
-                p.principalInvestigatorStaffId,
                 NULL AS piFirstName,
                 NULL AS piLastName,
                 NULL AS piEmail,
@@ -2445,10 +2266,18 @@ router.get('/', async (req, res) => {
         `;
         
         // This part dynamically builds the query.
-        // Simplified - only FROM projects table, no LEFT JOINs for now
-        let fromAndJoinClauses = `
+        // Add LEFT JOINs for programs and subprograms (only if tables exist)
+        let fromAndJoinClauses = DB_TYPE === 'postgresql' ? `
             FROM
                 projects p
+            ${programsTableExists ? `LEFT JOIN programs pr ON (p.notes->>'program_id')::integer = pr."programId" AND (pr.voided IS NULL OR pr.voided = false)` : ''}
+            ${subprogramsTableExists ? `LEFT JOIN subprograms spr ON (p.notes->>'subprogram_id')::integer = spr."subProgramId" AND (spr.voided IS NULL OR spr.voided = false)` : ''}
+            LEFT JOIN categories cat ON p.category_id = cat."categoryId" AND (cat.voided IS NULL OR cat.voided = false)
+        ` : `
+            FROM
+                projects p
+            LEFT JOIN programs pr ON p.programId = pr.programId AND (pr.voided IS NULL OR pr.voided = 0)
+            LEFT JOIN subprograms spr ON p.subProgramId = spr.subProgramId AND (spr.voided IS NULL OR spr.voided = 0)
         `;
 
         let queryParams = [];
@@ -2548,10 +2377,10 @@ router.get('/', async (req, res) => {
             }
         }
         if (categoryId) { 
-            // Category is now sector text field
+            // Filter by category_id column
             if (DB_TYPE === 'postgresql') {
-                whereConditions.push('p.sector ILIKE ?');
-                queryParams.push(`%${categoryId}%`);
+                whereConditions.push('p.category_id = ?');
+                queryParams.push(parseInt(categoryId));
             } else {
                 whereConditions.push('p.categoryId = ?'); 
                 queryParams.push(parseInt(categoryId)); 
@@ -2571,8 +2400,15 @@ router.get('/', async (req, res) => {
         // Build the final query (no location select clauses needed - already in BASE_PROJECT_SELECT as NULL)
         let query = `${BASE_PROJECT_SELECT} ${fromAndJoinClauses}`;
 
+        // Add voided condition - only exclude projects where voided = 1/true, include null and false
+        const voidedCondition = DB_TYPE === 'postgresql' 
+            ? '(p.voided IS NULL OR p.voided = false)'
+            : '(p.voided IS NULL OR p.voided = 0)';
+        
         if (whereConditions.length > 0) {
-            query += ` WHERE ${whereConditions.join(' AND ')}`;
+            query += ` WHERE ${voidedCondition} AND ${whereConditions.join(' AND ')}`;
+        } else {
+            query += ` WHERE ${voidedCondition}`;
         }
         // No GROUP BY needed since we're not using aggregations
         query += ` ORDER BY ${DB_TYPE === 'postgresql' ? 'p.project_id' : 'p.id'}`;
@@ -2583,12 +2419,19 @@ router.get('/', async (req, res) => {
             query = query.replace(/\?/g, () => `$${paramIndex++}`);
         }
         
+        // Log query for debugging (first 500 chars)
+        console.log('Executing projects query (first 500 chars):', query.substring(0, 500));
+        console.log('Query params:', queryParams);
+        
         // Use execute for PostgreSQL to handle placeholder conversion
         const result = await pool.execute(query, queryParams);
         const rows = DB_TYPE === 'postgresql' ? (result.rows || result) : (Array.isArray(result) ? result[0] : result);
+        console.log('Projects query returned', rows?.length || 0, 'rows');
         res.status(200).json(rows);
     } catch (error) {
         console.error('Error fetching projects:', error);
+        console.error('Error stack:', error.stack);
+        console.error('Query that failed (first 500 chars):', query?.substring(0, 500));
         res.status(500).json({ message: 'Error fetching projects', error: error.message });
     }
 });
@@ -2620,6 +2463,7 @@ router.put('/:id/approval', async (req, res) => {
     }
     
     try {
+        const DB_TYPE = process.env.DB_TYPE || 'mysql';
         const { id } = req.params;
         const { 
             approved_for_public, 
@@ -2632,94 +2476,154 @@ router.put('/:id/approval', async (req, res) => {
             revision_requested_at
         } = req.body;
 
-        // Build update query dynamically
-        let updateFields = [];
-        let updateValues = [];
-
-        if (revision_requested !== undefined) {
-            updateFields.push('revision_requested = ?');
-            updateValues.push(revision_requested ? 1 : 0);
+        if (DB_TYPE === 'postgresql') {
+            // PostgreSQL: Update JSONB field
+            // First, get the current public_engagement JSONB
+            const getCurrentQuery = 'SELECT public_engagement FROM projects WHERE project_id = $1 AND voided = false';
+            const currentResult = await pool.query(getCurrentQuery, [id]);
             
+            if (currentResult.rows.length === 0) {
+                return res.status(404).json({ error: 'Project not found' });
+            }
+            
+            // Get current public_engagement or initialize empty object
+            let publicEngagement = currentResult.rows[0].public_engagement || {};
+            
+            // Update the JSONB object
+            if (revision_requested !== undefined) {
+                publicEngagement.revision_requested = revision_requested;
+                
+                if (revision_requested) {
+                    publicEngagement.revision_notes = revision_notes || null;
+                    publicEngagement.revision_requested_by = revision_requested_by || req.user.id || req.user.userId;
+                    const revisionRequestedAt = revision_requested_at ? new Date(revision_requested_at) : new Date();
+                    publicEngagement.revision_requested_at = revisionRequestedAt.toISOString();
+                    // Reset approval when revision is requested
+                    publicEngagement.approved_for_public = false;
+                } else {
+                    // Clear revision fields
+                    publicEngagement.revision_notes = null;
+                    publicEngagement.revision_requested_by = null;
+                    publicEngagement.revision_requested_at = null;
+                }
+            }
+            
+            if (approved_for_public !== undefined) {
+                publicEngagement.approved_for_public = approved_for_public;
+                publicEngagement.approval_notes = approval_notes || null;
+                publicEngagement.approved_by = approved_by || req.user.id || req.user.userId;
+                const approvedAt = approved_at ? new Date(approved_at) : new Date();
+                publicEngagement.approved_at = approvedAt.toISOString();
+                
+                // Clear revision request when approving/rejecting
+                if (revision_requested === undefined) {
+                    publicEngagement.revision_requested = false;
+                    publicEngagement.revision_notes = null;
+                }
+            }
+            
+            // Update the JSONB field
+            const updateQuery = `
+                UPDATE projects
+                SET public_engagement = $1, updated_at = NOW()
+                WHERE project_id = $2 AND voided = false
+            `;
+            
+            const updateResult = await pool.query(updateQuery, [JSON.stringify(publicEngagement), id]);
+            
+            console.log('=== PROJECT APPROVAL UPDATE (PostgreSQL) ===');
+            console.log('Project ID:', id);
+            console.log('Updated public_engagement:', JSON.stringify(publicEngagement, null, 2));
+            console.log('Rows affected:', updateResult.rowCount);
+            console.log('==========================================');
+            
+            if (updateResult.rowCount === 0) {
+                return res.status(404).json({ error: 'Project not found' });
+            }
+            
+            let message = 'Project updated successfully';
             if (revision_requested) {
-                updateFields.push('revision_notes = ?');
-                updateFields.push('revision_requested_by = ?');
-                updateFields.push('revision_requested_at = ?');
-                updateValues.push(revision_notes || null);
-                updateValues.push(revision_requested_by || req.user.userId);
-                // Convert ISO string to MySQL datetime format (YYYY-MM-DD HH:MM:SS)
-                const revisionRequestedAt = revision_requested_at ? new Date(revision_requested_at) : new Date();
-                updateValues.push(revisionRequestedAt.toISOString().slice(0, 19).replace('T', ' '));
-                // Reset approval when revision is requested
-                updateFields.push('approved_for_public = 0');
-            } else {
-                // Clear revision fields
-                updateFields.push('revision_notes = NULL');
-                updateFields.push('revision_requested_by = NULL');
-                updateFields.push('revision_requested_at = NULL');
+                message = 'Revision requested successfully';
+            } else if (approved_for_public !== undefined) {
+                message = `Project ${approved_for_public ? 'approved' : 'revoked'} for public viewing`;
             }
-        }
-
-        if (approved_for_public !== undefined) {
-            updateFields.push('approved_for_public = ?');
-            updateFields.push('approval_notes = ?');
-            updateFields.push('approved_by = ?');
-            updateFields.push('approved_at = ?');
-            updateValues.push(approved_for_public ? 1 : 0);
-            updateValues.push(approval_notes || null);
-            updateValues.push(approved_by || req.user.userId);
-            // Convert ISO string to MySQL datetime format (YYYY-MM-DD HH:MM:SS)
-            const approvedAt = approved_at ? new Date(approved_at) : new Date();
-            updateValues.push(approvedAt.toISOString().slice(0, 19).replace('T', ' '));
             
-            // Clear revision request when approving/rejecting
-            if (revision_requested === undefined) {
-                updateFields.push('revision_requested = 0');
-                updateFields.push('revision_notes = NULL');
+            res.json({
+                success: true,
+                message
+            });
+        } else {
+            // MySQL: Update direct columns
+            let updateFields = [];
+            let updateValues = [];
+
+            if (revision_requested !== undefined) {
+                updateFields.push('revision_requested = ?');
+                updateValues.push(revision_requested ? 1 : 0);
+                
+                if (revision_requested) {
+                    updateFields.push('revision_notes = ?');
+                    updateFields.push('revision_requested_by = ?');
+                    updateFields.push('revision_requested_at = ?');
+                    updateValues.push(revision_notes || null);
+                    updateValues.push(revision_requested_by || req.user.userId);
+                    const revisionRequestedAt = revision_requested_at ? new Date(revision_requested_at) : new Date();
+                    updateValues.push(revisionRequestedAt.toISOString().slice(0, 19).replace('T', ' '));
+                    updateFields.push('approved_for_public = 0');
+                } else {
+                    updateFields.push('revision_notes = NULL');
+                    updateFields.push('revision_requested_by = NULL');
+                    updateFields.push('revision_requested_at = NULL');
+                }
             }
+
+            if (approved_for_public !== undefined) {
+                updateFields.push('approved_for_public = ?');
+                updateFields.push('approval_notes = ?');
+                updateFields.push('approved_by = ?');
+                updateFields.push('approved_at = ?');
+                updateValues.push(approved_for_public ? 1 : 0);
+                updateValues.push(approval_notes || null);
+                updateValues.push(approved_by || req.user.userId);
+                const approvedAt = approved_at ? new Date(approved_at) : new Date();
+                updateValues.push(approvedAt.toISOString().slice(0, 19).replace('T', ' '));
+                
+                if (revision_requested === undefined) {
+                    updateFields.push('revision_requested = 0');
+                    updateFields.push('revision_notes = NULL');
+                }
+            }
+
+            if (updateFields.length === 0) {
+                return res.status(400).json({ error: 'No update fields provided' });
+            }
+
+            updateValues.push(id);
+
+            const query = `
+                UPDATE kemri_projects
+                SET ${updateFields.join(', ')}
+                WHERE id = ? AND voided = 0
+            `;
+
+            const [result] = await pool.query(query, updateValues);
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: 'Project not found' });
+            }
+
+            let message = 'Project updated successfully';
+            if (revision_requested) {
+                message = 'Revision requested successfully';
+            } else if (approved_for_public !== undefined) {
+                message = `Project ${approved_for_public ? 'approved' : 'revoked'} for public viewing`;
+            }
+
+            res.json({
+                success: true,
+                message
+            });
         }
-
-        if (updateFields.length === 0) {
-            return res.status(400).json({ error: 'No update fields provided' });
-        }
-
-        updateValues.push(id);
-
-        const query = `
-            UPDATE kemri_projects
-            SET ${updateFields.join(', ')}
-            WHERE id = ? AND voided = 0
-        `;
-
-        console.log('=== PROJECT APPROVAL UPDATE ===');
-        console.log('Project ID:', id);
-        console.log('Update query:', query);
-        console.log('Update values:', updateValues);
-        console.log('Request body:', JSON.stringify(req.body, null, 2));
-        console.log('User:', JSON.stringify(req.user, null, 2));
-        console.log('Update fields count:', updateFields.length);
-        console.log('Update values count:', updateValues.length);
-
-        const [result] = await pool.query(query, updateValues);
-
-        console.log('Update result:', JSON.stringify(result, null, 2));
-        console.log('Affected rows:', result.affectedRows);
-        console.log('==============================');
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Project not found' });
-        }
-
-        let message = 'Project updated successfully';
-        if (revision_requested) {
-            message = 'Revision requested successfully';
-        } else if (approved_for_public !== undefined) {
-            message = `Project ${approved_for_public ? 'approved' : 'revoked'} for public viewing`;
-        }
-
-        res.json({
-            success: true,
-            message
-        });
     } catch (error) {
         console.error('=== ERROR UPDATING PROJECT APPROVAL ===');
         console.error('Error:', error);
@@ -2903,7 +2807,15 @@ router.post('/', validateProject, async (req, res) => {
                     finYearId,
                     programId,
                     subProgramId,
-                    overallProgress
+                    overallProgress,
+                    budgetSource,
+                    progressSummary,
+                    latitude,
+                    longitude,
+                    feedbackEnabled,
+                    commonFeedback,
+                    complaintsReceived,
+                    dataSources
                 } = projectData;
 
                 // Build JSONB objects
@@ -2917,13 +2829,15 @@ router.post('/', validateProject, async (req, res) => {
                     allocated_amount_kes: costOfProject || 0,
                     disbursed_amount_kes: paidOut || 0,
                     contracted: Contracted || false,
-                    budget_id: null
+                    budget_id: null,
+                    source: budgetSource || null
                 });
 
                 const progress = JSON.stringify({
                     status: status || 'Not Started',
                     status_reason: statusReason || null,
-                    percentage_complete: overallProgress || 0
+                    percentage_complete: overallProgress || 0,
+                    latest_update_summary: progressSummary || null
                 });
 
                 const notes = JSON.stringify({
@@ -2934,10 +2848,16 @@ router.post('/', validateProject, async (req, res) => {
                     subprogram_id: subProgramId || null
                 });
 
-                const dataSources = JSON.stringify({
-                    project_ref_num: ProjectRefNum || null,
-                    created_by_user_id: userId
-                });
+                // Handle dataSources - can be array or object
+                let dataSourcesJson;
+                if (dataSources && Array.isArray(dataSources) && dataSources.length > 0) {
+                    dataSourcesJson = JSON.stringify(dataSources);
+                } else {
+                    dataSourcesJson = JSON.stringify({
+                        project_ref_num: ProjectRefNum || null,
+                        created_by_user_id: userId
+                    });
+                }
 
                 const publicEngagement = JSON.stringify({
                     approved_for_public: false,
@@ -2948,22 +2868,29 @@ router.post('/', validateProject, async (req, res) => {
                     revision_notes: null,
                     revision_requested_by: null,
                     revision_requested_at: null,
-                    revision_submitted_at: null
+                    revision_submitted_at: null,
+                    feedback_enabled: feedbackEnabled !== undefined ? feedbackEnabled : true,
+                    common_feedback: commonFeedback || null,
+                    complaints_received: complaintsReceived || 0
                 });
 
                 const location = JSON.stringify({
                     county: null,
                     constituency: null,
-                    ward: null
+                    ward: null,
+                    geocoordinates: {
+                        lat: latitude || null,
+                        lng: longitude || null
+                    }
                 });
 
                 // Insert into PostgreSQL with JSONB structure
                 const insertQuery = `
                     INSERT INTO projects (
-                        name, description, implementing_agency, sector, ministry, state_department,
+                        name, description, implementing_agency, sector, ministry, state_department, category_id,
                         timeline, budget, progress, notes, data_sources, public_engagement, location,
                         created_at, updated_at, voided
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb, $12::jsonb, $13::jsonb, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false)
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb, $12::jsonb, $13::jsonb, $14::jsonb, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false)
                     RETURNING project_id
                 `;
                 
@@ -2974,11 +2901,12 @@ router.post('/', validateProject, async (req, res) => {
                     sector || null,
                     ministry || null,
                     stateDepartment || null,
+                    categoryId || null,
                     timeline,
                     budget,
                     progress,
                     notes,
-                    dataSources,
+                    dataSourcesJson,
                     publicEngagement,
                     location
                 ]);
@@ -2999,7 +2927,7 @@ router.post('/', validateProject, async (req, res) => {
             // NEW: Automatically create milestones from the category template
             if (categoryId) {
                 const milestoneQuery = DB_TYPE === 'postgresql' 
-                    ? 'SELECT milestone_name, description, sequence_order FROM category_milestones WHERE category_id = $1'
+                    ? 'SELECT "milestoneName", description, "sequenceOrder" FROM category_milestones WHERE "categoryId" = $1'
                     : 'SELECT milestoneName, description, sequenceOrder FROM category_milestones WHERE categoryId = ?';
                 
                 const milestoneResult = DB_TYPE === 'postgresql' 
@@ -3013,6 +2941,7 @@ router.post('/', validateProject, async (req, res) => {
                 if (milestoneTemplates && milestoneTemplates.length > 0) {
                     if (DB_TYPE === 'postgresql') {
                         // PostgreSQL: Insert milestones
+                        // Note: category_milestones uses camelCase (milestoneName), project_milestones uses snake_case (milestone_name)
                         for (const m of milestoneTemplates) {
                             await pool.query(
                                 `INSERT INTO project_milestones (
@@ -3020,9 +2949,9 @@ router.post('/', validateProject, async (req, res) => {
                                 ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)`,
                                 [
                                     newProjectId,
-                                    m.milestone_name,
+                                    m.milestoneName || m.milestone_name, // Handle both camelCase and snake_case
                                     m.description || null,
-                                    m.sequence_order,
+                                    m.sequenceOrder || m.sequence_order, // Handle both camelCase and snake_case
                                     'Not Started',
                                     userId
                                 ]
@@ -3160,30 +3089,188 @@ router.post('/apply-template/:projectId', async (req, res) => {
 router.put('/:id', validateProject, async (req, res) => {
     const { id } = req.params;
     if (isNaN(parseInt(id))) { return res.status(400).json({ message: 'Invalid project ID' }); }
-    const updatedFields = { ...req.body };
-    delete updatedFields.id;
+    const projectData = { ...req.body };
+    delete projectData.id;
+    
+    const DB_TYPE = process.env.DB_TYPE || 'mysql';
     
     try {
-        const connection = await pool.getConnection();
-        try {
-            await connection.beginTransaction();
-            const [result] = await connection.query('UPDATE kemri_projects SET ? WHERE id = ? AND voided = 0', [updatedFields, id]);
-            if (result.affectedRows === 0) {
-                await connection.rollback();
+        if (DB_TYPE === 'postgresql') {
+            // PostgreSQL: Update JSONB fields
+            const {
+                projectName,
+                projectDescription,
+                directorate,
+                startDate,
+                endDate,
+                costOfProject,
+                paidOut,
+                objective,
+                expectedOutput,
+                expectedOutcome,
+                status,
+                statusReason,
+                ProjectRefNum,
+                Contracted,
+                ministry,
+                stateDepartment,
+                sector,
+                finYearId,
+                programId,
+                subProgramId,
+                overallProgress,
+                budgetSource,
+                progressSummary,
+                latitude,
+                longitude,
+                feedbackEnabled,
+                commonFeedback,
+                complaintsReceived,
+                dataSources,
+                categoryId
+            } = projectData;
+
+            // Build JSONB objects (merge with existing data if needed)
+            const timeline = JSON.stringify({
+                start_date: startDate || null,
+                expected_completion_date: endDate || null,
+                financial_year: finYearId ? String(finYearId) : null
+            });
+
+            const budget = JSON.stringify({
+                allocated_amount_kes: costOfProject || 0,
+                disbursed_amount_kes: paidOut || 0,
+                contracted: Contracted || false,
+                budget_id: null,
+                source: budgetSource || null
+            });
+
+            const progress = JSON.stringify({
+                status: status || 'Not Started',
+                status_reason: statusReason || null,
+                percentage_complete: overallProgress || 0,
+                latest_update_summary: progressSummary || null
+            });
+
+            const notes = JSON.stringify({
+                objective: objective || null,
+                expected_output: expectedOutput || null,
+                expected_outcome: expectedOutcome || null,
+                program_id: programId || null,
+                subprogram_id: subProgramId || null
+            });
+
+            // Handle dataSources - can be array or object
+            let dataSourcesJson;
+            if (dataSources && Array.isArray(dataSources) && dataSources.length > 0) {
+                dataSourcesJson = JSON.stringify(dataSources);
+            } else {
+                dataSourcesJson = JSON.stringify({
+                    project_ref_num: ProjectRefNum || null
+                });
+            }
+
+            const publicEngagement = JSON.stringify({
+                approved_for_public: false,
+                approved_by: null,
+                approved_at: null,
+                approval_notes: null,
+                revision_requested: false,
+                revision_notes: null,
+                revision_requested_by: null,
+                revision_requested_at: null,
+                revision_submitted_at: null,
+                feedback_enabled: feedbackEnabled !== undefined ? feedbackEnabled : true,
+                common_feedback: commonFeedback || null,
+                complaints_received: complaintsReceived || 0
+            });
+
+            const location = JSON.stringify({
+                county: null,
+                constituency: null,
+                ward: null,
+                geocoordinates: {
+                    lat: latitude || null,
+                    lng: longitude || null
+                }
+            });
+
+            // Update PostgreSQL with JSONB structure
+            const updateQuery = `
+                UPDATE projects 
+                SET 
+                    name = $1,
+                    description = $2,
+                    implementing_agency = $3,
+                    sector = $4,
+                    ministry = $5,
+                    state_department = $6,
+                    category_id = $7,
+                    timeline = $8::jsonb,
+                    budget = $9::jsonb,
+                    progress = $10::jsonb,
+                    notes = $11::jsonb,
+                    data_sources = $12::jsonb,
+                    public_engagement = $13::jsonb,
+                    location = $14::jsonb,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE project_id = $15 AND voided = false
+                RETURNING project_id
+            `;
+            
+            const result = await pool.query(updateQuery, [
+                projectName,
+                projectDescription || null,
+                directorate || null,
+                sector || null,
+                ministry || null,
+                stateDepartment || null,
+                categoryId || null,
+                timeline,
+                budget,
+                progress,
+                notes,
+                dataSourcesJson,
+                publicEngagement,
+                location,
+                id
+            ]);
+            
+            if (result.rows.length === 0) {
                 return res.status(404).json({ message: 'Project not found or already deleted' });
             }
-            const [rows] = await connection.query(GET_SINGLE_PROJECT_QUERY, [id]);
-            await connection.commit();
-            res.status(200).json(rows[0]);
-        } catch (error) {
-            await connection.rollback();
-            throw error;
-        } finally {
-            connection.release();
+            
+            // Fetch updated project
+            const query = GET_SINGLE_PROJECT_QUERY(DB_TYPE);
+            const result2 = await pool.query(query, [id]);
+            const projectRows = DB_TYPE === 'postgresql' ? result2.rows : result2[0];
+            res.status(200).json(projectRows[0] || projectRows);
+        } else {
+            // MySQL: Use old structure
+            const connection = await pool.getConnection();
+            try {
+                await connection.beginTransaction();
+                const [result] = await connection.query('UPDATE kemri_projects SET ? WHERE id = ? AND voided = 0', [projectData, id]);
+                if (result.affectedRows === 0) {
+                    await connection.rollback();
+                    return res.status(404).json({ message: 'Project not found or already deleted' });
+                }
+                const query = GET_SINGLE_PROJECT_QUERY(DB_TYPE);
+                const [rows] = await connection.query(query, [id]);
+                await connection.commit();
+                res.status(200).json(rows[0]);
+            } catch (error) {
+                await connection.rollback();
+                throw error;
+            } finally {
+                connection.release();
+            }
         }
     } catch (error) {
         console.error('Error updating project:', error);
-        res.status(500).json({ message: 'Error updating project', error: error.message });
+        console.error('Error stack:', error.stack);
+        console.error('Project data received:', JSON.stringify(projectData, null, 2));
+        res.status(500).json({ message: 'Error updating project', error: error.message, details: error.stack });
     }
 });
 
@@ -3405,6 +3492,334 @@ router.delete('/:wardId', async (req, res) => {
     {
         console.error('Error deleting project ward association:', error);
         res.status(500).json({ message: 'Error deleting project ward association', error: error.message });
+    }
+});
+
+// ============================================
+// PROJECT SITES ROUTES
+// ============================================
+
+/**
+ * @route GET /api/projects/:projectId/sites
+ * @description Get all sites for a project
+ * @access Private
+ */
+router.get('/:projectId/sites', async (req, res) => {
+    const { projectId } = req.params;
+    const DB_TYPE = process.env.DB_TYPE || 'mysql';
+    
+    if (isNaN(parseInt(projectId))) {
+        return res.status(400).json({ message: 'Invalid project ID' });
+    }
+
+    try {
+        let query;
+        if (DB_TYPE === 'postgresql') {
+            // First check if project exists (only exclude projects where voided = true/1)
+            const projectCheck = await pool.query(
+                'SELECT project_id FROM projects WHERE project_id = $1 AND (voided IS NULL OR voided = false)',
+                [projectId]
+            );
+            
+            if (projectCheck.rows.length === 0) {
+                return res.status(404).json({ message: 'Project not found' });
+            }
+            
+            query = `
+                SELECT 
+                    ps.site_id, ps.project_id, ps.site_level, ps.region, ps.county, ps.constituency, ps.ward,
+                    ps.site_name, ps.status_raw, ps.status_norm, ps.percent_complete,
+                    ps.contract_sum_kes, ps.approved_cost_kes, ps.amount_disbursed_kes,
+                    ps.units, ps.stalls, ps.bed_capacity, ps.acreage,
+                    ps.connected_by, ps.categorization, ps.reason_for_outage,
+                    ps.start_date, ps.end_date, ps.remarks, ps.key_issues, ps.suggested_solutions,
+                    ps.extra, ps.loaded_at
+                FROM projects p
+                LEFT JOIN project_sites ps ON p.project_id = ps.project_id
+                WHERE p.project_id = $1 AND (p.voided IS NULL OR p.voided = false) AND ps.site_id IS NOT NULL
+                ORDER BY ps.site_id ASC
+            `;
+            const result = await pool.query(query, [projectId]);
+            return res.status(200).json(result.rows || []);
+        } else {
+            // First check if project exists (only exclude projects where voided = 1/true)
+            const [projectCheck] = await pool.query(
+                'SELECT id FROM kemri_projects WHERE id = ? AND (voided IS NULL OR voided = 0)',
+                [projectId]
+            );
+            
+            if (projectCheck.length === 0) {
+                return res.status(404).json({ message: 'Project not found' });
+            }
+            
+            query = `
+                SELECT 
+                    ps.site_id, ps.project_id, ps.site_level, ps.region, ps.county, ps.constituency, ps.ward,
+                    ps.site_name, ps.status_raw, ps.status_norm, ps.percent_complete,
+                    ps.contract_sum_kes, ps.approved_cost_kes, ps.amount_disbursed_kes,
+                    ps.units, ps.stalls, ps.bed_capacity, ps.acreage,
+                    ps.connected_by, ps.categorization, ps.reason_for_outage,
+                    ps.start_date, ps.end_date, ps.remarks, ps.key_issues, ps.suggested_solutions,
+                    ps.extra, ps.loaded_at
+                FROM kemri_projects p
+                LEFT JOIN project_sites ps ON p.id = ps.project_id
+                WHERE p.id = ? AND (p.voided IS NULL OR p.voided = 0) AND ps.site_id IS NOT NULL
+                ORDER BY ps.site_id ASC
+            `;
+            const [rows] = await pool.query(query, [projectId]);
+            return res.status(200).json(rows || []);
+        }
+    } catch (error) {
+        console.error('Error fetching project sites:', error);
+        res.status(500).json({ message: 'Error fetching project sites', error: error.message });
+    }
+});
+
+/**
+ * @route POST /api/projects/:projectId/sites
+ * @description Create a new site for a project
+ * @access Private
+ */
+router.post('/:projectId/sites', async (req, res) => {
+    const { projectId } = req.params;
+    const DB_TYPE = process.env.DB_TYPE || 'mysql';
+    const siteData = req.body;
+    
+    if (isNaN(parseInt(projectId))) {
+        return res.status(400).json({ message: 'Invalid project ID' });
+    }
+
+    try {
+        // Verify project exists
+        if (DB_TYPE === 'postgresql') {
+            const projectCheckQuery = 'SELECT project_id FROM projects WHERE project_id = $1 AND voided = false';
+            const projectCheck = await pool.query(projectCheckQuery, [projectId]);
+            if (projectCheck.rows.length === 0) {
+                return res.status(404).json({ message: 'Project not found' });
+            }
+        } else {
+            const projectCheckQuery = 'SELECT id FROM projects WHERE id = ? AND voided = 0';
+            const [projectRows] = await pool.query(projectCheckQuery, [projectId]);
+            if (projectRows.length === 0) {
+                return res.status(404).json({ message: 'Project not found' });
+            }
+        }
+
+        // Prepare site data
+        const {
+            site_level = 'site',
+            region, county, constituency, ward,
+            site_name, status_raw, status_norm = 'Not Started',
+            percent_complete = 0,
+            contract_sum_kes, approved_cost_kes, amount_disbursed_kes,
+            units, stalls, bed_capacity, acreage,
+            connected_by, categorization, reason_for_outage,
+            start_date, end_date, remarks, key_issues, suggested_solutions,
+            extra
+        } = siteData;
+
+        if (DB_TYPE === 'postgresql') {
+            const insertQuery = `
+                INSERT INTO project_sites (
+                    project_id, site_level, region, county, constituency, ward,
+                    site_name, status_raw, status_norm, percent_complete,
+                    contract_sum_kes, approved_cost_kes, amount_disbursed_kes,
+                    units, stalls, bed_capacity, acreage,
+                    connected_by, categorization, reason_for_outage,
+                    start_date, end_date, remarks, key_issues, suggested_solutions,
+                    extra, loaded_at
+                ) VALUES (
+                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+                    $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+                    $21, $22, $23, $24, $25, $26, $27, CURRENT_TIMESTAMP
+                )
+                RETURNING site_id, project_id, site_level, region, county, constituency, ward,
+                    site_name, status_raw, status_norm, percent_complete,
+                    contract_sum_kes, approved_cost_kes, amount_disbursed_kes,
+                    units, stalls, bed_capacity, acreage,
+                    connected_by, categorization, reason_for_outage,
+                    start_date, end_date, remarks, key_issues, suggested_solutions,
+                    extra, loaded_at
+            `;
+            
+            const extraJson = extra ? JSON.stringify(extra) : null;
+            const result = await pool.query(insertQuery, [
+                projectId, site_level, region || null, county || null, constituency || null, ward || null,
+                site_name || null, status_raw || null, status_norm, percent_complete,
+                contract_sum_kes || null, approved_cost_kes || null, amount_disbursed_kes || null,
+                units || null, stalls || null, bed_capacity || null, acreage || null,
+                connected_by || null, categorization || null, reason_for_outage || null,
+                start_date || null, end_date || null, remarks || null, key_issues || null, suggested_solutions || null,
+                extraJson
+            ]);
+            
+            return res.status(201).json(result.rows[0]);
+        } else {
+            const insertQuery = `
+                INSERT INTO project_sites (
+                    project_id, site_level, region, county, constituency, ward,
+                    site_name, status_raw, status_norm, percent_complete,
+                    contract_sum_kes, approved_cost_kes, amount_disbursed_kes,
+                    units, stalls, bed_capacity, acreage,
+                    connected_by, categorization, reason_for_outage,
+                    start_date, end_date, remarks, key_issues, suggested_solutions,
+                    extra, loaded_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            `;
+            
+            const extraJson = extra ? JSON.stringify(extra) : null;
+            const [result] = await pool.query(insertQuery, [
+                projectId, site_level, region || null, county || null, constituency || null, ward || null,
+                site_name || null, status_raw || null, status_norm, percent_complete,
+                contract_sum_kes || null, approved_cost_kes || null, amount_disbursed_kes || null,
+                units || null, stalls || null, bed_capacity || null, acreage || null,
+                connected_by || null, categorization || null, reason_for_outage || null,
+                start_date || null, end_date || null, remarks || null, key_issues || null, suggested_solutions || null,
+                extraJson
+            ]);
+            
+            // Fetch the created site
+            const [rows] = await pool.query('SELECT * FROM project_sites WHERE site_id = ?', [result.insertId]);
+            return res.status(201).json(rows[0]);
+        }
+    } catch (error) {
+        console.error('Error creating project site:', error);
+        res.status(500).json({ message: 'Error creating project site', error: error.message });
+    }
+});
+
+/**
+ * @route PUT /api/projects/:projectId/sites/:siteId
+ * @description Update a project site
+ * @access Private
+ */
+router.put('/:projectId/sites/:siteId', async (req, res) => {
+    const { projectId, siteId } = req.params;
+    const DB_TYPE = process.env.DB_TYPE || 'mysql';
+    const siteData = req.body;
+    
+    if (isNaN(parseInt(projectId)) || isNaN(parseInt(siteId))) {
+        return res.status(400).json({ message: 'Invalid project ID or site ID' });
+    }
+
+    try {
+        const {
+            site_level, region, county, constituency, ward,
+            site_name, status_raw, status_norm,
+            percent_complete,
+            contract_sum_kes, approved_cost_kes, amount_disbursed_kes,
+            units, stalls, bed_capacity, acreage,
+            connected_by, categorization, reason_for_outage,
+            start_date, end_date, remarks, key_issues, suggested_solutions,
+            extra
+        } = siteData;
+
+        if (DB_TYPE === 'postgresql') {
+            const updateQuery = `
+                UPDATE project_sites SET
+                    site_level = $1, region = $2, county = $3, constituency = $4, ward = $5,
+                    site_name = $6, status_raw = $7, status_norm = $8, percent_complete = $9,
+                    contract_sum_kes = $10, approved_cost_kes = $11, amount_disbursed_kes = $12,
+                    units = $13, stalls = $14, bed_capacity = $15, acreage = $16,
+                    connected_by = $17, categorization = $18, reason_for_outage = $19,
+                    start_date = $20, end_date = $21, remarks = $22, key_issues = $23, suggested_solutions = $24,
+                    extra = $25
+                WHERE project_id = $26 AND site_id = $27
+                RETURNING *
+            `;
+            
+            const extraJson = extra ? JSON.stringify(extra) : null;
+            const result = await pool.query(updateQuery, [
+                site_level, region || null, county || null, constituency || null, ward || null,
+                site_name || null, status_raw || null, status_norm, percent_complete,
+                contract_sum_kes || null, approved_cost_kes || null, amount_disbursed_kes || null,
+                units || null, stalls || null, bed_capacity || null, acreage || null,
+                connected_by || null, categorization || null, reason_for_outage || null,
+                start_date || null, end_date || null, remarks || null, key_issues || null, suggested_solutions || null,
+                extraJson,
+                projectId, siteId
+            ]);
+            
+            if (result.rows.length === 0) {
+                return res.status(404).json({ message: 'Project site not found' });
+            }
+            
+            return res.status(200).json(result.rows[0]);
+        } else {
+            const updateQuery = `
+                UPDATE project_sites SET
+                    site_level = ?, region = ?, county = ?, constituency = ?, ward = ?,
+                    site_name = ?, status_raw = ?, status_norm = ?, percent_complete = ?,
+                    contract_sum_kes = ?, approved_cost_kes = ?, amount_disbursed_kes = ?,
+                    units = ?, stalls = ?, bed_capacity = ?, acreage = ?,
+                    connected_by = ?, categorization = ?, reason_for_outage = ?,
+                    start_date = ?, end_date = ?, remarks = ?, key_issues = ?, suggested_solutions = ?,
+                    extra = ?
+                WHERE project_id = ? AND site_id = ?
+            `;
+            
+            const extraJson = extra ? JSON.stringify(extra) : null;
+            const [result] = await pool.query(updateQuery, [
+                site_level, region || null, county || null, constituency || null, ward || null,
+                site_name || null, status_raw || null, status_norm, percent_complete,
+                contract_sum_kes || null, approved_cost_kes || null, amount_disbursed_kes || null,
+                units || null, stalls || null, bed_capacity || null, acreage || null,
+                connected_by || null, categorization || null, reason_for_outage || null,
+                start_date || null, end_date || null, remarks || null, key_issues || null, suggested_solutions || null,
+                extraJson,
+                projectId, siteId
+            ]);
+            
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ message: 'Project site not found' });
+            }
+            
+            // Fetch the updated site
+            const [rows] = await pool.query('SELECT * FROM project_sites WHERE project_id = ? AND site_id = ?', [projectId, siteId]);
+            return res.status(200).json(rows[0]);
+        }
+    } catch (error) {
+        console.error('Error updating project site:', error);
+        res.status(500).json({ message: 'Error updating project site', error: error.message });
+    }
+});
+
+/**
+ * @route DELETE /api/projects/:projectId/sites/:siteId
+ * @description Delete a project site
+ * @access Private
+ */
+router.delete('/:projectId/sites/:siteId', async (req, res) => {
+    const { projectId, siteId } = req.params;
+    const DB_TYPE = process.env.DB_TYPE || 'mysql';
+    
+    if (isNaN(parseInt(projectId)) || isNaN(parseInt(siteId))) {
+        return res.status(400).json({ message: 'Invalid project ID or site ID' });
+    }
+
+    try {
+        if (DB_TYPE === 'postgresql') {
+            const deleteQuery = 'DELETE FROM project_sites WHERE project_id = $1 AND site_id = $2';
+            const result = await pool.query(deleteQuery, [projectId, siteId]);
+            
+            if (result.rowCount === 0) {
+                return res.status(404).json({ message: 'Project site not found' });
+            }
+            
+            return res.status(204).send();
+        } else {
+            const deleteQuery = 'DELETE FROM project_sites WHERE project_id = ? AND site_id = ?';
+            const [result] = await pool.query(deleteQuery, [projectId, siteId]);
+            
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ message: 'Project site not found' });
+            }
+            
+            return res.status(204).send();
+        }
+    } catch (error) {
+        console.error('Error deleting project site:', error);
+        res.status(500).json({ message: 'Error deleting project site', error: error.message });
     }
 });
 

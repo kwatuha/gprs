@@ -214,7 +214,7 @@ const DepartmentProjectsModal = ({ open, onClose, departmentData, statusFilter }
                 'Health Score': project.healthScore || 0,
                 'Allocated Budget': project.allocatedBudget ? formatCurrency(project.allocatedBudget) : 'KSh 0',
                 'Contract Sum': project.contractSum ? formatCurrency(project.contractSum) : 'KSh 0',
-                'Amount Paid': project.amountPaid ? formatCurrency(project.amountPaid) : 'KSh 0',
+                'Disbursed': project.amountPaid ? formatCurrency(project.amountPaid) : 'KSh 0',
                 'Absorption Rate (%)': project.absorptionRate ? parseFloat(project.absorptionRate).toFixed(2) : '0.00',
                 'Start Date': project.startDate ? formatDate(project.startDate) : 'N/A',
                 'End Date': project.endDate ? formatDate(project.endDate) : 'N/A'
@@ -268,7 +268,7 @@ const DepartmentProjectsModal = ({ open, onClose, departmentData, statusFilter }
                 'Health Score',
                 'Allocated Budget',
                 'Contract Sum',
-                'Amount Paid',
+                'Disbursed',
                 'Absorption Rate (%)',
                 'Start Date',
                 'End Date'
@@ -666,7 +666,7 @@ const DepartmentProjectsModal = ({ open, onClose, departmentData, statusFilter }
                                 },
                                 {
                                     id: 'amountPaid',
-                                    label: 'Amount Paid',
+                                    label: 'Disbursed',
                                     minWidth: 140,
                                     type: 'currency'
                                 },

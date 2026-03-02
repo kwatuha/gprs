@@ -75,6 +75,11 @@
           "icon": "AssessmentIcon",
           "route": "QUARTERLY_IMPLEMENTATION_REPORT",
           "hidden": true
+        },
+        {
+          "title": "Project Types",
+          "icon": "CategoryIcon",
+          "route": "PROJECT_TYPES"
         }
       ]
     },
@@ -107,13 +112,6 @@
           "title": "Import Strategic Data",
           "icon": "CloudUploadIcon",
           "route": "STRATEGIC_DATA_IMPORT"
-        },
-        {
-          "title": "HR Module",
-          "icon": "GroupIcon",
-          "route": "HR",
-          "permission": "hr.access",
-          "roles": ["admin"]
         }
       ]
     },

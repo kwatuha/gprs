@@ -255,6 +255,11 @@ function ProjectDetailsPage() {
     const [loadingContractors, setLoadingContractors] = useState(false);
     const [contractorsError, setContractorsError] = useState(null);
 
+    // NEW: State for Project Sites
+    const [projectSites, setProjectSites] = useState([]);
+    const [loadingSites, setLoadingSites] = useState(false);
+    const [sitesError, setSitesError] = useState(null);
+
     // NEW: State for Teams
     const [projectTeams, setProjectTeams] = useState([]);
     const [loadingTeams, setLoadingTeams] = useState(false);
@@ -401,6 +406,9 @@ function ProjectDetailsPage() {
             
             // NEW: Fetch teams
             await fetchProjectTeams();
+            
+            // NEW: Fetch project sites
+            await fetchProjectSites();
 
         } catch (err) {
             console.error('ProjectDetailsPage: Error fetching project details:', err);
@@ -450,6 +458,23 @@ function ProjectDetailsPage() {
         }
     }, [projectId, user]);
     
+    // NEW: Function to fetch project sites
+    const fetchProjectSites = useCallback(async () => {
+        setLoadingSites(true);
+        setSitesError(null);
+        
+        try {
+            const sites = await apiService.projects.getProjectSites(projectId);
+            setProjectSites(sites || []);
+        } catch (err) {
+            console.error('Error fetching project sites:', err);
+            setSitesError('Failed to load project sites.');
+            setProjectSites([]);
+        } finally {
+            setLoadingSites(false);
+        }
+    }, [projectId]);
+
     // NEW: Function to fetch contractors for project
     const fetchProjectContractors = useCallback(async () => {
         setLoadingContractors(true);
@@ -1769,7 +1794,7 @@ function ProjectDetailsPage() {
                     </Card>
                 </Grid>
 
-                {/* Paid Out Card */}
+                {/* Disbursed Card */}
                 <Grid item xs={12} sm={6} md={3}>
                     <Card sx={{ 
                         background: isLight 
@@ -1804,7 +1829,7 @@ function ProjectDetailsPage() {
                             <Box display="flex" alignItems="center" justifyContent="space-between">
                                 <Box>
                                     <Typography variant="caption" sx={{ opacity: 0.9, fontSize: '0.75rem' }}>
-                                        Paid Out
+                                        Disbursed
                                     </Typography>
                                     <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.25 }}>
                                         {formatCurrency(paidAmount)}
@@ -1987,12 +2012,12 @@ function ProjectDetailsPage() {
                     }}
                 >
                     <Tab label="Overview" icon={<InfoIcon />} iconPosition="start" />
+                    <Tab label="Sites" icon={<LocationOnIcon />} iconPosition="start" />
                     <Tab label="Teams" icon={<AccountTreeIcon />} iconPosition="start" />
-                    <Tab label="Contractor" icon={<PeopleIcon />} iconPosition="start" />
                     <Tab label="Timeline & Milestones" icon={<ScheduleIcon />} iconPosition="start" />
-                    <Tab label="Gantt Chart" icon={<TimelineIcon />} iconPosition="start" />
-                    <Tab label="M&E" icon={<AssessmentIcon />} iconPosition="start" />
-                    <Tab label="Documents" icon={<DescriptionIcon />} iconPosition="start" />
+                    {/* Gantt Chart tab - Hidden */}
+                    {/* M&E tab - Removed */}
+                    {/* Documents tab - Removed */}
                     <Tab label="Map" icon={<LocationOnIcon />} iconPosition="start" />
                 </Tabs>
 
@@ -2184,7 +2209,7 @@ function ProjectDetailsPage() {
                                     </Typography>
                                 </Box>
                                 <Box display="flex" justifyContent="space-between" sx={{ fontSize: '0.8rem' }}>
-                                    <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>Paid Out:</Typography>
+                                    <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>Disbursed:</Typography>
                                     <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 600, color: colors.greenAccent[500] }}>
                                         {formatCurrency(paidAmount)} ({paymentPercentage.toFixed(1)}%)
                                     </Typography>
@@ -3209,483 +3234,35 @@ function ProjectDetailsPage() {
                     </Box>
                 )}
 
+                {/* Gantt Chart Tab - Hidden */}
+                {/* M&E Tab - Removed */}
+                {/* Documents Tab - Removed */}
+
+                {/* M&E Tab Content - Removed (lines 3244-3695) */}
+
+                {/* Documents Tab Content - Removed */}
+
                 {activeTab === 4 && (
                     <Box>
-                        {/* Gantt Chart Tab */}
-                        <ProjectGanttChart 
-                            milestones={milestones}
-                            activities={milestoneActivities}
-                            projectName={project?.projectName || 'Project'}
+                        {/* Map Tab */}
+                        <ProjectMapEditor
+                            projectId={projectId}
+                            projectName={project?.projectName || ''}
                         />
                     </Box>
                 )}
 
+                {/* M&E Tab Content - Removed */}
+                {/* Documents Tab Content - Removed */}
+
                 {activeTab === 5 && (
-                    <Box>
-                        {/* M&E Tab */}
-                        {/* NEW: Project Monitoring & Observations Section */}
-            <Box sx={{ mt: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h5" sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        fontWeight: 'bold',
-                        color: theme.palette.mode === 'dark' ? colors.blueAccent[700] : colors.blueAccent[500],
-                        textShadow: theme.palette.mode === 'dark' ? '1px 1px 2px rgba(0, 0, 0, 0.2)' : 'none',
-                        borderBottom: `2px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[700] : colors.blueAccent[400]}`,
-                        pb: 1
-                    }}>
-                        <AssessmentIcon sx={{ mr: 1, color: theme.palette.mode === 'dark' ? colors.blueAccent[700] : colors.blueAccent[500] }} />
-                        Project Monitoring & Observations
-                    </Typography>
-                    <Stack direction="row" spacing={1}>
-                        {checkUserPrivilege(user, 'project_monitoring.create') && (
-                            <Button
-                                variant="contained"
-                                startIcon={<AddIcon />}
-                                onClick={() => setOpenMonitoringModal(true)}
-                                sx={{ 
-                                    backgroundColor: colors.greenAccent[600],
-                                    color: colors.grey[100],
-                                    fontWeight: 'bold',
-                                    borderRadius: '8px',
-                                    px: 2,
-                                    py: 0.75,
-                                    boxShadow: theme.palette.mode === 'light' ? `0 2px 8px ${colors.greenAccent[100]}40` : 'none',
-                                    '&:hover': { 
-                                        backgroundColor: colors.greenAccent[700],
-                                        transform: 'translateY(-1px)',
-                                        boxShadow: theme.palette.mode === 'light' ? `0 4px 12px ${colors.greenAccent[100]}50` : 'none'
-                                    },
-                                    transition: 'all 0.2s ease-in-out'
-                                }}
-                            >
-                                Add Observation
-                            </Button>
-                        )}
-                    </Stack>
-                </Box>
-
-                {/* Monitoring Summary Cards */}
-                <Grid container spacing={3} sx={{ mb: 3 }}>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Paper sx={{ 
-                            p: 2, 
-                            textAlign: 'center',
-                            borderRadius: '12px',
-                            backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.grey[50],
-                            border: `1px solid ${theme.palette.mode === 'dark' ? colors.grey[600] : colors.grey[200]}`,
-                            boxShadow: theme.palette.mode === 'light' ? `0 2px 8px ${colors.grey[200]}40` : 'none'
-                        }}>
-                            <Typography variant="h4" sx={{ 
-                                fontWeight: 'bold',
-                                color: theme.palette.mode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[600]
-                            }}>
-                                {monitoringRecords.length}
-                            </Typography>
-                            <Typography variant="body2" sx={{ 
-                                color: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700],
-                                fontWeight: 500
-                            }}>
-                                Total Observations
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Paper sx={{ 
-                            p: 2, 
-                            textAlign: 'center',
-                            borderRadius: '12px',
-                            backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.grey[50],
-                            border: `1px solid ${theme.palette.mode === 'dark' ? colors.grey[600] : colors.grey[200]}`,
-                            boxShadow: theme.palette.mode === 'light' ? `0 2px 8px ${colors.grey[200]}40` : 'none'
-                        }}>
-                            <Typography variant="h4" sx={{ 
-                                fontWeight: 'bold',
-                                color: theme.palette.mode === 'dark' ? colors.redAccent[500] : colors.redAccent[600]
-                            }}>
-                                {monitoringRecords.filter(r => r.warningLevel === 'High').length}
-                            </Typography>
-                            <Typography variant="body2" sx={{ 
-                                color: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700],
-                                fontWeight: 500
-                            }}>
-                                High Priority
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Paper sx={{ 
-                            p: 2, 
-                            textAlign: 'center',
-                            borderRadius: '12px',
-                            backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.grey[50],
-                            border: `1px solid ${theme.palette.mode === 'dark' ? colors.grey[600] : colors.grey[200]}`,
-                            boxShadow: theme.palette.mode === 'light' ? `0 2px 8px ${colors.grey[200]}40` : 'none'
-                        }}>
-                            <Typography variant="h4" sx={{ 
-                                fontWeight: 'bold',
-                                color: theme.palette.mode === 'dark' ? colors.redAccent[400] : colors.redAccent[500]
-                            }}>
-                                {monitoringRecords.filter(r => r.warningLevel === 'Medium').length}
-                            </Typography>
-                            <Typography variant="body2" sx={{ 
-                                color: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700],
-                                fontWeight: 500
-                            }}>
-                                Medium Priority
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                        <Paper sx={{ 
-                            p: 2, 
-                            textAlign: 'center',
-                            borderRadius: '12px',
-                            backgroundColor: theme.palette.mode === 'dark' ? colors.primary[600] : colors.grey[50],
-                            border: `1px solid ${theme.palette.mode === 'dark' ? colors.grey[600] : colors.grey[200]}`,
-                            boxShadow: theme.palette.mode === 'light' ? `0 2px 8px ${colors.grey[200]}40` : 'none'
-                        }}>
-                            <Typography variant="h4" sx={{ 
-                                fontWeight: 'bold',
-                                color: theme.palette.mode === 'dark' ? colors.greenAccent[500] : colors.greenAccent[600]
-                            }}>
-                                {monitoringRecords.filter(r => r.warningLevel === 'None').length}
-                            </Typography>
-                            <Typography variant="body2" sx={{ 
-                                color: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700],
-                                fontWeight: 500
-                            }}>
-                                Routine
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                </Grid>
-
-                {/* Recent Observations List */}
-                {loadingMonitoring ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                        <CircularProgress size={40} />
-                    </Box>
-                ) : monitoringError ? (
-                    <Alert severity="error" sx={{ 
-                        borderRadius: '8px',
-                        '& .MuiAlert-icon': {
-                            color: theme.palette.mode === 'dark' ? undefined : colors.redAccent[600]
-                        }
-                    }}>
-                        {monitoringError}
-                    </Alert>
-                ) : monitoringRecords.length === 0 ? (
-                    <Paper sx={{ 
-                        p: 4, 
-                        textAlign: 'center',
-                        borderRadius: '12px',
-                        backgroundColor: theme.palette.mode === 'dark' ? '#1F2A40' : colors.grey[50],
-                        border: `2px dashed ${theme.palette.mode === 'dark' ? '#141b2d' : colors.grey[300]}`,
-                        color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[600]
-                    }}>
-                        <Typography variant="h6" sx={{ 
-                            fontWeight: 'bold',
-                            mb: 0.4,
-                            color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[600]
-                        }}>
-                            No Monitoring Records Yet
-                        </Typography>
-                        <Typography variant="body2" sx={{ 
-                            color: theme.palette.mode === 'dark' ? colors.grey[200] : colors.grey[500],
-                            mb: 2
-                        }}>
-                            Start monitoring this project by adding your first observation.
-                        </Typography>
-                        {checkUserPrivilege(user, 'project_monitoring.create') && (
-                            <Button
-                                variant="contained"
-                                startIcon={<AddIcon />}
-                                onClick={() => setOpenMonitoringModal(true)}
-                                sx={{ 
-                                    backgroundColor: colors.greenAccent[600],
-                                    '&:hover': { backgroundColor: colors.greenAccent[700] }
-                                }}
-                            >
-                                Add First Observation
-                            </Button>
-                        )}
-                    </Paper>
-                ) : (
-                    <Paper sx={{ 
-                        borderRadius: '16px',
-                        backgroundColor: theme.palette.mode === 'dark' ? '#1F2A40' : colors.grey[50],
-                        border: `1px solid ${theme.palette.mode === 'dark' ? '#141b2d' : colors.grey[200]}`,
-                        boxShadow: theme.palette.mode === 'light' ? `0 4px 16px ${colors.grey[200]}30` : `0 4px 16px #141b2d30`,
-                        overflow: 'hidden'
-                    }}>
-                        {/* Enhanced Header */}
-                        <Box sx={{ 
-                            p: 3, 
-                            borderBottom: `2px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[200]}`,
-                            backgroundColor: theme.palette.mode === 'dark' ? '#141b2d' : colors.blueAccent[50],
-                            position: 'relative',
-                            '&::before': {
-                                content: '""',
-                                position: 'absolute',
-                                left: 0,
-                                top: 0,
-                                bottom: 0,
-                                width: '4px',
-                                backgroundColor: theme.palette.mode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[400]
-                            }
-                        }}>
-                            <Stack direction="row" alignItems="center" spacing={2}>
-                                <Box sx={{
-                                    width: 40,
-                                    height: 40,
-                                    borderRadius: '50%',
-                                    backgroundColor: theme.palette.mode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[400],
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    boxShadow: theme.palette.mode === 'light' ? `0 2px 8px ${colors.blueAccent[100]}40` : 'none'
-                                }}>
-                                    <AssessmentIcon sx={{ color: 'white', fontSize: '1.2rem' }} />
-                                </Box>
-                                <Box>
-                                    <Typography variant="h6" sx={{ 
-                                        fontWeight: 'bold',
-                                        color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.blueAccent[700],
-                                        mb: 0.5
-                                    }}>
-                                        Recent Observations
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ 
-                                        color: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700],
-                                        fontSize: '0.875rem'
-                                    }}>
-                                        Latest monitoring records and project insights
-                                    </Typography>
-                                </Box>
-                            </Stack>
-                        </Box>
-                        <List sx={{ p: 0 }}>
-                            {monitoringRecords.slice(0, 5).map((record, index) => (
-                                <ListItem
-                                    key={record.recordId}
-                                    sx={{
-                                        p: 3,
-                                        backgroundColor: theme.palette.mode === 'dark' ? '#141414' : colors.grey[50],
-                                        borderBottom: index < Math.min(5, monitoringRecords.length) - 1 ? 
-                                            `1px solid ${theme.palette.mode === 'dark' ? '#141b2d' : colors.grey[200]}` : 'none',
-                                        '&:hover': {
-                                            backgroundColor: theme.palette.mode === 'dark' ? '#292929' : colors.grey[100],
-                                            transform: 'translateY(-1px)',
-                                            boxShadow: theme.palette.mode === 'light' ? `0 4px 12px ${colors.grey[200]}30` : `0 4px 12px #141b2d30`,
-                                            transition: 'all 0.2s ease-in-out'
-                                        },
-                                        transition: 'all 0.2s ease-in-out'
-                                    }}
-                                >
-                                    <Box sx={{ flex: 1, mr: 2 }}>
-                                        {/* Enhanced Header Row */}
-                                        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-                                            <Box sx={{
-                                                width: 12,
-                                                height: 12,
-                                                borderRadius: '50%',
-                                                backgroundColor: getWarningLevelColors(record.warningLevel).backgroundColor,
-                                                border: `2px solid ${theme.palette.mode === 'dark' ? colors.grey[800] : colors.grey[100]}`,
-                                                boxShadow: theme.palette.mode === 'light' ? `0 2px 4px ${getWarningLevelColors(record.warningLevel).backgroundColor}40` : 'none'
-                                            }} />
-                                            <Typography variant="subtitle1" sx={{ 
-                                                fontWeight: 'bold',
-                                                color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[800],
-                                                fontSize: '1.1rem'
-                                            }}>
-                                                {record.warningLevel === 'None' ? 'Routine Observation' : `Warning: ${record.warningLevel}`}
-                                            </Typography>
-                                            <Chip 
-                                                label={record.warningLevel === 'None' ? 'Routine' : record.warningLevel}
-                                                size="small"
-                                                sx={{
-                                                    backgroundColor: getWarningLevelColors(record.warningLevel).backgroundColor,
-                                                    color: getWarningLevelColors(record.warningLevel).textColor,
-                                                    fontWeight: 'bold',
-                                                    fontSize: '0.7rem',
-                                                    height: '20px'
-                                                }}
-                                            />
-                                        </Stack>
-
-                                        {/* Enhanced Content */}
-                                        <Box sx={{ pl: 2 }}>
-                                    <Typography variant="body2" sx={{ 
-                                        color: theme.palette.mode === 'dark' ? colors.grey[200] : colors.grey[700],
-                                        mb: 2,
-                                        lineHeight: 1.6,
-                                        fontSize: '0.9rem'
-                                    }}>
-                                        <Box component="span" sx={{ 
-                                            fontWeight: 'bold',
-                                            color: theme.palette.mode === 'dark' ? colors.blueAccent[400] : colors.blueAccent[700],
-                                            mr: 1
-                                        }}>
-                                            Observation:
-                                        </Box>
-                                        {record.comment}
-                                    </Typography>
-
-                                            {record.recommendations && (
-                                                <Typography variant="body2" sx={{ 
-                                                    color: theme.palette.mode === 'dark' ? colors.grey[200] : colors.grey[700],
-                                                    mb: 2,
-                                                    lineHeight: 1.6,
-                                                    fontSize: '0.9rem'
-                                                }}>
-                                                    <Box component="span" sx={{ 
-                                                        fontWeight: 'bold',
-                                                        color: theme.palette.mode === 'dark' ? colors.greenAccent[500] : colors.greenAccent[700],
-                                                        mr: 1
-                                                    }}>
-                                                        Recommendations:
-                                                    </Box>
-                                                    {record.recommendations}
-                                                </Typography>
-                                            )}
-
-                                            {record.challenges && (
-                                                <Typography variant="body2" sx={{ 
-                                                    color: theme.palette.mode === 'dark' ? 'text.error' : colors.redAccent[600],
-                                                    mb: 2,
-                                                    lineHeight: 1.6,
-                                                    fontSize: '0.9rem'
-                                                }}>
-                                                    <Box component="span" sx={{ 
-                                                        fontWeight: 'bold',
-                                                        color: theme.palette.mode === 'dark' ? colors.redAccent[400] : colors.redAccent[500],
-                                                        mr: 1
-                                                    }}>
-                                                        Challenges:
-                                                    </Box>
-                                                    {record.challenges}
-                                                </Typography>
-                                            )}
-
-                                            {/* Enhanced Timestamp */}
-                                            <Box sx={{ 
-                                                display: 'flex', 
-                                                alignItems: 'center', 
-                                                gap: 1,
-                                                mt: 2,
-                                                pt: 2,
-                                                borderTop: `1px solid ${theme.palette.mode === 'dark' ? colors.grey[700] : colors.grey[200]}`
-                                            }}>
-                                                <Typography variant="caption" sx={{ 
-                                                    color: theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700],
-                                                    fontSize: '0.75rem',
-                                                    fontWeight: 500,
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 0.5
-                                                }}>
-                                                    📅 Recorded on: {formatMonitoringDate(record.createdAt)}
-                                                </Typography>
-                                            </Box>
-                                        </Box>
-                                    </Box>
-                                    {/* Enhanced Action Buttons */}
-                                    <Stack direction="row" spacing={1} sx={{ ml: 'auto' }}>
-                                        {checkUserPrivilege(user, 'project_monitoring.update') && (
-                                            <Tooltip title="Edit Record">
-                                                <IconButton 
-                                                    size="small"
-                                                    onClick={() => handleEditMonitoringRecord(record)}
-                                                    sx={{
-                                                        color: theme.palette.mode === 'dark' ? colors.blueAccent[400] : colors.blueAccent[600],
-                                                        backgroundColor: theme.palette.mode === 'dark' ? colors.blueAccent[900] : colors.blueAccent[50],
-                                                        border: `1px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[200]}`,
-                                                        '&:hover': {
-                                                            backgroundColor: theme.palette.mode === 'dark' ? colors.blueAccent[700] : colors.blueAccent[100],
-                                                            transform: 'scale(1.05)',
-                                                            boxShadow: theme.palette.mode === 'light' ? `0 2px 8px ${colors.blueAccent[100]}40` : 'none'
-                                                        },
-                                                        transition: 'all 0.2s ease-in-out'
-                                                    }}
-                                                >
-                                                    <EditIcon fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
-                                        )}
-                                        {checkUserPrivilege(user, 'project_monitoring.delete') && (
-                                            <Tooltip title="Delete Record">
-                                                <IconButton 
-                                                    size="small"
-                                                    sx={{
-                                                        color: theme.palette.mode === 'dark' ? colors.redAccent[400] : colors.redAccent[600],
-                                                        backgroundColor: theme.palette.mode === 'dark' ? colors.redAccent[900] : colors.redAccent[50],
-                                                        border: `1px solid ${theme.palette.mode === 'dark' ? colors.redAccent[600] : colors.redAccent[200]}`,
-                                                        '&:hover': {
-                                                            backgroundColor: theme.palette.mode === 'dark' ? colors.redAccent[700] : colors.redAccent[100],
-                                                            transform: 'scale(1.05)',
-                                                            boxShadow: theme.palette.mode === 'light' ? `0 2px 8px ${colors.redAccent[100]}40` : 'none'
-                                                        },
-                                                        transition: 'all 0.2s ease-in-out'
-                                                    }}
-                                                >
-                                                    <DeleteIcon fontSize="small" />
-                                                </IconButton>
-                                            </Tooltip>
-                                        )}
-                                    </Stack>
-                                </ListItem>
-                            ))}
-                        </List>
-
-                        {/* Enhanced Footer */}
-                        {monitoringRecords.length > 5 && (
-                            <Box sx={{ 
-                                p: 3, 
-                                textAlign: 'center',
-                                borderTop: `1px solid ${theme.palette.mode === 'dark' ? '#141b2d' : colors.grey[200]}`,
-                                backgroundColor: theme.palette.mode === 'dark' ? '#141b2d' : colors.grey[100]
-                            }}>
-                                <Button
-                                    variant="outlined"
-                                    onClick={() => setOpenMonitoringModal(true)}
-                                    startIcon={<AssessmentIcon />}
-                                    sx={{
-                                        borderColor: theme.palette.mode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[400],
-                                        color: theme.palette.mode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[600],
-                                        fontWeight: 'bold',
-                                        borderRadius: '8px',
-                                        px: 3,
-                                        py: 1,
-                                        '&:hover': {
-                                            borderColor: theme.palette.mode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[500],
-                                            backgroundColor: theme.palette.mode === 'dark' ? colors.blueAccent[700] : colors.blueAccent[100],
-                                            transform: 'translateY(-1px)',
-                                            boxShadow: theme.palette.mode === 'light' ? `0 4px 12px ${colors.blueAccent[100]}50` : 'none'
-                                        },
-                                        transition: 'all 0.2s ease-in-out'
-                                    }}
-                                >
-                                    View All Observations ({monitoringRecords.length})
-                                </Button>
-                            </Box>
-                        )}
-                    </Paper>
-                )}
-            </Box>
-
-                    </Box>
-                )}
-
-                {activeTab === 6 && (
                     <Box>
                         {/* Documents Tab */}
                         <ProjectDocumentsAttachments projectId={projectId} />
                     </Box>
                 )}
 
-                {activeTab === 7 && (
+                {activeTab === 6 && (
                     <Box>
                         {/* Map Tab */}
                         <ProjectMapEditor 
@@ -3695,11 +3272,11 @@ function ProjectDetailsPage() {
                     </Box>
                 )}
 
-                {activeTab === 2 && (
+                {activeTab === 1 && (
                     <Box>
-                        {/* Contractor Tab */}
+                        {/* Sites Tab */}
                         <Typography variant="h6" sx={{ 
-                            mb: 0.4, 
+                            mb: 1, 
                             fontWeight: 'bold',
                             color: theme.palette.mode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[600],
                             display: 'flex',
@@ -3707,86 +3284,237 @@ function ProjectDetailsPage() {
                             gap: 1,
                             fontSize: '1rem'
                         }}>
-                            <PeopleIcon /> Contractor & Team Information
+                            <LocationOnIcon /> Project Sites
                         </Typography>
-                        {loadingContractors ? (
+                        {loadingSites ? (
                             <Box display="flex" justifyContent="center" alignItems="center" minHeight="150px">
                                 <CircularProgress />
                             </Box>
-                        ) : contractorsError ? (
+                        ) : sitesError ? (
                             <Alert severity="error" sx={{ mb: 1 }}>
-                                {contractorsError}
+                                {sitesError}
                             </Alert>
-                        ) : projectContractors.length === 0 ? (
-                            <Paper sx={{ p: 1, textAlign: 'center' }}>
-                                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                                    No contractors assigned to this project.
+                        ) : projectSites.length === 0 ? (
+                            <Paper sx={{ p: 2, textAlign: 'center' }}>
+                                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.9rem', mb: 2 }}>
+                                    No sites added to this project yet.
                                 </Typography>
                             </Paper>
                         ) : (
-                            projectContractors.map((contractor, index) => (
-                                <Paper 
-                                    key={contractor.contractorId || index}
-                                    sx={{ 
-                                        p: 1.5, 
-                                        mb: 0.4,
-                                        borderRadius: '10px',
-                                        backgroundColor: theme.palette.mode === 'dark' ? '#1F2A40' : colors.grey[50]
-                                    }}
-                                >
-                                    <Grid container spacing={1.5}>
-                                        <Grid item xs={12}>
-                                            <Typography variant="h6" sx={{ 
-                                                fontWeight: 'bold',
-                                                color: theme.palette.mode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[600],
-                                                mb: 0.4,
-                                                fontSize: '0.9rem'
-                                            }}>
-                                                {contractor.companyName}
-                                            </Typography>
-                                        </Grid>
-                                        {contractor.contactPerson && (
-                                            <Grid item xs={12} md={6}>
-                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                                                    Contact Person
-                                                </Typography>
-                                                <Typography variant="body1">
-                                                    {contractor.contactPerson}
-                                                </Typography>
-                                            </Grid>
-                                        )}
-                                        {contractor.email && (
-                                            <Grid item xs={12} md={6}>
-                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                                                    Email
-                                                </Typography>
-                                                <Typography variant="body1">
-                                                    <Link href={`mailto:${contractor.email}`} color="primary">
-                                                        {contractor.email}
-                                                    </Link>
-                                                </Typography>
-                                            </Grid>
-                                        )}
-                                        {contractor.phone && (
-                                            <Grid item xs={12} md={6}>
-                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                                                    Phone
-                                                </Typography>
-                                                <Typography variant="body1">
-                                                    <Link href={`tel:${contractor.phone}`} color="primary">
-                                                        {contractor.phone}
-                                                    </Link>
-                                                </Typography>
-                                            </Grid>
-                                        )}
-                                    </Grid>
-                                </Paper>
-                            ))
+                            <TableContainer component={Paper} sx={{ mt: 2 }}>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell><strong>Site Name</strong></TableCell>
+                                            <TableCell><strong>Location</strong></TableCell>
+                                            <TableCell><strong>Status</strong></TableCell>
+                                            <TableCell><strong>Progress</strong></TableCell>
+                                            <TableCell><strong>Actions</strong></TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {projectSites.map((site) => (
+                                            <TableRow key={site.site_id}>
+                                                <TableCell>{site.site_name || 'N/A'}</TableCell>
+                                                <TableCell>
+                                                    {[site.ward, site.constituency, site.county].filter(Boolean).join(', ') || 'N/A'}
+                                                </TableCell>
+                                                <TableCell>{site.status_norm || 'N/A'}</TableCell>
+                                                <TableCell>{site.percent_complete || 0}%</TableCell>
+                                                <TableCell>
+                                                    <IconButton 
+                                                        size="small" 
+                                                        color="error"
+                                                        onClick={() => handleDeleteSite(site.site_id)}
+                                                    >
+                                                        <DeleteIcon fontSize="small" />
+                                                    </IconButton>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
                         )}
                     </Box>
                 )}
 
+                {activeTab === 5 && (
+                    <Box>
+                        {/* Documents Tab */}
+                        <ProjectDocumentsAttachments projectId={projectId} />
+                    </Box>
+                )}
+
+                {activeTab === 6 && (
+                    <Box>
+                        {/* Map Tab */}
+                        <ProjectMapEditor 
+                            projectId={projectId} 
+                            projectName={project?.projectName || ''}
+                        />
+                    </Box>
+                )}
+
                 {activeTab === 1 && (
+                    <Box>
+                        {/* Sites Tab */}
+                        <Typography variant="h6" sx={{ 
+                            mb: 1, 
+                            fontWeight: 'bold',
+                            color: theme.palette.mode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[600],
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            fontSize: '1rem'
+                        }}>
+                            <LocationOnIcon /> Project Sites
+                        </Typography>
+                        {loadingSites ? (
+                            <Box display="flex" justifyContent="center" alignItems="center" minHeight="150px">
+                                <CircularProgress />
+                            </Box>
+                        ) : sitesError ? (
+                            <Alert severity="error" sx={{ mb: 1 }}>
+                                {sitesError}
+                            </Alert>
+                        ) : projectSites.length === 0 ? (
+                            <Paper sx={{ p: 2, textAlign: 'center' }}>
+                                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.9rem', mb: 2 }}>
+                                    No sites added to this project yet.
+                                </Typography>
+                                <Button
+                                    variant="contained"
+                                    startIcon={<AddIcon />}
+                                    onClick={() => {
+                                        // TODO: Open add site dialog
+                                        setSnackbar({ open: true, message: 'Site management coming soon', severity: 'info' });
+                                    }}
+                                    sx={{
+                                        backgroundColor: colors.greenAccent[600],
+                                        '&:hover': {
+                                            backgroundColor: colors.greenAccent[700]
+                                        }
+                                    }}
+                                >
+                                    Add Site
+                                </Button>
+                            </Paper>
+                        ) : (
+                            <Box>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {projectSites.length} site{projectSites.length !== 1 ? 's' : ''} found
+                                    </Typography>
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<AddIcon />}
+                                        onClick={() => {
+                                            // TODO: Open add site dialog
+                                            setSnackbar({ open: true, message: 'Site management coming soon', severity: 'info' });
+                                        }}
+                                        size="small"
+                                        sx={{
+                                            backgroundColor: colors.greenAccent[600],
+                                            '&:hover': {
+                                                backgroundColor: colors.greenAccent[700]
+                                            }
+                                        }}
+                                    >
+                                        Add Site
+                                    </Button>
+                                </Box>
+                                <Grid container spacing={2}>
+                                    {projectSites.map((site, index) => (
+                                        <Grid item xs={12} md={6} key={site.site_id || index}>
+                                            <Paper 
+                                                sx={{ 
+                                                    p: 2, 
+                                                    borderRadius: '10px',
+                                                    backgroundColor: theme.palette.mode === 'dark' ? '#1F2A40' : colors.grey[50],
+                                                    border: `1px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[700] : colors.blueAccent[200]}`,
+                                                }}
+                                            >
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
+                                                    <Typography variant="h6" sx={{ 
+                                                        fontWeight: 'bold',
+                                                        color: theme.palette.mode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[600],
+                                                        fontSize: '0.95rem'
+                                                    }}>
+                                                        {site.site_name || `Site ${index + 1}`}
+                                                    </Typography>
+                                                    <Box>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => {
+                                                                // TODO: Open edit site dialog
+                                                                setSnackbar({ open: true, message: 'Site editing coming soon', severity: 'info' });
+                                                            }}
+                                                            sx={{ color: colors.blueAccent[500] }}
+                                                        >
+                                                            <EditIcon fontSize="small" />
+                                                        </IconButton>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={async () => {
+                                                                if (window.confirm('Are you sure you want to delete this site?')) {
+                                                                    try {
+                                                                        await apiService.projects.deleteProjectSite(projectId, site.site_id);
+                                                                        setSnackbar({ open: true, message: 'Site deleted successfully', severity: 'success' });
+                                                                        fetchProjectSites();
+                                                                    } catch (err) {
+                                                                        setSnackbar({ open: true, message: 'Failed to delete site', severity: 'error' });
+                                                                    }
+                                                                }
+                                                            }}
+                                                            sx={{ color: colors.redAccent[500] }}
+                                                        >
+                                                            <DeleteIcon fontSize="small" />
+                                                        </IconButton>
+                                                    </Box>
+                                                </Box>
+                                                <Stack spacing={0.5}>
+                                                    {site.county && (
+                                                        <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
+                                                            <strong>County:</strong> {site.county}
+                                                        </Typography>
+                                                    )}
+                                                    {site.constituency && (
+                                                        <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
+                                                            <strong>Constituency:</strong> {site.constituency}
+                                                        </Typography>
+                                                    )}
+                                                    {site.ward && (
+                                                        <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
+                                                            <strong>Ward:</strong> {site.ward}
+                                                        </Typography>
+                                                    )}
+                                                    {site.status_norm && (
+                                                        <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
+                                                            <strong>Status:</strong> {site.status_norm}
+                                                        </Typography>
+                                                    )}
+                                                    {site.percent_complete !== null && site.percent_complete !== undefined && (
+                                                        <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
+                                                            <strong>Progress:</strong> {site.percent_complete}%
+                                                        </Typography>
+                                                    )}
+                                                    {site.approved_cost_kes && (
+                                                        <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
+                                                            <strong>Approved Cost:</strong> {formatCurrency(site.approved_cost_kes)}
+                                                        </Typography>
+                                                    )}
+                                                </Stack>
+                                            </Paper>
+                                        </Grid>
+                                    ))}
+                                </Grid>
+                            </Box>
+                        )}
+                    </Box>
+                )}
+
+                {activeTab === 2 && (
                     <Box>
                         {/* Teams Tab */}
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>

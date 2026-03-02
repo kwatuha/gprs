@@ -2,11 +2,11 @@
 import axiosInstance from './axiosInstance';
 
 /**
- * API service for County Proposed Projects Management
+ * API service for Proposed Projects Management
  */
 const countyProposedProjectsService = {
   /**
-   * Get all county proposed projects with optional filtering
+   * Get all proposed projects with optional filtering
    * @param {object} filters - Filter parameters (category, status, priority, page, limit, search)
    * @returns {Promise<Object>} Response with projects and pagination
    */
@@ -28,7 +28,7 @@ const countyProposedProjectsService = {
   },
 
   /**
-   * Create a new county proposed project
+   * Create a new proposed project
    * @param {object} projectData - Project data
    * @returns {Promise<Object>} Created project data
    */

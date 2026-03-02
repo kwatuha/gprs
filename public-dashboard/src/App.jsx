@@ -268,7 +268,7 @@ function App() {
               transition: 'all 0.2s ease-in-out'
             }}
           >
-            County Proposed Projects
+            Proposed Projects
           </Button>
           <Button
             color="inherit"

@@ -364,7 +364,7 @@ const CountyProposedProjectsPage = () => {
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight="bold" gutterBottom>
-          County Proposed Projects
+          Proposed Projects
         </Typography>
         <Typography variant="body1" color="text.secondary">
           View projects proposed by the County Government across various sectors

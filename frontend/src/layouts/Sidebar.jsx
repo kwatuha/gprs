@@ -351,7 +351,8 @@ const Sidebar = ({ isPinnedOpen = false, onTogglePinned }) => {
     { title: "Import Map Data", to: ROUTES.MAP_DATA_IMPORT, icon: <CloudUploadIcon /> },
     { title: "Strategic Planning", to: ROUTES.STRATEGIC_PLANNING, icon: <AssignmentIcon /> },
     { title: "Import Strategic Data", to: ROUTES.STRATEGIC_DATA_IMPORT, icon: <CloudUploadIcon /> },
-    { title: "HR Module", to: ROUTES.HR, icon: <PeopleIcon />, privilege: () => hasPrivilege('hr.access') },
+    // HR Module - Hidden
+    // { title: "HR Module", to: ROUTES.HR, icon: <PeopleIcon />, privilege: () => hasPrivilege('hr.access') },
   ];
 
   const adminItems = [
@@ -362,7 +363,7 @@ const Sidebar = ({ isPinnedOpen = false, onTogglePinned }) => {
     { title: "Feedback Management", to: ROUTES.FEEDBACK_MANAGEMENT, icon: <Comment />, privilege: () => hasPrivilege('feedback.respond') || user?.roleName === 'admin' },
     { title: "Metadata Management", to: ROUTES.METADATA_MANAGEMENT, icon: <SettingsIcon /> },
     { title: "Contractor Management", to: ROUTES.CONTRACTOR_MANAGEMENT, icon: <BusinessIcon /> },
-    { title: "County Proposed Projects", to: ROUTES.COUNTY_PROPOSED_PROJECTS, icon: <AssignmentIcon /> },
+    { title: "Proposed Projects", to: ROUTES.COUNTY_PROPOSED_PROJECTS, icon: <AssignmentIcon /> },
     { title: "Project Announcements", to: ROUTES.PROJECT_ANNOUNCEMENTS, icon: <AnnouncementIcon /> },
   ];
 

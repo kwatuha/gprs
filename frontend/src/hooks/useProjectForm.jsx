@@ -1,15 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
 import apiService from '../api';
 import { DEFAULT_COUNTY } from '../configs/appConfig';
+import { normalizeProjectStatus } from '../utils/projectStatusNormalizer';
 
 const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar) => {
   const [formData, setFormData] = useState({
     projectName: '', projectDescription: '', startDate: '', endDate: '',
     directorate: '', costOfProject: '', paidOut: '',
-    objective: '', expectedOutput: '', principalInvestigator: '', expectedOutcome: '',
-    status: 'Not Started', statusReason: '',
+    objective: '', expectedOutput: '', expectedOutcome: '',
+    status: 'Not started',
     ministry: '', stateDepartment: '', sector: '', // New fields replacing departmentId, sectionId, categoryId
+    categoryId: '', // Project category/type - determines which site fields are shown
     countyIds: [], subcountyIds: [], wardIds: [],
+    sites: [], // Array of project sites for multilocation support - REQUIRED (at least one)
+    // Additional JSONB fields from original database structure
+    budgetSource: '', // Budget JSONB: source
+    progressSummary: '', // Progress JSONB: latest_update_summary
+    latitude: '', // Location JSONB: geocoordinates.lat
+    longitude: '', // Location JSONB: geocoordinates.lng
+    feedbackEnabled: true, // Public Engagement JSONB: feedback_enabled
+    commonFeedback: '', // Public Engagement JSONB: common_feedback
+    complaintsReceived: 0, // Public Engagement JSONB: complaints_received
+    dataSources: [], // Data Sources JSONB: array of {type, links, retrieved_from, verification_status}
   });
   const [formErrors, setFormErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -24,21 +36,25 @@ const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar)
     countyIds: [],
     subcountyIds: [],
     wardIds: [],
+    sites: [],
   });
 
   useEffect(() => {
     if (currentProject) {
+      console.log('Loading project for editing:', currentProject);
       setLoading(true);
       const fetchAssociations = async () => {
         try {
-          const [countiesRes, subcountiesRes, wardsRes] = await Promise.all([
+          const [countiesRes, subcountiesRes, wardsRes, sitesRes] = await Promise.all([
             apiService.junctions.getProjectCounties(currentProject.id),
             apiService.junctions.getProjectSubcounties(currentProject.id),
             apiService.junctions.getProjectWards(currentProject.id),
+            apiService.projects.getProjectSites(currentProject.id).catch(() => []), // Fetch sites, default to empty array if not available
           ]);
           const countyIds = countiesRes.map(c => String(c.countyId));
           const subcountyIds = subcountiesRes.map(sc => String(sc.subcountyId));
           const wardIds = wardsRes.map(w => String(w.wardId));
+          const sites = sitesRes || [];
 
           const formDataToSet = {
             projectName: currentProject.projectName || '',
@@ -50,21 +66,31 @@ const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar)
             paidOut: currentProject.paidOut || '',
             objective: currentProject.objective || '',
             expectedOutput: currentProject.expectedOutput || '',
-            principalInvestigator: currentProject.principalInvestigator || '',
             expectedOutcome: currentProject.expectedOutcome || '',
-            status: currentProject.status || 'Not Started',
-            statusReason: currentProject.statusReason || '',
+            status: currentProject.status ? normalizeProjectStatus(currentProject.status) : 'Not started',
             ministry: currentProject.ministry || '',
             stateDepartment: currentProject.stateDepartment || '',
             sector: currentProject.sector || '',
+            categoryId: currentProject.categoryId ? String(currentProject.categoryId) : '',
             countyIds,
             subcountyIds,
             wardIds,
+            sites,
+            // Additional JSONB fields
+            budgetSource: currentProject.budgetSource || '',
+            progressSummary: currentProject.progressSummary || '',
+            latitude: currentProject.latitude || '',
+            longitude: currentProject.longitude || '',
+            feedbackEnabled: currentProject.feedbackEnabled !== undefined ? currentProject.feedbackEnabled : true,
+            commonFeedback: currentProject.commonFeedback || '',
+            complaintsReceived: currentProject.complaintsReceived || 0,
+            dataSources: currentProject.dataSources ? (Array.isArray(currentProject.dataSources) ? currentProject.dataSources : []) : [],
           };
           
+          console.log('Form data to set:', formDataToSet);
           setFormData(formDataToSet);
 
-          setInitialAssociations({ countyIds, subcountyIds, wardIds });
+          setInitialAssociations({ countyIds, subcountyIds, wardIds, sites });
 
         } catch (err) {
           setSnackbar({ open: true, message: 'Failed to load project associations for editing.', severity: 'error' });
@@ -99,13 +125,24 @@ const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar)
       setFormData({
         projectName: '', projectDescription: '', startDate: '', endDate: '',
         directorate: '', costOfProject: '', paidOut: '',
-        objective: '', expectedOutput: '', principalInvestigator: '', expectedOutcome: '',
-        status: 'Not Started', statusReason: '',
+        objective: '', expectedOutput: '', expectedOutcome: '',
+        status: 'Not started',
         ministry: '', stateDepartment: '', sector: '',
+        categoryId: '',
         countyIds: defaultCountyIds, // Default to configured default county (Kisumu)
         subcountyIds: [], wardIds: [],
+        sites: [],
+        // Additional JSONB fields (keep defaults stable for controlled inputs)
+        budgetSource: '',
+        progressSummary: '',
+        latitude: '',
+        longitude: '',
+        feedbackEnabled: true,
+        commonFeedback: '',
+        complaintsReceived: 0,
+        dataSources: [],
       });
-      setInitialAssociations({ countyIds: defaultCountyIds, subcountyIds: [], wardIds: [] });
+      setInitialAssociations({ countyIds: defaultCountyIds, subcountyIds: [], wardIds: [], sites: [] });
       setLoading(false);
     }
   }, [currentProject, setSnackbar, allMetadata]);
@@ -192,7 +229,9 @@ const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar)
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => {
-        const newState = { ...prev, [name]: value };
+        // Convert categoryId to string for consistency with dropdown values
+        const processedValue = name === 'categoryId' ? String(value) : value;
+        const newState = { ...prev, [name]: processedValue };
 
         // Clear subcounties and wards when counties change
         if (name === 'subcountyIds' && prev.subcountyIds[0] !== value[0]) { newState.wardIds = []; }
@@ -236,16 +275,18 @@ const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar)
 
   const validateForm = () => {
     let errors = {};
-    // Only projectName is required
+    // Project name is required
     if (!formData.projectName || !formData.projectName.trim()) {
       errors.projectName = 'Project Name is required.';
     }
+    // Project category is optional
+    // Sites are no longer required during project creation - they will be added later on project details page
     // Validate date range only if both dates are provided
     if (formData.startDate && formData.endDate && new Date(formData.startDate) > new Date(formData.endDate)) {
       errors.date_range = 'End Date cannot be before Start Date.';
     }
     setFormErrors(errors);
-    return Object.keys(errors).length === 0;
+    return { isValid: Object.keys(errors).length === 0, errors };
   };
 
   const synchronizeAssociations = useCallback(async (projectId, currentIds, newIds, addFn, removeFn) => {
@@ -257,17 +298,40 @@ const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar)
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    if (!validateForm()) {
-      setSnackbar({ open: true, message: 'Please correct the form errors.', severity: 'error' });
+    console.log('handleSubmit called');
+    console.log('formData:', formData);
+    
+    const validationResult = validateForm();
+    if (!validationResult.isValid) {
+      console.log('Validation failed, errors:', validationResult.errors);
+      // Show specific validation errors
+      const errorMessages = Object.values(validationResult.errors).filter(msg => msg);
+      const errorMessage = errorMessages.length > 0 
+        ? `Please correct: ${errorMessages.join(', ')}`
+        : 'Please correct the form errors.';
+      setSnackbar({ open: true, message: errorMessage, severity: 'error' });
       return;
     }
 
+    console.log('Validation passed, submitting...');
     setLoading(true);
     const dataToSubmit = { ...formData };
     
+    // Note: Budget values are entered manually during project creation
+    // Sites will be added later on the project details page
     // Note: Geographical coverage (counties) is optional and will default to Kisumu if not provided
     for (const key of ['costOfProject', 'paidOut']) {
       if (dataToSubmit[key] === '' || dataToSubmit[key] === null) { dataToSubmit[key] = null; } else if (typeof dataToSubmit[key] === 'string') { const parsed = parseFloat(dataToSubmit[key]); dataToSubmit[key] = isNaN(parsed) ? null : parsed; }
+    }
+    
+    // Handle numeric conversions for additional fields
+    for (const key of ['latitude', 'longitude']) {
+      if (dataToSubmit[key] === '' || dataToSubmit[key] === null) { dataToSubmit[key] = null; } else if (typeof dataToSubmit[key] === 'string') { const parsed = parseFloat(dataToSubmit[key]); dataToSubmit[key] = isNaN(parsed) ? null : parsed; }
+    }
+    
+    // Handle complaintsReceived as integer
+    if (dataToSubmit.complaintsReceived !== undefined && dataToSubmit.complaintsReceived !== null) {
+      dataToSubmit.complaintsReceived = parseInt(dataToSubmit.complaintsReceived, 10) || 0;
     }
 
     // Handle geographical coverage - convert to integers and filter invalid values
@@ -295,7 +359,15 @@ const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar)
       }
     }
     
-    delete dataToSubmit.countyIds; delete dataToSubmit.subcountyIds; delete dataToSubmit.wardIds;
+    // Convert categoryId to integer if present, otherwise set to null
+    if (dataToSubmit.categoryId && dataToSubmit.categoryId !== '') {
+      dataToSubmit.categoryId = parseInt(dataToSubmit.categoryId, 10) || null;
+    } else {
+      dataToSubmit.categoryId = null;
+    }
+    
+    // Sites are no longer handled during project creation - they will be managed on project details page
+    delete dataToSubmit.countyIds; delete dataToSubmit.subcountyIds; delete dataToSubmit.wardIds; delete dataToSubmit.sites;
 
     let projectId = currentProject ? currentProject.id : null;
 
@@ -319,11 +391,21 @@ const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar)
       onFormSuccess();
     } catch (err) {
       console.error("Submit project error:", err);
-      setSnackbar({ open: true, message: err.response?.data?.message || err.message || 'Failed to save project.', severity: 'error' });
+      console.error("Error response:", err.response?.data);
+      console.error("Error message:", err.message);
+      setSnackbar({ 
+        open: true, 
+        message: err.response?.data?.message || err.message || 'Failed to save project. Please check the console for details.', 
+        severity: 'error' 
+      });
     } finally {
       setLoading(false);
     }
-  }, [formData, currentProject, initialAssociations, onFormSuccess, setSnackbar, synchronizeAssociations, validateForm, allMetadata]);
+  }, [formData, formErrors, currentProject, initialAssociations, onFormSuccess, setSnackbar, synchronizeAssociations, allMetadata]);
+
+  const handleSitesChange = (sites) => {
+    setFormData(prev => ({ ...prev, sites }));
+  };
 
   return {
     formData, formErrors, loading, handleChange, handleMultiSelectChange, handleSubmit,

@@ -75,10 +75,11 @@ export const ROUTES = {
     PERFORMANCE_MANAGEMENT_REPORT: '/performance-management-report', // ✨ NEW: Performance Management report route
     CAPR_REPORT: '/capr-report', // ✨ NEW: CAPR report route
     QUARTERLY_IMPLEMENTATION_REPORT: '/quarterly-implementation-report', // ✨ NEW: Quarterly Implementation report route
-    COUNTY_PROPOSED_PROJECTS: '/county-proposed-projects', // ✨ NEW: County Proposed Projects management route
+    COUNTY_PROPOSED_PROJECTS: '/county-proposed-projects', // ✨ NEW: Proposed Projects management route
     PROJECT_ANNOUNCEMENTS: '/project-announcements', // ✨ NEW: Project Announcements management route
     PUBLIC_APPROVAL: '/public-approval', // ✨ NEW: Public Content Approval management route
     BUDGET_MANAGEMENT: '/budget-management', // ✨ NEW: Budget Management route
+    PROJECT_TYPES: '/project-types', // ✨ NEW: Project Types management route
 
     // Sub-routes with dynamic parameters
     PROJECT_DETAILS: '/projects/:projectId',

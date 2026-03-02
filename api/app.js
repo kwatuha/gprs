@@ -68,6 +68,8 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve templates publicly (before authentication middleware)
+app.use('/api/templates', express.static(path.join(__dirname, 'templates')));
 
 app.get('/', (req, res) => {
     res.send('Welcome to the KEMRI CRUD API!');

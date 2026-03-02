@@ -1311,11 +1311,9 @@ function ProjectManagementPage() {
         dataGridColumn.renderCell = (params) => {
           if (!params) return null;
           if (!params.row) return null;
+          // Removed unused privilege checks: canAssignContractor, canViewGantt, canViewKdsp
           const canUpdate = checkUserPrivilege(user, 'project.update');
           const canDelete = checkUserPrivilege(user, 'project.delete');
-          const canAssignContractor = checkUserPrivilege(user, 'projects.assign_contractor');
-          const canViewGantt = checkUserPrivilege(user, 'project.read_gantt_chart');
-          const canViewKdsp = checkUserPrivilege(user, 'project.read_kdsp_details');
           
           return (
             <>
@@ -1663,7 +1661,7 @@ function ProjectManagementPage() {
               <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
                 <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
                   <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.7rem' }}>
-                    Paid Out
+                    Disbursed
                   </Typography>
                   <PaidIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.greenAccent[400], fontSize: 16 }} />
                 </Box>
@@ -2462,11 +2460,14 @@ function ProjectManagementPage() {
         user={user}
       />
       
-      <AssignContractorModal
+      {/* AssignContractorModal - Hidden */}
+      {false && (
+        <AssignContractorModal
           open={openAssignModal}
           onClose={handleCloseAssignModal}
           project={selectedProjectForAssignment}
-      />
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
@@ -2501,15 +2502,8 @@ function ProjectManagementPage() {
       >
         {selectedProjectForContextMenu && (
           <>
-            {checkUserPrivilege(user, 'projects.assign_contractor') && (
-              <MenuItem onClick={() => {
-                handleOpenAssignModal(selectedProjectForContextMenu);
-                handleContextMenuClose();
-              }}>
-                <ListItemIcon><GroupAddIcon fontSize="small" /></ListItemIcon>
-                <ListItemText>Assign Contractors</ListItemText>
-              </MenuItem>
-            )}
+            {/* Assign Contractors - Removed */}
+            {/* View Gantt Chart - Removed */}
             {checkUserPrivilege(user, 'project.update') && (
               <MenuItem onClick={() => {
                 handleOpenFormDialog(selectedProjectForContextMenu);
@@ -2528,15 +2522,6 @@ function ProjectManagementPage() {
                 <ListItemText>Delete Project</ListItemText>
               </MenuItem>
             )}
-            {checkUserPrivilege(user, 'project.read_gantt_chart') && (
-              <MenuItem onClick={() => {
-                handleViewGanttChart(selectedProjectForContextMenu.id);
-                handleContextMenuClose();
-              }}>
-                <ListItemIcon><GanttChartIcon fontSize="small" /></ListItemIcon>
-                <ListItemText>View Gantt Chart</ListItemText>
-              </MenuItem>
-            )}
             <MenuItem onClick={() => {
               handleViewDetails(selectedProjectForContextMenu.id);
               handleContextMenuClose();
@@ -2544,15 +2529,7 @@ function ProjectManagementPage() {
               <ListItemIcon><ViewDetailsIcon fontSize="small" /></ListItemIcon>
               <ListItemText>View Details</ListItemText>
             </MenuItem>
-            {checkUserPrivilege(user, 'project.read_kdsp_details') && (
-              <MenuItem onClick={() => {
-                handleViewKdspDetails(selectedProjectForContextMenu.id);
-                handleContextMenuClose();
-              }}>
-                <ListItemIcon><ViewDetailsIcon fontSize="small" /></ListItemIcon>
-                <ListItemText>View KDSP Details</ListItemText>
-              </MenuItem>
-            )}
+            {/* View KDSP Details - Removed */}
           </>
         )}
       </Menu>
@@ -2577,24 +2554,11 @@ function ProjectManagementPage() {
         {selectedRow && (() => {
           const canUpdate = checkUserPrivilege(user, 'project.update');
           const canDelete = checkUserPrivilege(user, 'project.delete');
-          const canAssignContractor = checkUserPrivilege(user, 'projects.assign_contractor');
-          const canViewGantt = checkUserPrivilege(user, 'project.read_gantt_chart');
-          const canViewKdsp = checkUserPrivilege(user, 'project.read_kdsp_details');
+          // Removed: canAssignContractor, canViewGantt, canViewKdsp
           
           return (
             <>
-              {canAssignContractor && (
-                <MenuItem onClick={() => {
-                  handleOpenAssignModal(selectedRow);
-                  setRowActionMenuAnchor(null);
-                  setSelectedRow(null);
-                }}>
-                  <ListItemIcon>
-                    <GroupAddIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Assign Contractors</ListItemText>
-                </MenuItem>
-              )}
+              {/* Assign Contractors - Removed */}
               <MenuItem 
                 onClick={() => {
                   if (canUpdate) {
@@ -2625,18 +2589,7 @@ function ProjectManagementPage() {
                 </ListItemIcon>
                 <ListItemText>Delete</ListItemText>
               </MenuItem>
-              {canViewGantt && (
-                <MenuItem onClick={() => {
-                  handleViewGanttChart(selectedRow.id);
-                  setRowActionMenuAnchor(null);
-                  setSelectedRow(null);
-                }}>
-                  <ListItemIcon>
-                    <GanttChartIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Gantt Chart</ListItemText>
-                </MenuItem>
-              )}
+              {/* Gantt Chart - Removed */}
               <MenuItem onClick={() => {
                 handleViewDetails(selectedRow.id);
                 setRowActionMenuAnchor(null);
@@ -2647,18 +2600,7 @@ function ProjectManagementPage() {
                 </ListItemIcon>
                 <ListItemText>View Details</ListItemText>
               </MenuItem>
-              {canViewKdsp && (
-                <MenuItem onClick={() => {
-                  handleViewKdspDetails(selectedRow.id);
-                  setRowActionMenuAnchor(null);
-                  setSelectedRow(null);
-                }}>
-                  <ListItemIcon>
-                    <ViewDetailsIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>View KDSP Details</ListItemText>
-                </MenuItem>
-              )}
+              {/* View KDSP Details - Removed */}
             </>
           );
         })()}

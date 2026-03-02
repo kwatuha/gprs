@@ -36,6 +36,15 @@ const ProjectFormDialog = ({
     formWards,
   } = useProjectForm(currentProject, allMetadata, onFormSuccess, setSnackbar, user);
 
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-KE', {
+      style: 'currency',
+      currency: 'KES',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
   // Use normalized status options for consistency across the application
   const projectStatuses = [
@@ -182,7 +191,64 @@ const ProjectFormDialog = ({
             📋 Project Details
           </Typography>
           <Grid container spacing={2}>
-            {/* Sector Field (replaces categoryId) */}
+            {/* Project Type - determines which site fields are shown */}
+            <Grid item xs={12} sm={6}>
+              <FormControl 
+                fullWidth 
+                variant="outlined" 
+                size="small" 
+                error={!!formErrors.categoryId}
+                sx={{ minWidth: 200 }}
+              >
+                <InputLabel sx={{ color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200], fontWeight: 'bold' }}>
+                  Project Type
+                </InputLabel>
+                <Select 
+                  name="categoryId" 
+                  label="Project Type"
+                  value={formData.categoryId ? String(formData.categoryId) : ''} 
+                  onChange={handleChange}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: formErrors.categoryId ? colors.redAccent[500] : colors.blueAccent[600],
+                        borderWidth: '2px',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: formErrors.categoryId ? colors.redAccent[600] : colors.blueAccent[500],
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: formErrors.categoryId ? colors.redAccent[500] : colors.greenAccent[500],
+                        borderWidth: '2px',
+                      },
+                    },
+                  }}
+                >
+                  {(() => {
+                    const categories = allMetadata?.projectCategories;
+                    // Remove the console.warn to reduce noise - categories will be logged in useProjectData
+                    if (!categories || categories.length === 0) {
+                      return (
+                        <MenuItem disabled value="">
+                          {categories === undefined ? 'Loading project types...' : 'No project types available. Please add project types first.'}
+                        </MenuItem>
+                      );
+                    }
+                    return categories.map((category) => (
+                      <MenuItem key={category.categoryId} value={String(category.categoryId)}>
+                        {category.categoryName}
+                      </MenuItem>
+                    ));
+                  })()}
+                </Select>
+                {formErrors.categoryId && (
+                  <Typography variant="caption" sx={{ color: colors.redAccent[500], mt: 0.5, ml: 1.75 }}>
+                    {formErrors.categoryId}
+                  </Typography>
+                )}
+              </FormControl>
+            </Grid>
+            {/* Sector Field */}
             <Grid item xs={12} sm={6}>
               <TextField 
                 name="sector" 
@@ -257,7 +323,7 @@ const ProjectFormDialog = ({
             <Grid item xs={12} sm={6}>
               <TextField 
                 name="directorate" 
-                label="Directorate" 
+                label="Implementing Agency" 
                 type="text" 
                 fullWidth 
                 variant="outlined" 
@@ -289,41 +355,7 @@ const ProjectFormDialog = ({
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField 
-                name="principalInvestigator" 
-                label="Project Manager" 
-                type="text" 
-                fullWidth 
-                variant="outlined" 
-                size="small"
-                value={formData.principalInvestigator} 
-                onChange={handleChange}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: colors.blueAccent[600],
-                      borderWidth: '2px',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: colors.blueAccent[500],
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: colors.greenAccent[500],
-                      borderWidth: '2px',
-                    },
-                  },
-                                     '& .MuiInputLabel-root': {
-                     color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
-                     fontWeight: 'bold',
-                   },
-                   '& .MuiInputBase-input': {
-                     color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
-                   },
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth variant="outlined" size="small" sx={{ minWidth: 180 }}>
+              <FormControl fullWidth variant="outlined" size="small" sx={{ minWidth: 200 }}>
                 <InputLabel sx={{ color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200], fontWeight: 'bold' }}>Status</InputLabel>
                 <Select 
                   name="status" 
@@ -417,76 +449,6 @@ const ProjectFormDialog = ({
                 onChange={handleChange} 
                 error={!!formErrors.endDate || !!formErrors.date_range} 
                 helperText={formErrors.endDate || formErrors.date_range}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: colors.blueAccent[600],
-                      borderWidth: '2px',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: colors.blueAccent[500],
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: colors.greenAccent[500],
-                      borderWidth: '2px',
-                    },
-                  },
-                                     '& .MuiInputLabel-root': {
-                     color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
-                     fontWeight: 'bold',
-                   },
-                   '& .MuiInputBase-input': {
-                     color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
-                   },
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField 
-                name="costOfProject" 
-                label="Cost of Project" 
-                type="number" 
-                fullWidth 
-                variant="outlined" 
-                size="small"
-                value={formData.costOfProject} 
-                onChange={handleChange} 
-                inputProps={{ step: "0.01", min: "0" }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: colors.blueAccent[600],
-                      borderWidth: '2px',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: colors.blueAccent[500],
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: colors.greenAccent[500],
-                      borderWidth: '2px',
-                    },
-                  },
-                                     '& .MuiInputLabel-root': {
-                     color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
-                     fontWeight: 'bold',
-                   },
-                   '& .MuiInputBase-input': {
-                     color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
-                   },
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField 
-                name="paidOut" 
-                label="Paid Out" 
-                type="number" 
-                fullWidth 
-                variant="outlined" 
-                size="small"
-                value={formData.paidOut} 
-                onChange={handleChange} 
-                inputProps={{ step: "0.01", min: "0" }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     '& fieldset': {
@@ -630,42 +592,6 @@ const ProjectFormDialog = ({
                 variant="outlined" 
                 size="small"
                 value={formData.expectedOutcome} 
-                onChange={handleChange}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: colors.blueAccent[600],
-                      borderWidth: '2px',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: colors.blueAccent[500],
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: colors.greenAccent[500],
-                      borderWidth: '2px',
-                    },
-                  },
-                                     '& .MuiInputLabel-root': {
-                     color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
-                     fontWeight: 'bold',
-                   },
-                   '& .MuiInputBase-input': {
-                     color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
-                   },
-                }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField 
-                name="statusReason" 
-                label="Status Reason" 
-                type="text" 
-                fullWidth 
-                multiline 
-                rows={2} 
-                variant="outlined" 
-                size="small"
-                value={formData.statusReason} 
                 onChange={handleChange}
                 sx={{
                   '& .MuiOutlinedInput-root': {
@@ -849,7 +775,7 @@ const ProjectFormDialog = ({
           <Grid container spacing={2}>
             {/* Multi-select Counties */}
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="dense" variant="outlined" size="small" sx={{ minWidth: 180 }}>
+              <FormControl fullWidth margin="dense" variant="outlined" size="small" sx={{ minWidth: 200 }}>
                 <InputLabel id="county-multi-select-label">Counties</InputLabel>
                 <Select 
                   labelId="county-multi-select-label" 
@@ -895,7 +821,7 @@ const ProjectFormDialog = ({
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="dense" variant="outlined" size="small" sx={{ minWidth: 180 }}>
+              <FormControl fullWidth margin="dense" variant="outlined" size="small" sx={{ minWidth: 200 }}>
                 <InputLabel id="subcounty-multi-select-label">Sub-Counties</InputLabel>
                 <Select labelId="subcounty-multi-select-label" multiple name="subcountyIds" value={formData.subcountyIds} onChange={handleMultiSelectChange}
                   input={<OutlinedInput id="select-multiple-chip-subcounty" label="Sub-Counties" />}
@@ -914,7 +840,7 @@ const ProjectFormDialog = ({
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="dense" variant="outlined" size="small" sx={{ minWidth: 180 }} disabled={formData.subcountyIds.length === 0 && (allMetadata.wards?.length || 0) === 0}>
+              <FormControl fullWidth margin="dense" variant="outlined" size="small" sx={{ minWidth: 200 }} disabled={formData.subcountyIds.length === 0 && (allMetadata.wards?.length || 0) === 0}>
                 <InputLabel id="ward-multi-select-label">Wards</InputLabel>
                 <Select labelId="ward-multi-select-label" multiple name="wardIds" value={formData.wardIds} onChange={handleMultiSelectChange}
                   input={<OutlinedInput id="select-multiple-chip-ward" label="Wards" />}
@@ -931,6 +857,399 @@ const ProjectFormDialog = ({
                   {formWards?.map((ward) => (<MenuItem key={ward.wardId} value={String(ward.wardId)}>{ward.name}</MenuItem>))}
                 </Select>
               </FormControl>
+            </Grid>
+          </Grid>
+        </Paper>
+
+
+        {/* Additional Details Section */}
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            p: 2, 
+            mb: 2.5, 
+            borderRadius: '16px',
+            background: colorMode === 'dark' 
+              ? `linear-gradient(145deg, ${colors.primary[300]}, ${colors.primary[400]})`
+              : `linear-gradient(145deg, ${colors.grey[900]}, ${colors.grey[800]})`,
+            border: `1px solid ${colors.blueAccent[700]}`,
+            boxShadow: `0 6px 24px rgba(0, 0, 0, 0.08)`,
+            position: 'relative',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '4px',
+              background: `linear-gradient(90deg, ${colors.greenAccent[500]}, ${colors.blueAccent[500]})`,
+              borderRadius: '16px 16px 0 0',
+            }
+          }}
+        >
+          <Typography 
+            variant="h6" 
+            gutterBottom 
+            sx={{ 
+              color: colorMode === 'dark' ? colors.blueAccent[700] : colors.blueAccent[300], 
+              mb: 2, 
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}
+          >
+            📋 Additional Details
+          </Typography>
+          
+          <Grid container spacing={2}>
+            {/* Budget Details */}
+            <Grid item xs={12} sm={6}>
+              <TextField
+                name="costOfProject"
+                label="Allocated Budget (KES)"
+                type="number"
+                fullWidth
+                variant="outlined"
+                size="small"
+                value={formData.costOfProject ?? ''}
+                onChange={handleChange}
+                placeholder="e.g., 70000000"
+                helperText="Maps to budget.allocated_amount_kes"
+                inputProps={{ min: 0, step: 'any' }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: colors.blueAccent[600],
+                      borderWidth: '2px',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: colors.blueAccent[500],
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: colors.greenAccent[500],
+                      borderWidth: '2px',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
+                    fontWeight: 'bold',
+                  },
+                  '& .MuiInputBase-input': {
+                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
+                  },
+                }}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                name="paidOut"
+                label="Disbursed Amount (KES)"
+                type="number"
+                fullWidth
+                variant="outlined"
+                size="small"
+                value={formData.paidOut ?? ''}
+                onChange={handleChange}
+                placeholder="e.g., 30000000"
+                helperText="Maps to budget.disbursed_amount_kes"
+                inputProps={{ min: 0, step: 'any' }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: colors.blueAccent[600],
+                      borderWidth: '2px',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: colors.blueAccent[500],
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: colors.greenAccent[500],
+                      borderWidth: '2px',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
+                    fontWeight: 'bold',
+                  },
+                  '& .MuiInputBase-input': {
+                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
+                  },
+                }}
+              />
+            </Grid>
+
+            {/* Budget Source */}
+            <Grid item xs={12} sm={6}>
+              <TextField 
+                name="budgetSource" 
+                label="Budget Source" 
+                type="text" 
+                fullWidth 
+                variant="outlined" 
+                size="small"
+                value={formData.budgetSource || ''} 
+                onChange={handleChange}
+                placeholder="e.g., Government of Kenya, Private Sector Investment"
+                helperText="Source of project funding"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: colors.blueAccent[600],
+                      borderWidth: '2px',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: colors.blueAccent[500],
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: colors.greenAccent[500],
+                      borderWidth: '2px',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
+                    fontWeight: 'bold',
+                  },
+                  '& .MuiInputBase-input': {
+                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
+                  },
+                }}
+              />
+            </Grid>
+
+            {/* Progress Summary */}
+            <Grid item xs={12}>
+              <TextField 
+                name="progressSummary" 
+                label="Progress Summary / Latest Update" 
+                type="text" 
+                fullWidth 
+                multiline 
+                rows={3} 
+                variant="outlined" 
+                size="small"
+                value={formData.progressSummary || ''} 
+                onChange={handleChange}
+                placeholder="Provide a summary of the latest project progress and updates..."
+                helperText="Detailed summary of project progress and current status"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: colors.blueAccent[600],
+                      borderWidth: '2px',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: colors.blueAccent[500],
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: colors.greenAccent[500],
+                      borderWidth: '2px',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
+                    fontWeight: 'bold',
+                  },
+                  '& .MuiInputBase-input': {
+                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
+                  },
+                }}
+              />
+            </Grid>
+
+            {/* Geocoordinates */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold', color: colors.blueAccent[300] }}>
+                📍 Project Location Coordinates (Optional)
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField 
+                name="latitude" 
+                label="Latitude" 
+                type="number" 
+                fullWidth 
+                variant="outlined" 
+                size="small"
+                value={formData.latitude || ''} 
+                onChange={handleChange}
+                placeholder="e.g., -1.2921"
+                inputProps={{ step: "0.0001" }}
+                helperText="Decimal degrees (e.g., -1.2921)"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: colors.blueAccent[600],
+                      borderWidth: '2px',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: colors.blueAccent[500],
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: colors.greenAccent[500],
+                      borderWidth: '2px',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
+                    fontWeight: 'bold',
+                  },
+                  '& .MuiInputBase-input': {
+                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
+                  },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField 
+                name="longitude" 
+                label="Longitude" 
+                type="number" 
+                fullWidth 
+                variant="outlined" 
+                size="small"
+                value={formData.longitude || ''} 
+                onChange={handleChange}
+                placeholder="e.g., 36.8219"
+                inputProps={{ step: "0.0001" }}
+                helperText="Decimal degrees (e.g., 36.8219)"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: colors.blueAccent[600],
+                      borderWidth: '2px',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: colors.blueAccent[500],
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: colors.greenAccent[500],
+                      borderWidth: '2px',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
+                    fontWeight: 'bold',
+                  },
+                  '& .MuiInputBase-input': {
+                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
+                  },
+                }}
+              />
+            </Grid>
+
+            {/* Public Engagement */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" sx={{ mb: 1, mt: 1, fontWeight: 'bold', color: colors.blueAccent[300] }}>
+                💬 Public Engagement
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth size="small">
+                <InputLabel sx={{ color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200], fontWeight: 'bold' }}>
+                  Feedback Enabled
+                </InputLabel>
+                <Select
+                  name="feedbackEnabled"
+                  value={formData.feedbackEnabled !== undefined ? formData.feedbackEnabled : true}
+                  onChange={handleChange}
+                  sx={{
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: colors.blueAccent[600],
+                      borderWidth: '2px',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: colors.blueAccent[500],
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: colors.greenAccent[500],
+                      borderWidth: '2px',
+                    },
+                    '& .MuiSelect-select': {
+                      color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
+                    },
+                    minWidth: 200,
+                  }}
+                >
+                  <MenuItem value={true}>Yes</MenuItem>
+                  <MenuItem value={false}>No</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField 
+                name="complaintsReceived" 
+                label="Complaints Received" 
+                type="number" 
+                fullWidth 
+                variant="outlined" 
+                size="small"
+                value={formData.complaintsReceived || 0} 
+                onChange={handleChange}
+                inputProps={{ min: 0, step: 1 }}
+                helperText="Number of complaints received"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: colors.blueAccent[600],
+                      borderWidth: '2px',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: colors.blueAccent[500],
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: colors.greenAccent[500],
+                      borderWidth: '2px',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
+                    fontWeight: 'bold',
+                  },
+                  '& .MuiInputBase-input': {
+                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
+                  },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField 
+                name="commonFeedback" 
+                label="Common Feedback" 
+                type="text" 
+                fullWidth 
+                multiline 
+                rows={2} 
+                variant="outlined" 
+                size="small"
+                value={formData.commonFeedback || ''} 
+                onChange={handleChange}
+                placeholder="Common feedback or concerns from the public..."
+                helperText="Summary of common feedback received from the public"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: colors.blueAccent[600],
+                      borderWidth: '2px',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: colors.blueAccent[500],
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: colors.greenAccent[500],
+                      borderWidth: '2px',
+                    },
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
+                    fontWeight: 'bold',
+                  },
+                  '& .MuiInputBase-input': {
+                    color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
+                  },
+                }}
+              />
             </Grid>
           </Grid>
         </Paper>
@@ -979,7 +1298,11 @@ const ProjectFormDialog = ({
           Cancel
         </Button>
         <Button 
-          onClick={handleSubmit} 
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleSubmit();
+          }} 
           variant="contained" 
           disabled={loading}
           sx={{

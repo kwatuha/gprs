@@ -9,7 +9,7 @@ const projectTableColumns = [
   { id: 'endDate', label: 'End Date', minWidth: 120, show: false, sortable: true },     // Added sortable
   { id: 'costOfProject', label: 'Budget', minWidth: 150, width: 150, show: false, sortable: true },   // Added sortable
   { id: 'Contracted', label: 'Contracted', minWidth: 150, show: true, sortable: true },   // Added sortable
-  { id: 'paidOut', label: 'Paid', minWidth: 100, show: false, sortable: true },     // Added sortable
+  { id: 'paidOut', label: 'Disbursed', minWidth: 100, show: false, sortable: true },     // Added sortable
   { id: 'overallProgress', label: 'Progress', minWidth: 160, width: 160, show: true, sortable: true },
   { id: 'departmentName', label: 'Department', minWidth: 145, show: false, sortable: true },
   { id: 'financialYearName', label: 'Fin. Year', minWidth: 125, show: false, sortable: true },

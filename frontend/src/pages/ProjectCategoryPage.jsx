@@ -4,7 +4,7 @@ import {
   DialogContent, DialogActions, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Paper, CircularProgress, IconButton,
   Alert, Snackbar, Stack, Collapse, Accordion, AccordionSummary, AccordionDetails,
-  Grid, useTheme
+  Grid, useTheme, FormControl, InputLabel, Select, MenuItem, Card, CardContent, Chip
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -43,7 +43,7 @@ const ProjectCategoryPage = () => {
     currentCategoryToEdit: null,
     currentMilestoneToEdit: null,
     categoryFormData: { categoryName: '', description: '' },
-    milestoneFormData: { categoryId: null, milestoneName: '', description: '', sequenceOrder: '' },
+    milestoneFormData: { categoryId: null, milestoneName: '', description: '', sequenceOrder: '', unitOfMeasure: '', achievementValue: '' },
     itemToDelete: null, // { id, name, type: 'category' | 'milestone' }
     categoryFormErrors: {},
     milestoneFormErrors: {}
@@ -102,10 +102,10 @@ const ProjectCategoryPage = () => {
     setLoading(true);
     try {
       if (currentCategoryToEdit) {
-        await apiService.projectCategories.updateCategory(currentCategoryToEdit.categoryId, categoryFormData);
+        await apiService.metadata.projectCategories.updateCategory(currentCategoryToEdit.categoryId, categoryFormData);
         setSnackbar({ open: true, message: 'Category updated successfully!', severity: 'success' });
       } else {
-        await apiService.projectCategories.createCategory(categoryFormData);
+        await apiService.metadata.projectCategories.createCategory(categoryFormData);
         setSnackbar({ open: true, message: 'Category created successfully!', severity: 'success' });
       }
       setDialogStateValue('openCategoryDialog', false);
@@ -139,7 +139,9 @@ const ProjectCategoryPage = () => {
       categoryId: milestone.categoryId,
       milestoneName: milestone.milestoneName,
       description: milestone.description,
-      sequenceOrder: milestone.sequenceOrder
+      sequenceOrder: milestone.sequenceOrder,
+      unitOfMeasure: milestone.unit_of_measure || '',
+      achievementValue: milestone.achievement_value || ''
     });
     setDialogStateValue('milestoneFormErrors', {});
     setDialogStateValue('openMilestoneDialog', true);
@@ -177,10 +179,10 @@ const ProjectCategoryPage = () => {
       console.log('Category ID:', categoryId);
       
       if (currentMilestoneToEdit) {
-        await apiService.projectCategories.updateMilestone(categoryId, currentMilestoneToEdit.milestoneId, milestoneDataToSubmit);
+        await apiService.metadata.projectCategories.updateMilestone(categoryId, currentMilestoneToEdit.milestoneId, milestoneDataToSubmit);
         setSnackbar({ open: true, message: 'Milestone updated successfully!', severity: 'success' });
       } else {
-        await apiService.projectCategories.createMilestone(categoryId, milestoneDataToSubmit);
+        await apiService.metadata.projectCategories.createMilestone(categoryId, milestoneDataToSubmit);
         setSnackbar({ open: true, message: 'Milestone created successfully!', severity: 'success' });
       }
       handleCloseMilestoneDialog();
@@ -213,10 +215,10 @@ const ProjectCategoryPage = () => {
     setDialogStateValue('openDeleteConfirmDialog', false);
     try {
       if (itemToDelete.type === 'category') {
-        await apiService.projectCategories.deleteCategory(itemToDelete.id);
+        await apiService.metadata.projectCategories.deleteCategory(itemToDelete.id);
         setSnackbar({ open: true, message: 'Category deleted successfully!', severity: 'success' });
       } else if (itemToDelete.type === 'milestone') {
-        await apiService.projectCategories.deleteMilestone(currentMilestoneToEdit.categoryId, itemToDelete.id);
+        await apiService.metadata.projectCategories.deleteMilestone(currentMilestoneToEdit.categoryId, itemToDelete.id);
         setSnackbar({ open: true, message: 'Milestone deleted successfully!', severity: 'success' });
       }
       fetchCategoriesAndMilestones();
@@ -242,19 +244,35 @@ const ProjectCategoryPage = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1" sx={{ color: theme.palette.primary.main, fontWeight: 'bold' }}>
-          Project Category Management
-        </Typography>
+    <Box sx={{ pt: 1, px: 2, pb: 2 }}>
+      {/* Compact Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+        <Box>
+          <Typography variant="h5" component="h1" sx={{ color: theme.palette.primary.main, fontWeight: 700, lineHeight: 1.2 }}>
+            Project Types Management
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.1 }}>
+            Manage project types and their milestone templates
+          </Typography>
+        </Box>
         {hasPrivilege('projectcategory.create') && (
           <Button
             variant="contained"
+            size="small"
             startIcon={<AddIcon />}
             onClick={handleOpenCreateCategoryDialog}
-            sx={{ backgroundColor: '#16a34a', '&:hover': { backgroundColor: '#15803d' }, color: 'white', fontWeight: 'semibold', borderRadius: '8px' }}
+            sx={{ 
+              backgroundColor: '#16a34a', 
+              '&:hover': { backgroundColor: '#15803d' }, 
+              color: 'white', 
+              fontWeight: 600, 
+              borderRadius: '6px',
+              px: 2,
+              py: 0.75,
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+            }}
           >
-            Add New Category
+            New Type
           </Button>
         )}
       </Box>
@@ -319,6 +337,8 @@ const ProjectCategoryPage = () => {
                                   <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Order</TableCell>
                                   <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Milestone Name</TableCell>
                                   <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Description</TableCell>
+                                  <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Unit of Measure</TableCell>
+                                  <TableCell sx={{ fontWeight: 'bold', color: 'white' }}>Achievement Value</TableCell>
                                   <TableCell align="right" sx={{ fontWeight: 'bold', color: 'white' }}>Actions</TableCell>
                                 </TableRow>
                               </TableHead>
@@ -327,7 +347,14 @@ const ProjectCategoryPage = () => {
                                   <TableRow key={milestone.milestoneId}>
                                     <TableCell>{milestone.sequenceOrder}</TableCell>
                                     <TableCell>{milestone.milestoneName}</TableCell>
-                                    <TableCell>{milestone.description}</TableCell>
+                                    <TableCell>{milestone.description || '-'}</TableCell>
+                                    <TableCell>{milestone.unit_of_measure || '-'}</TableCell>
+                                    <TableCell>
+                                      {milestone.achievement_value != null 
+                                        ? `${milestone.achievement_value} ${milestone.unit_of_measure || ''}`.trim()
+                                        : '-'
+                                      }
+                                    </TableCell>
                                     <TableCell align="right">
                                       <Stack direction="row" spacing={1} justifyContent="flex-end">
                                         {hasPrivilege('categorymilestone.update') && (
@@ -442,6 +469,48 @@ const ProjectCategoryPage = () => {
             onChange={handleMilestoneFormChange}
             error={!!milestoneFormErrors.sequenceOrder}
             helperText={milestoneFormErrors.sequenceOrder}
+            sx={{ mb: 2 }}
+          />
+          <FormControl fullWidth margin="dense" sx={{ mb: 2 }}>
+            <InputLabel>Unit of Measure</InputLabel>
+            <Select
+              name="unitOfMeasure"
+              value={milestoneFormData.unitOfMeasure || ''}
+              label="Unit of Measure"
+              onChange={handleMilestoneFormChange}
+            >
+              <MenuItem value="">None</MenuItem>
+              <MenuItem value="%">Percentage (%)</MenuItem>
+              <MenuItem value="count">Count</MenuItem>
+              <MenuItem value="counts">Counts</MenuItem>
+              <MenuItem value="length">Length (m)</MenuItem>
+              <MenuItem value="area">Area (m²)</MenuItem>
+              <MenuItem value="volume">Volume (m³)</MenuItem>
+              <MenuItem value="weight">Weight (kg)</MenuItem>
+              <MenuItem value="time">Time (days)</MenuItem>
+              <MenuItem value="currency">Currency (KES)</MenuItem>
+              <MenuItem value="units">Units</MenuItem>
+              <MenuItem value="stalls">Stalls</MenuItem>
+              <MenuItem value="beds">Beds</MenuItem>
+              <MenuItem value="rooms">Rooms</MenuItem>
+              <MenuItem value="classrooms">Classrooms</MenuItem>
+              <MenuItem value="kilometers">Kilometers (km)</MenuItem>
+              <MenuItem value="meters">Meters (m)</MenuItem>
+              <MenuItem value="hectares">Hectares</MenuItem>
+              <MenuItem value="acres">Acres</MenuItem>
+            </Select>
+          </FormControl>
+          <TextField
+            margin="dense"
+            name="achievementValue"
+            label="Achievement Value (Target)"
+            type="number"
+            fullWidth
+            variant="outlined"
+            value={milestoneFormData.achievementValue}
+            onChange={handleMilestoneFormChange}
+            helperText={`The target/expected value when this milestone is achieved (in ${milestoneFormData.unitOfMeasure || 'selected unit'})`}
+            inputProps={{ step: "0.01", min: "0" }}
             sx={{ mb: 2 }}
           />
         </DialogContent>

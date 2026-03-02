@@ -23,9 +23,9 @@ const formatDate = (dateValue) => {
 /**
  * @route GET /api/county-proposed-projects
  * @description Get all county proposed projects (admin view)
- * @access Protected
+ * @access Protected - requires county_proposed_projects.read OR public_content.approve
  */
-router.get('/', auth, privilege(['county_proposed_projects.read']), async (req, res) => {
+router.get('/', auth, privilege(['county_proposed_projects.read', 'public_content.approve'], { anyOf: true }), async (req, res) => {
     try {
         const { category, status, priority, page = 1, limit = 20, search } = req.query;
         
@@ -145,9 +145,9 @@ router.get('/', auth, privilege(['county_proposed_projects.read']), async (req, 
 /**
  * @route GET /api/county-proposed-projects/:id
  * @description Get a specific county proposed project by ID
- * @access Protected
+ * @access Protected - requires county_proposed_projects.read OR public_content.approve
  */
-router.get('/:id', auth, privilege(['county_proposed_projects.read']), async (req, res) => {
+router.get('/:id', auth, privilege(['county_proposed_projects.read', 'public_content.approve'], { anyOf: true }), async (req, res) => {
     try {
         const { id } = req.params;
         

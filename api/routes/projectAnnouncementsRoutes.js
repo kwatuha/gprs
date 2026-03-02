@@ -9,9 +9,9 @@ const privilege = require('../middleware/privilegeMiddleware');
 /**
  * @route GET /api/project-announcements
  * @description Get all project announcements (admin view)
- * @access Protected
+ * @access Protected - requires project_announcements.read OR public_content.approve
  */
-router.get('/', auth, privilege(['project_announcements.read']), async (req, res) => {
+router.get('/', auth, privilege(['project_announcements.read', 'public_content.approve'], { anyOf: true }), async (req, res) => {
     try {
         const { category, status, page = 1, limit = 20, search } = req.query;
         
@@ -101,9 +101,9 @@ router.get('/', auth, privilege(['project_announcements.read']), async (req, res
 /**
  * @route GET /api/project-announcements/:id
  * @description Get a specific announcement by ID
- * @access Protected
+ * @access Protected - requires project_announcements.read OR public_content.approve
  */
-router.get('/:id', auth, privilege(['project_announcements.read']), async (req, res) => {
+router.get('/:id', auth, privilege(['project_announcements.read', 'public_content.approve'], { anyOf: true }), async (req, res) => {
     try {
         const { id } = req.params;
         

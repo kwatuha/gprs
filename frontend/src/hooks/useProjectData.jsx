@@ -81,9 +81,13 @@ const useProjectData = (user, authLoading, filterState) => {
         apiService.metadata.financialYears.getAllFinancialYears(),
         apiService.metadata.programs.getAllPrograms(),
         apiService.metadata.counties.getAllCounties(),
-        apiService.metadata.projectCategories.getAllCategories(),
+        apiService.metadata.projectCategories.getAllCategories().catch(err => {
+          console.error('Error fetching project categories:', err);
+          return []; // Return empty array on error instead of failing the whole Promise.all
+        }),
       ]);
 
+      console.log('Fetched project categories:', projectCategories);
       const newMetadata = { departments, financialYears, programs, counties, projectCategories };
 
       if (filterState.departmentId) {

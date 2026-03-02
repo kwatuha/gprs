@@ -213,8 +213,25 @@ const metaDataService = {
   // --- Project Categories & Milestones API Calls ---
   projectCategories: {
     getAllCategories: async () => {
-      const response = await axiosInstance.get('/metadata/projectcategories');
-      return response.data;
+      try {
+        console.log('Fetching project categories from /metadata/projectcategories');
+        const response = await axiosInstance.get('/metadata/projectcategories');
+        console.log('Project categories API response status:', response.status);
+        console.log('Project categories API response data:', response.data);
+        console.log('Project categories API response data type:', typeof response.data);
+        console.log('Project categories API response data is array:', Array.isArray(response.data));
+        // Ensure we return an array
+        const categories = Array.isArray(response.data) ? response.data : [];
+        console.log('Returning categories:', categories.length, 'items');
+        return categories;
+      } catch (error) {
+        console.error('Error fetching project categories from API:', error);
+        console.error('Error message:', error.message);
+        console.error('Error response status:', error.response?.status);
+        console.error('Error response data:', error.response?.data);
+        console.error('Error response headers:', error.response?.headers);
+        return []; // Return empty array on error
+      }
     },
     getCategoryById: async (categoryId) => {
       const response = await axiosInstance.get(`/metadata/projectcategories/${categoryId}`);

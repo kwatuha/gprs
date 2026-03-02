@@ -4,6 +4,14 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../../config/db'); // Correct path for the new folder structure
 
+const DB_TYPE = process.env.DB_TYPE || 'mysql';
+
+// Helper to get voided condition
+const getVoidedCondition = () => DB_TYPE === 'postgresql' ? 'voided = false' : 'voided = 0';
+
+// Helper to quote column names for PostgreSQL
+const quoteColumn = (col) => DB_TYPE === 'postgresql' ? `"${col}"` : col;
+
 // --- Programs CRUD ---
 
 /**
@@ -13,7 +21,12 @@ const pool = require('../../config/db'); // Correct path for the new folder stru
  */
 router.get('/', async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT programId, programme, createdAt, updatedAt, userId FROM programs WHERE voided = 0');
+        const query = DB_TYPE === 'postgresql'
+            ? `SELECT "programId", programme, "createdAt", "updatedAt", "userId" FROM programs WHERE ${getVoidedCondition()}`
+            : `SELECT programId, programme, createdAt, updatedAt, userId FROM programs WHERE ${getVoidedCondition()}`;
+        
+        const result = await pool.query(query);
+        const rows = DB_TYPE === 'postgresql' ? result.rows : result[0];
         res.status(200).json(rows);
     } catch (error) {
         console.error('Error fetching programs:', error);
@@ -36,11 +49,16 @@ router.post('/', async (req, res) => {
     }
 
     try {
-        const [result] = await pool.query(
-            'INSERT INTO programs (programme, remarks, userId) VALUES (?, ?, ?)',
-            [programme, remarks, userId]
-        );
-        res.status(201).json({ message: 'Program created successfully', programId: result.insertId });
+        const query = DB_TYPE === 'postgresql'
+            ? `INSERT INTO programs (programme, remarks, "userId") VALUES ($1, $2, $3) RETURNING "programId"`
+            : 'INSERT INTO programs (programme, remarks, userId) VALUES (?, ?, ?)';
+        
+        const result = await pool.query(query, [programme, remarks, userId]);
+        const programId = DB_TYPE === 'postgresql' 
+            ? result.rows[0].programId 
+            : result.insertId || result[0].insertId;
+        
+        res.status(201).json({ message: 'Program created successfully', programId });
     } catch (error) {
         console.error('Error creating program:', error);
         res.status(500).json({ message: 'Error creating program', error: error.message });
@@ -57,11 +75,14 @@ router.put('/:programId', async (req, res) => {
     const { programme, remarks } = req.body;
 
     try {
-        const [result] = await pool.query(
-            'UPDATE programs SET programme = ?, remarks = ?, updatedAt = CURRENT_TIMESTAMP WHERE programId = ? AND voided = 0',
-            [programme, remarks, programId]
-        );
-        if (result.affectedRows === 0) {
+        const query = DB_TYPE === 'postgresql'
+            ? `UPDATE programs SET programme = $1, remarks = $2, "updatedAt" = CURRENT_TIMESTAMP WHERE "programId" = $3 AND ${getVoidedCondition()}`
+            : `UPDATE programs SET programme = ?, remarks = ?, updatedAt = CURRENT_TIMESTAMP WHERE programId = ? AND ${getVoidedCondition()}`;
+        
+        const result = await pool.query(query, [programme, remarks, programId]);
+        const affectedRows = DB_TYPE === 'postgresql' ? result.rowCount : (result.affectedRows || result[0].affectedRows);
+        
+        if (affectedRows === 0) {
             return res.status(404).json({ message: 'Program not found or already deleted' });
         }
         res.status(200).json({ message: 'Program updated successfully' });
@@ -82,11 +103,15 @@ router.delete('/:programId', async (req, res) => {
     const userId = 1; // Placeholder for now
 
     try {
-        const [result] = await pool.query(
-            'UPDATE programs SET voided = 1, voidedBy = ? WHERE programId = ? AND voided = 0',
-            [userId, programId]
-        );
-        if (result.affectedRows === 0) {
+        const voidedValue = DB_TYPE === 'postgresql' ? 'true' : '1';
+        const query = DB_TYPE === 'postgresql'
+            ? `UPDATE programs SET voided = ${voidedValue}, "voidedBy" = $1 WHERE "programId" = $2 AND ${getVoidedCondition()}`
+            : `UPDATE programs SET voided = ${voidedValue}, voidedBy = ? WHERE programId = ? AND ${getVoidedCondition()}`;
+        
+        const result = await pool.query(query, [userId, programId]);
+        const affectedRows = DB_TYPE === 'postgresql' ? result.rowCount : (result.affectedRows || result[0].affectedRows);
+        
+        if (affectedRows === 0) {
             return res.status(404).json({ message: 'Program not found or already deleted' });
         }
         res.status(200).json({ message: 'Program soft-deleted successfully' });

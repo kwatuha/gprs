@@ -59,7 +59,7 @@ import PerformanceManagementReport from './components/PerformanceManagementRepor
 import CAPRReport from './components/CAPRReport';
 // ✨ NEW: Import the QuarterlyImplementationReport component
 import QuarterlyImplementationReport from './components/QuarterlyImplementationReport';
-// ✨ NEW: Import the County Proposed Projects and Announcements management pages
+// ✨ NEW: Import the Proposed Projects and Announcements management pages
 import CountyProposedProjectsManagementPage from './pages/CountyProposedProjectsManagementPage';
 import ProjectAnnouncementsManagementPage from './pages/ProjectAnnouncementsManagementPage';
 // ✨ NEW: Import the Public Approval Management page
@@ -208,6 +208,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'settings/project-categories',
+        element: <ProjectCategoryPage />,
+      },
+      {
+        path: 'project-types',
         element: <ProjectCategoryPage />,
       },
       {

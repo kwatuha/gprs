@@ -47,16 +47,17 @@ const IMPORT_TYPES = [
     templateEndpoint: '/projects/template',
     color: 'primary'
   },
-  {
-    id: 'strategic-plans',
-    name: 'Strategic Plans',
-    description: 'Import CIDP strategic plans, programs, and subprograms',
-    icon: <AssessmentIcon />,
-    privilege: 'strategic_plan.import',
-    endpoint: '/strategy/import-cidp',
-    templateEndpoint: '/strategy/template',
-    color: 'secondary'
-  },
+  // Strategic Plans - Hidden
+  // {
+  //   id: 'strategic-plans',
+  //   name: 'Strategic Plans',
+  //   description: 'Import CIDP strategic plans, programs, and subprograms',
+  //   icon: <AssessmentIcon />,
+  //   privilege: 'strategic_plan.import',
+  //   endpoint: '/strategy/import-cidp',
+  //   templateEndpoint: '/strategy/template',
+  //   color: 'secondary'
+  // },
   {
     id: 'map-data',
     name: 'Map Data',
@@ -67,26 +68,28 @@ const IMPORT_TYPES = [
     templateEndpoint: '/maps/template',
     color: 'success'
   },
-  {
-    id: 'participants',
-    name: 'Participants',
-    description: 'Import participant and stakeholder data',
-    icon: <AccountTreeIcon />,
-    privilege: 'participants.create',
-    endpoint: '/participants/import-data',
-    templateEndpoint: '/participants/template',
-    color: 'warning'
-  },
-  {
-    id: 'comprehensive-projects',
-    name: 'Comprehensive Project Details',
-    description: 'Import complete project data including strategic plans, programs, sub-programs, workplans, activities, milestones, and budgets',
-    icon: <BusinessIcon />,
-    privilege: 'project.create',
-    endpoint: '/comprehensive-projects/preview',
-    templateEndpoint: '/comprehensive-projects/template',
-    color: 'info'
-  },
+  // Participants - Hidden
+  // {
+  //   id: 'participants',
+  //   name: 'Participants',
+  //   description: 'Import participant and stakeholder data',
+  //   icon: <AccountTreeIcon />,
+  //   privilege: 'participants.create',
+  //   endpoint: '/participants/import-data',
+  //   templateEndpoint: '/participants/template',
+  //   color: 'warning'
+  // },
+  // Comprehensive Project Details - Hidden
+  // {
+  //   id: 'comprehensive-projects',
+  //   name: 'Comprehensive Project Details',
+  //   description: 'Import complete project data including strategic plans, programs, sub-programs, workplans, activities, milestones, and budgets',
+  //   icon: <BusinessIcon />,
+  //   privilege: 'project.create',
+  //   endpoint: '/comprehensive-projects/preview',
+  //   templateEndpoint: '/comprehensive-projects/template',
+  //   color: 'info'
+  // },
   {
     id: 'budgets',
     name: 'Budgets',
@@ -99,9 +102,9 @@ const IMPORT_TYPES = [
   }
 ];
 
-// Optional static template paths (served from frontend public/ with Vite base '/impes')
+// Optional static template paths (served from backend api/templates/)
 const STATIC_TEMPLATE_PATHS = {
-  projects: '/impes/templates/projects_import_template.xlsx',
+  projects: '/api/templates/projects_import_template.xlsx',
 };
 
 // Expected column headers for each template type (used for client-side fallback generation)
@@ -120,7 +123,9 @@ const TEMPLATE_HEADERS = {
     'ward',
     'Contracted',
     'StartDate',
-    'EndDate'
+    'EndDate',
+    'sector',
+    'agency'
   ],
   'strategic-plans': [
     'Plan Name', 'Plan Code', 'Program', 'Subprogram', 'Objective', 'Outcome', 'Output',
@@ -144,7 +149,7 @@ const TEMPLATE_HEADER_VARIANTS = {
     ProjectDescription: ['Description', 'Project Description', 'Details'],
     Status: ['Project Status', 'Current Status'],
     budget: ['Budget', 'Estimated Cost', 'Budget (KES)'],
-    amountPaid: ['Amount Paid', 'Disbursed', 'Expenditure'],
+    amountPaid: ['Disbursed', 'Amount Disbursed', 'Disbursed Amount', 'Amount Paid', 'Expenditure'],
     financialYear: ['FY', 'Financial Year', 'Year'],
     department: ['Department', 'Implementing Department', 'Directorate'],
     'sub-county': ['Subcounty', 'Sub County', 'Sub-County'],
@@ -299,48 +304,10 @@ function CentralImportPage() {
         return Array.from(seen.values());
       };
 
-      // Check metadata mapping for projects import
-      if (currentImportType.id === 'projects' && response.fullData && response.fullData.length > 0) {
-        try {
-          const mappingResponse = await apiService.projects.checkMetadataMapping({ dataToImport: response.fullData });
-          if (mappingResponse.success) {
-            const deduplicatedSummary = {
-              ...mappingResponse.mappingSummary,
-              departments: {
-                existing: deduplicateCaseInsensitive(mappingResponse.mappingSummary.departments?.existing || []),
-                new: deduplicateCaseInsensitive(mappingResponse.mappingSummary.departments?.new || []),
-                unmatched: deduplicateCaseInsensitive(mappingResponse.mappingSummary.departments?.unmatched || [])
-              },
-              directorates: {
-                existing: deduplicateCaseInsensitive(mappingResponse.mappingSummary.directorates?.existing || []),
-                new: deduplicateCaseInsensitive(mappingResponse.mappingSummary.directorates?.new || []),
-                unmatched: deduplicateCaseInsensitive(mappingResponse.mappingSummary.directorates?.unmatched || [])
-              },
-              subcounties: {
-                existing: deduplicateCaseInsensitive(mappingResponse.mappingSummary.subcounties?.existing || []),
-                new: deduplicateCaseInsensitive(mappingResponse.mappingSummary.subcounties?.new || []),
-                unmatched: deduplicateCaseInsensitive(mappingResponse.mappingSummary.subcounties?.unmatched || [])
-              },
-              wards: {
-                existing: deduplicateCaseInsensitive(mappingResponse.mappingSummary.wards?.existing || []),
-                new: deduplicateCaseInsensitive(mappingResponse.mappingSummary.wards?.new || []),
-                unmatched: deduplicateCaseInsensitive(mappingResponse.mappingSummary.wards?.unmatched || [])
-              },
-              financialYears: {
-                existing: deduplicateCaseInsensitive(mappingResponse.mappingSummary.financialYears?.existing || []),
-                new: deduplicateCaseInsensitive(mappingResponse.mappingSummary.financialYears?.new || []),
-                unmatched: deduplicateCaseInsensitive(mappingResponse.mappingSummary.financialYears?.unmatched || [])
-              }
-            };
-
-            setMappingSummary(deduplicatedSummary);
-            // Automatically show mapping preview for projects
-            setShowMappingPreview(true);
-          }
-        } catch (mappingErr) {
-          console.error('Metadata mapping check error:', mappingErr);
-          // Don't block import if mapping check fails, just log it
-        }
+      // Skip metadata mapping check for projects import (disabled per user request)
+      if (currentImportType.id === 'projects') {
+        setMappingSummary(null);
+        setShowMappingPreview(false);
       }
 
       // Automatically check metadata for budget imports after preview
@@ -390,7 +357,9 @@ function CentralImportPage() {
             setShowMappingPreview(true);
             setSnackbar({ 
               open: true, 
-              message: 'Preview completed. Please review metadata mapping before confirming import.', 
+              message: importType === 'projects' 
+                ? 'Preview completed. You can now confirm the import.' 
+                : 'Preview completed. Please review metadata mapping before confirming import.', 
               severity: 'info' 
             });
           }
@@ -1146,48 +1115,7 @@ function CentralImportPage() {
                     </Card>
                   </Grid>
 
-                  {/* Directorates (Sections) - Only for Projects */}
-                  {currentImportType?.id === 'projects' && mappingSummary.directorates && (
-                    <Grid item xs={12} md={6}>
-                      <Card variant="outlined" sx={{ '& .MuiCardContent-root': { py: 1.5, '&:last-child': { pb: 1.5 } } }}>
-                        <CardContent>
-                          <Typography variant="body2" fontWeight={600} gutterBottom sx={{ fontSize: '0.875rem' }}>
-                            Directorates ({mappingSummary.directorates.existing.length + mappingSummary.directorates.new.length})
-                          </Typography>
-                        {mappingSummary.directorates.existing.length > 0 && (
-                          <Box sx={{ mb: 0.75 }}>
-                            <Typography variant="caption" color="success.main" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.75rem', mb: 0.5 }}>
-                              <CheckCircleIcon fontSize="small" /> {mappingSummary.directorates.existing.length} Existing
-                            </Typography>
-                            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(2, 1fr)' }, gap: 0.5 }}>
-                              {mappingSummary.directorates.existing.map((dir, idx) => (
-                                <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, py: 0.25 }}>
-                                  <CheckCircleIcon fontSize="small" color="success" sx={{ fontSize: '0.875rem' }} />
-                                  <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>{dir}</Typography>
-                                </Box>
-                              ))}
-                            </Box>
-                          </Box>
-                        )}
-                        {mappingSummary.directorates.new.length > 0 && (
-                          <Box>
-                            <Typography variant="caption" color="warning.main" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.75rem', mb: 0.5 }}>
-                              <AddCircleIcon fontSize="small" /> {mappingSummary.directorates.new.length} Need to be Created
-                            </Typography>
-                            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(2, 1fr)' }, gap: 0.5 }}>
-                              {mappingSummary.directorates.new.map((dir, idx) => (
-                                <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, py: 0.25 }}>
-                                  <AddCircleIcon fontSize="small" color="warning" sx={{ fontSize: '0.875rem' }} />
-                                  <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>{dir}</Typography>
-                                </Box>
-                              ))}
-                            </Box>
-                          </Box>
-                        )}
-                      </CardContent>
-                    </Card>
-                    </Grid>
-                  )}
+                  {/* Directorates (Sections) - Removed from template preview */}
 
                   {/* Sub-counties */}
                   <Grid item xs={12} md={6}>
@@ -1404,12 +1332,7 @@ function CentralImportPage() {
                         size="small"
                         sx={{ fontSize: '0.7rem' }}
                       />
-                      <Chip 
-                        label={`${mappingSummary.directorates?.existing.length || 0} Existing Directorates`} 
-                        color="success" 
-                        size="small"
-                        sx={{ fontSize: '0.7rem' }}
-                      />
+                      {/* Directorates chips - Removed from template preview */}
                       {mappingSummary.departments?.new.length > 0 && (
                         <Chip 
                           label={`${mappingSummary.departments.new.length} New Departments`} 
@@ -1418,14 +1341,7 @@ function CentralImportPage() {
                           sx={{ fontSize: '0.7rem' }}
                         />
                       )}
-                      {mappingSummary.directorates?.new.length > 0 && (
-                        <Chip 
-                          label={`${mappingSummary.directorates.new.length} New Directorates`} 
-                          color="warning" 
-                          size="small"
-                          sx={{ fontSize: '0.7rem' }}
-                        />
-                      )}
+                      {/* Directorates new chip - Removed from template preview */}
                     </Box>
                   </Box>
                 )}
@@ -1441,7 +1357,7 @@ function CentralImportPage() {
               bgcolor: 'action.hover', 
               borderRadius: 2, 
               border: '2px solid', 
-              borderColor: ((currentImportType?.id === 'projects' || currentImportType?.id === 'budgets') && mappingSummary && !showMappingPreview) ? 'warning.main' : 'success.main'
+              borderColor: ((currentImportType?.id === 'budgets') && mappingSummary && !showMappingPreview) ? 'warning.main' : 'success.main'
             }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
                 <Box sx={{ flex: 1 }}>
@@ -1449,7 +1365,7 @@ function CentralImportPage() {
                     Ready to Import
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
-                    {((currentImportType?.id === 'projects' || currentImportType?.id === 'budgets') && mappingSummary && !showMappingPreview)
+                    {((currentImportType?.id === 'budgets') && mappingSummary && !showMappingPreview)
                       ? '⚠️ Please review the Metadata Mapping Preview above before confirming the import.'
                       : 'Review the preview above and confirm to proceed with the import.'}
                   </Typography>
@@ -1464,7 +1380,7 @@ function CentralImportPage() {
                     disabled={
                       loading || 
                       !checkUserPrivilege(user, currentImportType.privilege) ||
-                      ((currentImportType?.id === 'projects' || currentImportType?.id === 'budgets') && mappingSummary && !showMappingPreview)
+                      ((currentImportType?.id === 'budgets') && mappingSummary && !showMappingPreview)
                     }
                     sx={{ minWidth: 160 }}
                   >

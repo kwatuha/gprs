@@ -391,6 +391,24 @@ const projectService = {
     },
     
   },
+
+  // --- Project Sites API Calls ---
+  getProjectSites: async (projectId) => {
+    const response = await axiosInstance.get(`/projects/${projectId}/sites`);
+    return response.data;
+  },
+  createProjectSite: async (projectId, siteData) => {
+    const response = await axiosInstance.post(`/projects/${projectId}/sites`, siteData);
+    return response.data;
+  },
+  updateProjectSite: async (projectId, siteId, siteData) => {
+    const response = await axiosInstance.put(`/projects/${projectId}/sites/${siteId}`, siteData);
+    return response.data;
+  },
+  deleteProjectSite: async (projectId, siteId) => {
+    const response = await axiosInstance.delete(`/projects/${projectId}/sites/${siteId}`);
+    return response.data;
+  },
   
   // Comprehensive Project Import
   comprehensiveProjects: {

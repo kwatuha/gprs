@@ -246,7 +246,7 @@ const YearBudgetModal = ({ open, onClose, yearData }) => {
                                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                                 <Box>
                                                     <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                                                        Amount Paid
+                                                        Disbursed
                                                     </Typography>
                                                     <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                                                         {formatCurrency(totals.totalPaid)}
@@ -351,7 +351,7 @@ const YearBudgetModal = ({ open, onClose, yearData }) => {
                                     },
                                     {
                                         id: 'amountPaid',
-                                        label: 'Amount Paid',
+                                        label: 'Disbursed',
                                         minWidth: 140,
                                         type: 'text'
                                     },

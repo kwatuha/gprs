@@ -1116,36 +1116,53 @@ router.get('/projects-by-status-and-year', async (req, res) => {
  */
 router.get('/financial-status-by-project-status', async (req, res) => {
     try {
+        const DB_TYPE = getDBType();
         const { finYearId, departmentId, countyId, subcountyId, wardId } = req.query;
-        let whereConditions = ['p.voided = 0', 'p.status IS NOT NULL'];
+        let whereConditions = [
+            DB_TYPE === 'postgresql' ? 'p.voided = false' : 'p.voided = 0',
+            `${getStatusField()} IS NOT NULL`
+        ];
         const queryParams = [];
+        const placeholder = DB_TYPE === 'postgresql' ? '$' : '?';
+        let placeholderIndex = 1;
 
         if (finYearId) {
-            whereConditions.push('p.finYearId = ?');
+            if (DB_TYPE === 'postgresql') {
+                whereConditions.push(`(p.timeline->>'financial_year') = ${placeholder}${placeholderIndex}`);
+            } else {
+                whereConditions.push(`p.finYearId = ${placeholder}`);
+            }
             queryParams.push(finYearId);
+            placeholderIndex++;
         }
         if (departmentId) {
-            whereConditions.push('p.departmentId = ?');
+            if (DB_TYPE === 'postgresql') {
+                whereConditions.push(`p.ministry = ${placeholder}${placeholderIndex}`);
+            } else {
+                whereConditions.push(`p.departmentId = ${placeholder}`);
+            }
             queryParams.push(departmentId);
+            placeholderIndex++;
         }
         // Location filters can be added here with appropriate joins
         // For example, if (countyId) { whereConditions.push('c.countyId = ?'); queryParams.push(countyId); }
 
         const sqlQuery = `
             SELECT
-                p.status AS status,
-                SUM(p.costOfProject) AS totalBudget,
-                SUM(p.paidOut) AS totalPaid
+                ${getStatusField()} AS status,
+                SUM(${getCostField()}) AS totalBudget,
+                SUM(${getPaidField()}) AS totalPaid
             FROM
                 projects p
             ${whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : ''}
             GROUP BY
-                p.status
+                ${getStatusField()}
             ORDER BY
-                p.status;
+                ${getStatusField()};
         `;
         
-        const [rows] = await pool.query(sqlQuery, queryParams);
+        const result = DB_TYPE === 'postgresql' ? await pool.query(sqlQuery, queryParams) : await pool.query(sqlQuery, queryParams);
+        const rows = DB_TYPE === 'postgresql' ? (result.rows || result) : (Array.isArray(result) ? result[0] : result);
         res.status(200).json(rows);
 
     } catch (error) {
@@ -1219,17 +1236,18 @@ router.get('/filter-options', async (req, res) => {
         // Get project statuses
         let projectStatuses;
         if (DB_TYPE === 'postgresql') {
-            // PostgreSQL projects table might not have status column
+            // PostgreSQL projects table stores status in JSONB progress field
             try {
                 const result = await pool.execute(`
-                    SELECT DISTINCT p.status 
+                    SELECT DISTINCT ${getStatusField()} AS status
                     FROM projects p
-                    WHERE (p.voided = false OR p.voided IS NULL) AND p.status IS NOT NULL AND p.status != ''
-                    ORDER BY p.status
+                    WHERE (p.voided = false OR p.voided IS NULL) AND ${getStatusField()} IS NOT NULL AND ${getStatusField()} != ''
+                    ORDER BY ${getStatusField()}
                 `);
                 projectStatuses = result.rows || result;
             } catch (e) {
                 // If status column doesn't exist, return empty array
+                console.error('Error fetching project statuses:', e);
                 projectStatuses = [];
             }
         } else {
@@ -1338,13 +1356,26 @@ router.get('/annual-trends', async (req, res) => {
             actualEndYear = parseInt(queryEndYear);
         } else {
             // Find the earliest project startDate in the database
-            const [earliestProject] = await pool.execute(`
-                SELECT MIN(YEAR(p.startDate)) as earliestYear
-                FROM projects p
-                WHERE p.voided = 0 AND p.startDate IS NOT NULL
-            `);
+            const DB_TYPE = getDBType();
+            let earliestProject;
+            if (DB_TYPE === 'postgresql') {
+                const result = await pool.query(`
+                    SELECT MIN(EXTRACT(YEAR FROM (p.timeline->>'start_date')::date)) as "earliestYear"
+                    FROM projects p
+                    WHERE p.voided = false AND (p.timeline->>'start_date') IS NOT NULL
+                `);
+                earliestProject = result.rows || result;
+            } else {
+                [earliestProject] = await pool.execute(`
+                    SELECT MIN(YEAR(p.startDate)) as earliestYear
+                    FROM projects p
+                    WHERE p.voided = 0 AND p.startDate IS NOT NULL
+                `);
+            }
             
-            const earliestYear = earliestProject[0]?.earliestYear;
+            const earliestYear = DB_TYPE === 'postgresql' 
+                ? (earliestProject[0]?.earliestYear || earliestProject?.[0]?.['earliestYear'])
+                : earliestProject[0]?.earliestYear;
             // Default to 2013 if no data found, or use query parameter if provided
             actualStartYear = queryStartYear ? parseInt(queryStartYear) : (earliestYear || 2013);
             actualEndYear = queryEndYear ? parseInt(queryEndYear) : currentYear;
@@ -1357,77 +1388,161 @@ router.get('/annual-trends', async (req, res) => {
             });
         }
         
+        const DB_TYPE = getDBType();
         // Get project performance trends
-        const [projectPerformance] = await pool.execute(`
-            SELECT 
-                YEAR(p.startDate) as year,
-                COUNT(p.id) as totalProjects,
-                COUNT(CASE WHEN p.status = 'Completed' THEN 1 END) as completedProjects,
-                AVG(p.overallProgress) as avgProgress,
-                AVG(DATEDIFF(p.endDate, p.startDate)) as avgDuration
-            FROM projects p
-            WHERE p.voided = 0 
-                AND p.startDate IS NOT NULL
-                AND YEAR(p.startDate) >= ?
-                AND YEAR(p.startDate) <= ?
-            GROUP BY YEAR(p.startDate)
-            ORDER BY year
-        `, [actualStartYear, actualEndYear]);
+        let projectPerformance;
+        if (DB_TYPE === 'postgresql') {
+            const result = await pool.query(`
+                SELECT 
+                    EXTRACT(YEAR FROM (p.timeline->>'start_date')::date) as year,
+                    COUNT(p.project_id) as "totalProjects",
+                    COUNT(CASE WHEN ${getStatusField()} = 'Completed' THEN 1 END) as "completedProjects",
+                    AVG((p.progress->>'percentage_complete')::numeric) as "avgProgress",
+                    AVG(EXTRACT(EPOCH FROM ((${getEndDateField()}) - (${getStartDateField()}))) / 86400) as "avgDuration"
+                FROM projects p
+                WHERE p.voided = false 
+                    AND (p.timeline->>'start_date') IS NOT NULL
+                    AND EXTRACT(YEAR FROM (p.timeline->>'start_date')::date) >= $1
+                    AND EXTRACT(YEAR FROM (p.timeline->>'start_date')::date) <= $2
+                GROUP BY EXTRACT(YEAR FROM (p.timeline->>'start_date')::date)
+                ORDER BY year
+            `, [actualStartYear, actualEndYear]);
+            projectPerformance = result.rows || result;
+        } else {
+            [projectPerformance] = await pool.execute(`
+                SELECT 
+                    YEAR(p.startDate) as year,
+                    COUNT(p.id) as totalProjects,
+                    COUNT(CASE WHEN p.status = 'Completed' THEN 1 END) as completedProjects,
+                    AVG(p.overallProgress) as avgProgress,
+                    AVG(DATEDIFF(p.endDate, p.startDate)) as avgDuration
+                FROM projects p
+                WHERE p.voided = 0 
+                    AND p.startDate IS NOT NULL
+                    AND YEAR(p.startDate) >= ?
+                    AND YEAR(p.startDate) <= ?
+                GROUP BY YEAR(p.startDate)
+                ORDER BY year
+            `, [actualStartYear, actualEndYear]);
+        }
 
         // Get financial trends
-        const [financialTrends] = await pool.execute(`
-            SELECT 
-                YEAR(p.startDate) as year,
-                SUM(p.costOfProject) as totalBudget,
-                SUM(p.paidOut) as totalExpenditure,
-                CASE 
-                    WHEN SUM(p.costOfProject) > 0 THEN 
-                        (SUM(p.paidOut) * 100.0 / SUM(p.costOfProject))
-                    ELSE 0 
-                END as absorptionRate
-            FROM projects p
-            WHERE p.voided = 0 
-                AND p.startDate IS NOT NULL
-                AND YEAR(p.startDate) >= ?
-                AND YEAR(p.startDate) <= ?
-            GROUP BY YEAR(p.startDate)
-            ORDER BY year
-        `, [actualStartYear, actualEndYear]);
+        let financialTrends;
+        if (DB_TYPE === 'postgresql') {
+            const result = await pool.query(`
+                SELECT 
+                    EXTRACT(YEAR FROM (p.timeline->>'start_date')::date) as year,
+                    SUM((${getCostField()})) as "totalBudget",
+                    SUM((${getPaidField()})) as "totalExpenditure",
+                    CASE 
+                        WHEN SUM((${getCostField()})) > 0 THEN 
+                            (SUM((${getPaidField()})) * 100.0 / SUM((${getCostField()})))
+                        ELSE 0 
+                    END as "absorptionRate"
+                FROM projects p
+                WHERE p.voided = false 
+                    AND (p.timeline->>'start_date') IS NOT NULL
+                    AND EXTRACT(YEAR FROM (p.timeline->>'start_date')::date) >= $1
+                    AND EXTRACT(YEAR FROM (p.timeline->>'start_date')::date) <= $2
+                GROUP BY EXTRACT(YEAR FROM (p.timeline->>'start_date')::date)
+                ORDER BY year
+            `, [actualStartYear, actualEndYear]);
+            financialTrends = result.rows || result;
+        } else {
+            [financialTrends] = await pool.execute(`
+                SELECT 
+                    YEAR(p.startDate) as year,
+                    SUM(p.costOfProject) as totalBudget,
+                    SUM(p.paidOut) as totalExpenditure,
+                    CASE 
+                        WHEN SUM(p.costOfProject) > 0 THEN 
+                            (SUM(p.paidOut) * 100.0 / SUM(p.costOfProject))
+                        ELSE 0 
+                    END as absorptionRate
+                FROM projects p
+                WHERE p.voided = 0 
+                    AND p.startDate IS NOT NULL
+                    AND YEAR(p.startDate) >= ?
+                    AND YEAR(p.startDate) <= ?
+                GROUP BY YEAR(p.startDate)
+                ORDER BY year
+            `, [actualStartYear, actualEndYear]);
+        }
 
         // Get department trends
-        const [departmentTrends] = await pool.execute(`
-            SELECT 
-                YEAR(p.startDate) as year,
-                d.name as departmentName,
-                d.alias as departmentAlias,
-                COUNT(p.id) as projectCount,
-                SUM(p.costOfProject) as departmentBudget,
-                SUM(p.paidOut) as departmentExpenditure
-            FROM projects p
-            INNER JOIN departments d ON p.departmentId = d.departmentId
-            WHERE p.voided = 0 
-                AND p.startDate IS NOT NULL
-                AND YEAR(p.startDate) >= ?
-                AND YEAR(p.startDate) <= ?
-            GROUP BY YEAR(p.startDate), d.departmentId, d.name, d.alias
-            ORDER BY year, d.name
-        `, [actualStartYear, actualEndYear]);
+        let departmentTrends;
+        if (DB_TYPE === 'postgresql') {
+            const result = await pool.query(`
+                SELECT 
+                    EXTRACT(YEAR FROM (p.timeline->>'start_date')::date) as year,
+                    p.ministry as "departmentName",
+                    NULL as "departmentAlias",
+                    COUNT(p.project_id) as "projectCount",
+                    SUM((${getCostField()})) as "departmentBudget",
+                    SUM((${getPaidField()})) as "departmentExpenditure"
+                FROM projects p
+                WHERE p.voided = false 
+                    AND (p.timeline->>'start_date') IS NOT NULL
+                    AND EXTRACT(YEAR FROM (p.timeline->>'start_date')::date) >= $1
+                    AND EXTRACT(YEAR FROM (p.timeline->>'start_date')::date) <= $2
+                GROUP BY EXTRACT(YEAR FROM (p.timeline->>'start_date')::date), p.ministry
+                ORDER BY year, p.ministry
+            `, [actualStartYear, actualEndYear]);
+            departmentTrends = result.rows || result;
+        } else {
+            [departmentTrends] = await pool.execute(`
+                SELECT 
+                    YEAR(p.startDate) as year,
+                    d.name as departmentName,
+                    d.alias as departmentAlias,
+                    COUNT(p.id) as projectCount,
+                    SUM(p.costOfProject) as departmentBudget,
+                    SUM(p.paidOut) as departmentExpenditure
+                FROM projects p
+                INNER JOIN departments d ON p.departmentId = d.departmentId
+                WHERE p.voided = 0 
+                    AND p.startDate IS NOT NULL
+                    AND YEAR(p.startDate) >= ?
+                    AND YEAR(p.startDate) <= ?
+                GROUP BY YEAR(p.startDate), d.departmentId, d.name, d.alias
+                ORDER BY year, d.name
+            `, [actualStartYear, actualEndYear]);
+        }
 
         // Get project status trends
-        const [statusTrends] = await pool.execute(`
-            SELECT 
-                YEAR(p.startDate) as year,
-                p.status,
-                COUNT(p.id) as count
-            FROM projects p
-            WHERE p.voided = 0 
-                AND p.startDate IS NOT NULL
-                AND YEAR(p.startDate) >= ?
-                AND YEAR(p.startDate) <= ?
-                AND p.status IS NOT NULL
-            GROUP BY YEAR(p.startDate), p.status
-            ORDER BY year, p.status
-        `, [actualStartYear, actualEndYear]);
+        let statusTrends;
+        if (DB_TYPE === 'postgresql') {
+            const result = await pool.query(`
+                SELECT 
+                    EXTRACT(YEAR FROM (p.timeline->>'start_date')::date) as year,
+                    ${getStatusField()} as status,
+                    COUNT(p.project_id) as count
+                FROM projects p
+                WHERE p.voided = false 
+                    AND (p.timeline->>'start_date') IS NOT NULL
+                    AND EXTRACT(YEAR FROM (p.timeline->>'start_date')::date) >= $1
+                    AND EXTRACT(YEAR FROM (p.timeline->>'start_date')::date) <= $2
+                    AND ${getStatusField()} IS NOT NULL
+                GROUP BY EXTRACT(YEAR FROM (p.timeline->>'start_date')::date), ${getStatusField()}
+                ORDER BY year, ${getStatusField()}
+            `, [actualStartYear, actualEndYear]);
+            statusTrends = result.rows || result;
+        } else {
+            [statusTrends] = await pool.execute(`
+                SELECT 
+                    YEAR(p.startDate) as year,
+                    p.status,
+                    COUNT(p.id) as count
+                FROM projects p
+                WHERE p.voided = 0 
+                    AND p.startDate IS NOT NULL
+                    AND YEAR(p.startDate) >= ?
+                    AND YEAR(p.startDate) <= ?
+                    AND p.status IS NOT NULL
+                GROUP BY YEAR(p.startDate), p.status
+                ORDER BY year, p.status
+            `, [actualStartYear, actualEndYear]);
+        }
 
         // Calculate year-over-year growth rates
         const calculateGrowthRate = (current, previous) => {
@@ -1594,34 +1709,42 @@ router.get('/counties', async (req, res) => {
  */
 router.get('/sub-counties', async (req, res) => {
     try {
-        const [subCounties] = await pool.execute(`
-            SELECT 
-                s.subcountyId,
-                s.name as subcountyName,
-                s.geoLat,
-                s.geoLon,
-                COUNT(DISTINCT w.wardId) as totalWards,
-                COUNT(DISTINCT p.id) as totalProjects,
-                COALESCE(SUM(p.costOfProject), 0) as totalBudget,
-                COALESCE(SUM(p.paidOut), 0) as totalPaid,
-                COALESCE(AVG(p.overallProgress), 0) as avgProgress,
-                CASE 
-                    WHEN SUM(p.costOfProject) > 0 THEN 
-                        (SUM(p.paidOut) * 100.0 / SUM(p.costOfProject))
-                    ELSE 0 
-                END as absorptionRate
-            FROM subcounties s
-            LEFT JOIN wards w ON s.subcountyId = w.subcountyId AND w.voided = 0
-            LEFT JOIN project_subcounties ps ON s.subcountyId = ps.subcountyId AND ps.voided = 0
-            LEFT JOIN projects p ON ps.projectId = p.id AND p.voided = 0
-            WHERE s.countyId = 1 AND s.voided = 0
-            GROUP BY s.subcountyId, s.name, s.geoLat, s.geoLon
-            ORDER BY s.name
-        `);
+        const DB_TYPE = getDBType();
+        let subCounties;
+        
+        if (DB_TYPE === 'postgresql') {
+            // PostgreSQL: Junction tables may not exist, return empty for now
+            subCounties = [];
+        } else {
+            [subCounties] = await pool.execute(`
+                SELECT 
+                    s.subcountyId,
+                    s.name as subcountyName,
+                    s.geoLat,
+                    s.geoLon,
+                    COUNT(DISTINCT w.wardId) as totalWards,
+                    COUNT(DISTINCT p.id) as totalProjects,
+                    COALESCE(SUM(p.costOfProject), 0) as totalBudget,
+                    COALESCE(SUM(p.paidOut), 0) as totalPaid,
+                    COALESCE(AVG(p.overallProgress), 0) as avgProgress,
+                    CASE 
+                        WHEN SUM(p.costOfProject) > 0 THEN 
+                            (SUM(p.paidOut) * 100.0 / SUM(p.costOfProject))
+                        ELSE 0 
+                    END as absorptionRate
+                FROM subcounties s
+                LEFT JOIN wards w ON s.subcountyId = w.subcountyId AND w.voided = 0
+                LEFT JOIN project_subcounties ps ON s.subcountyId = ps.subcountyId AND ps.voided = 0
+                LEFT JOIN projects p ON ps.projectId = p.id AND p.voided = 0
+                WHERE s.countyId = 1 AND s.voided = 0
+                GROUP BY s.subcountyId, s.name, s.geoLat, s.geoLon
+                ORDER BY s.name
+            `);
+        }
 
         res.json({
-            subCounties: subCounties,
-            projectProgress: subCounties
+            subCounties: subCounties || [],
+            projectProgress: subCounties || []
         });
 
     } catch (error) {
@@ -1641,34 +1764,48 @@ router.get('/sub-counties', async (req, res) => {
  */
 router.get('/wards', async (req, res) => {
     try {
-        const [wards] = await pool.execute(`
-            SELECT 
-                w.wardId,
-                w.name as wardName,
-                s.name as subcountyName,
-                w.geoLat,
-                w.geoLon,
-                COUNT(DISTINCT p.id) as totalProjects,
-                COALESCE(SUM(p.costOfProject), 0) as totalBudget,
-                COALESCE(SUM(p.paidOut), 0) as totalPaid,
-                COALESCE(AVG(p.overallProgress), 0) as avgProgress,
-                CASE 
-                    WHEN SUM(p.costOfProject) > 0 THEN 
-                        (SUM(p.paidOut) * 100.0 / SUM(p.costOfProject))
-                    ELSE 0 
-                END as absorptionRate
-            FROM wards w
-            INNER JOIN subcounties s ON w.subcountyId = s.subcountyId
-            LEFT JOIN project_wards pw ON w.wardId = pw.wardId AND pw.voided = 0
-            LEFT JOIN projects p ON pw.projectId = p.id AND p.voided = 0
-            WHERE s.countyId = 1 AND w.voided = 0
-            GROUP BY w.wardId, w.name, s.name, w.geoLat, w.geoLon
-            ORDER BY s.name, w.name
-        `);
+        const DB_TYPE = getDBType();
+        const { subCounty } = req.query;
+        let wards;
+        
+        if (DB_TYPE === 'postgresql') {
+            // PostgreSQL: Junction tables may not exist, return empty for now
+            wards = [];
+        } else {
+            let query = `
+                SELECT 
+                    w.wardId,
+                    w.name as wardName,
+                    s.name as subcountyName,
+                    w.geoLat,
+                    w.geoLon,
+                    COUNT(DISTINCT p.id) as totalProjects,
+                    COALESCE(SUM(p.costOfProject), 0) as totalBudget,
+                    COALESCE(SUM(p.paidOut), 0) as totalPaid,
+                    COALESCE(AVG(p.overallProgress), 0) as avgProgress,
+                    CASE 
+                        WHEN SUM(p.costOfProject) > 0 THEN 
+                            (SUM(p.paidOut) * 100.0 / SUM(p.costOfProject))
+                        ELSE 0 
+                    END as absorptionRate
+                FROM wards w
+                INNER JOIN subcounties s ON w.subcountyId = s.subcountyId
+                LEFT JOIN project_wards pw ON w.wardId = pw.wardId AND pw.voided = 0
+                LEFT JOIN projects p ON pw.projectId = p.id AND p.voided = 0
+                WHERE s.countyId = 1 AND w.voided = 0
+            `;
+            
+            if (subCounty) {
+                query += ` AND s.name = ?`;
+                [wards] = await pool.execute(query + ` GROUP BY w.wardId, w.name, s.name, w.geoLat, w.geoLon ORDER BY s.name, w.name`, [subCounty]);
+            } else {
+                [wards] = await pool.execute(query + ` GROUP BY w.wardId, w.name, s.name, w.geoLat, w.geoLon ORDER BY s.name, w.name`);
+            }
+        }
 
         res.json({
-            wards: wards,
-            projectProgress: wards
+            wards: wards || [],
+            projectProgress: wards || []
         });
 
     } catch (error) {

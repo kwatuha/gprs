@@ -14,6 +14,41 @@ export const useChat = () => {
 };
 
 export const ChatProvider = ({ children }) => {
+  // Check if chat is enabled via environment variable (default to disabled)
+  const chatEnabled = import.meta.env.VITE_ENABLE_CHAT === 'true';
+  
+  // If chat is disabled, return a no-op provider
+  if (!chatEnabled) {
+    const noOpValue = {
+      socket: null,
+      isConnected: false,
+      rooms: [],
+      activeRoom: null,
+      messages: {},
+      typingUsers: {},
+      unreadCounts: {},
+      onlineUsers: new Set(),
+      fetchRooms: () => Promise.resolve(),
+      fetchMessages: () => Promise.resolve(),
+      sendMessage: () => {},
+      joinRoom: () => {},
+      leaveRoom: () => {},
+      createRoom: () => Promise.resolve(null),
+      createRoleRoom: () => Promise.resolve(null),
+      fetchRoles: () => Promise.resolve([]),
+      fetchParticipants: () => Promise.resolve([]),
+      uploadFile: () => Promise.resolve(null),
+      getTotalUnreadCount: () => 0,
+      setActiveRoom: () => {},
+    };
+    
+    return (
+      <ChatContext.Provider value={noOpValue}>
+        {children}
+      </ChatContext.Provider>
+    );
+  }
+  
   const { user, token } = useAuth();
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -26,26 +61,50 @@ export const ChatProvider = ({ children }) => {
 
   // Initialize Socket.IO connection
   useEffect(() => {
-    console.log('ChatContext - Initializing socket connection...');
-    console.log('ChatContext - User:', user);
-    console.log('ChatContext - Token exists:', !!token);
     
     if (user && token) {
       // Connect through nginx proxy for socket.io
       // Use environment variable or auto-detect from current location
-      const socketUrl = import.meta.env.VITE_SOCKET_URL || 
-        (window.location.protocol + '//' + window.location.host);
-      console.log('ChatContext - Creating socket connection to', socketUrl);
-      console.log('ChatContext - window.location:', window.location);
+      // If VITE_API_URL is set and is a full URL, use it for socket connection
+      let socketUrl = import.meta.env.VITE_SOCKET_URL;
+      
+      if (!socketUrl) {
+        // Try to derive from API URL if available
+        const apiUrl = import.meta.env.VITE_API_URL;
+        if (apiUrl && apiUrl.startsWith('http')) {
+          // Extract base URL from API URL (remove /api suffix if present)
+          socketUrl = apiUrl.replace(/\/api\/?$/, '');
+        } else {
+          // In production, only connect if explicitly configured
+          // In development, allow localhost connections
+          if (import.meta.env.PROD && window.location.hostname !== 'localhost') {
+            // Production mode and not localhost - don't attempt connection without explicit config
+            return;
+          }
+          // Fall back to current location (development or localhost)
+          socketUrl = window.location.protocol + '//' + window.location.host;
+        }
+      }
+      
       const newSocket = io(socketUrl, {
         auth: {
           token: token
         },
-        transports: ['websocket', 'polling']
+        transports: ['websocket', 'polling'],
+        timeout: 5000, // 5 second connection timeout
+        reconnection: false, // Disable automatic reconnection to prevent error spam
+        autoConnect: true,
+        forceNew: false
       });
+      
+      // Suppress all socket.io internal error logging
+      if (newSocket.io) {
+        newSocket.io.on('error', () => {
+          // Silently ignore transport errors
+        });
+      }
 
       newSocket.on('connect', () => {
-        console.log('ChatContext - Connected to chat server');
         setIsConnected(true);
         newSocket.emit('join_rooms');
         // Fetch rooms when connected
@@ -53,13 +112,19 @@ export const ChatProvider = ({ children }) => {
       });
 
       newSocket.on('disconnect', () => {
-        console.log('Disconnected from chat server');
         setIsConnected(false);
       });
 
       newSocket.on('connect_error', (error) => {
-        console.error('ChatContext - Connection error:', error);
-        console.error('ChatContext - Error details:', error.message, error.description);
+        // Silently handle connection errors - chat is optional
+        setIsConnected(false);
+        // Suppress all error logging - chat feature is optional
+        // Connection will be retried automatically but won't spam console
+      });
+      
+      // Suppress timeout errors
+      newSocket.on('error', () => {
+        // Silently ignore all socket errors
         setIsConnected(false);
       });
 

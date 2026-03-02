@@ -190,7 +190,7 @@ export const submitCitizenProposal = async (proposalData) => {
   }
 };
 
-// County Proposed Projects
+// Proposed Projects
 export const getCountyProposedProjects = async (filters = {}) => {
   try {
     const response = await publicApi.get('/county-proposed-projects', { params: filters });

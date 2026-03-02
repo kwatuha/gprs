@@ -99,7 +99,7 @@ export const financialTableColumns = [
     },
     {
         id: 'amountPaid',
-        label: 'Amount Paid',
+        label: 'Disbursed',
         minWidth: 140,
         type: 'currency'
     },
@@ -156,7 +156,7 @@ export const analyticsTableColumns = [
     },
     {
         id: 'amountPaid',
-        label: 'Amount Paid',
+        label: 'Disbursed',
         minWidth: 140,
         type: 'currency'
     },

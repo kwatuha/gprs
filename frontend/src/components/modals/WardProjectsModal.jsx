@@ -536,7 +536,7 @@ const WardProjectsModal = ({ open, onClose, wardData }) => {
                                 },
                                 {
                                     id: 'amountPaid',
-                                    label: 'Amount Paid',
+                                    label: 'Disbursed',
                                     minWidth: 140,
                                     type: 'currency'
                                 },

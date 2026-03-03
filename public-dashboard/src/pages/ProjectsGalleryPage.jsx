@@ -28,7 +28,8 @@ import {
   LocationOn,
   AccountBalanceWallet,
   CalendarToday,
-  Comment
+  Comment,
+  Business
 } from '@mui/icons-material';
 import {
   getProjects,
@@ -56,7 +57,8 @@ const ProjectsGalleryPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedYear, setSelectedYear] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [selectedMinistry, setSelectedMinistry] = useState('all');
+  const [selectedStateDepartment, setSelectedStateDepartment] = useState('all');
   const [selectedProjectType, setSelectedProjectType] = useState('all');
   const [selectedSubcounty, setSelectedSubcounty] = useState('all');
   const [selectedWard, setSelectedWard] = useState('all');
@@ -67,6 +69,7 @@ const ProjectsGalleryPage = () => {
   const [projectTypes, setProjectTypes] = useState([]);
   const [subcounties, setSubcounties] = useState([]);
   const [wards, setWards] = useState([]);
+  const [stateDepartments, setStateDepartments] = useState([]);
 
   const statuses = ['Completed', 'Ongoing', 'Not Started', 'Under Procurement', 'Stalled'];
 
@@ -76,7 +79,7 @@ const ProjectsGalleryPage = () => {
 
   useEffect(() => {
     fetchProjects();
-  }, [pagination.page, selectedYear, selectedStatus, selectedDepartment, selectedProjectType, selectedSubcounty, selectedWard, searchTerm]);
+  }, [pagination.page, selectedYear, selectedStatus, selectedMinistry, selectedStateDepartment, selectedProjectType, selectedSubcounty, selectedWard, searchTerm]);
 
   useEffect(() => {
     // Update wards when subcounty changes
@@ -129,19 +132,30 @@ const ProjectsGalleryPage = () => {
 
       if (selectedYear !== 'all') filters.finYearId = selectedYear;
       if (selectedStatus !== 'all') filters.status = selectedStatus;
-      if (selectedDepartment !== 'all') filters.department = selectedDepartment;
+      if (selectedMinistry !== 'all') filters.ministry = selectedMinistry;
+      if (selectedStateDepartment !== 'all') filters.stateDepartment = selectedStateDepartment;
       if (selectedProjectType !== 'all') filters.projectType = selectedProjectType;
       if (selectedSubcounty !== 'all') filters.subCountyId = selectedSubcounty;
       if (selectedWard !== 'all') filters.wardId = selectedWard;
       if (searchTerm) filters.search = searchTerm;
 
       const response = await getProjects(filters);
-      setProjects(response.projects || []);
+      const projectsData = response.projects || [];
+      setProjects(projectsData);
       setPagination(prev => ({
         ...prev,
         total: response.pagination?.total || 0,
         totalPages: response.pagination?.totalPages || 0
       }));
+      
+      // Extract unique state departments from all projects for filter dropdown
+      const uniqueStateDepts = Array.from(new Set(
+        projectsData
+          .map(p => p.state_department || p.stateDepartment)
+          .filter(Boolean)
+      )).sort();
+      setStateDepartments(uniqueStateDepts);
+      
       setError(null);
     } catch (err) {
       console.error('Error fetching projects:', err);
@@ -160,7 +174,8 @@ const ProjectsGalleryPage = () => {
     setSearchTerm('');
     setSelectedYear('all');
     setSelectedStatus('all');
-    setSelectedDepartment('all');
+    setSelectedMinistry('all');
+    setSelectedStateDepartment('all');
     setSelectedProjectType('all');
     setSelectedSubcounty('all');
     setSelectedWard('all');
@@ -253,9 +268,27 @@ const ProjectsGalleryPage = () => {
           <Box sx={{ mb: 0.75, display: 'flex', alignItems: 'center', gap: 0.75 }}>
             <LocationOn sx={{ fontSize: 16, color: 'text.secondary' }} />
             <Typography variant="caption" color="text.secondary">
-              {project.ward_name || project.subcounty_name || project.department_name || 'N/A'}
+              {project.ward_name || project.subcounty_name || project.constituency || 'N/A'}
             </Typography>
           </Box>
+
+          {(project.ministry || project.department_name) && (
+            <Box sx={{ mb: 0.75, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <Business sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Typography variant="caption" color="text.secondary">
+                Ministry: {project.ministry || project.department_name}
+              </Typography>
+            </Box>
+          )}
+
+          {(project.state_department || project.stateDepartment) && (
+            <Box sx={{ mb: 0.75, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <Business sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Typography variant="caption" color="text.secondary">
+                State Department: {project.state_department || project.stateDepartment}
+              </Typography>
+            </Box>
+          )}
 
           <Box sx={{ mb: 0.75, display: 'flex', alignItems: 'center', gap: 0.75 }}>
             <AccountBalanceWallet sx={{ fontSize: 16, color: 'success.main' }} />
@@ -405,15 +438,15 @@ const ProjectsGalleryPage = () => {
             </FormControl>
           </Grid>
 
-          {/* Department */}
+          {/* Ministry */}
           <Grid item xs={6} sm={3.5} md={2}>
             <FormControl fullWidth size="small">
-              <InputLabel sx={{ fontSize: '0.8125rem' }}>Department</InputLabel>
+              <InputLabel sx={{ fontSize: '0.8125rem' }}>Ministry</InputLabel>
               <Select
-                value={selectedDepartment}
-                label="Department"
+                value={selectedMinistry}
+                label="Ministry"
                 onChange={(e) => {
-                  setSelectedDepartment(e.target.value);
+                  setSelectedMinistry(e.target.value);
                   setPagination(prev => ({ ...prev, page: 1 }));
                 }}
                 sx={{ height: '32px', fontSize: '0.8125rem' }}
@@ -422,6 +455,29 @@ const ProjectsGalleryPage = () => {
                 {departments.map((dept) => (
                   <MenuItem key={dept.id} value={dept.name} sx={{ fontSize: '0.8125rem' }}>
                     {dept.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          {/* State Department */}
+          <Grid item xs={6} sm={3.5} md={2}>
+            <FormControl fullWidth size="small">
+              <InputLabel sx={{ fontSize: '0.8125rem' }}>State Department</InputLabel>
+              <Select
+                value={selectedStateDepartment}
+                label="State Department"
+                onChange={(e) => {
+                  setSelectedStateDepartment(e.target.value);
+                  setPagination(prev => ({ ...prev, page: 1 }));
+                }}
+                sx={{ height: '32px', fontSize: '0.8125rem' }}
+              >
+                <MenuItem value="all" sx={{ fontSize: '0.8125rem' }}>All</MenuItem>
+                {stateDepartments.map((stateDept) => (
+                  <MenuItem key={stateDept} value={stateDept} sx={{ fontSize: '0.8125rem' }}>
+                    {stateDept}
                   </MenuItem>
                 ))}
               </Select>
@@ -518,7 +574,7 @@ const ProjectsGalleryPage = () => {
       </Paper>
 
       {/* Results Summary - Filters Applied Chip */}
-      {(selectedYear !== 'all' || selectedStatus !== 'all' || selectedDepartment !== 'all' || selectedProjectType !== 'all' || selectedSubcounty !== 'all' || selectedWard !== 'all' || searchTerm) && (
+      {(selectedYear !== 'all' || selectedStatus !== 'all' || selectedMinistry !== 'all' || selectedStateDepartment !== 'all' || selectedProjectType !== 'all' || selectedSubcounty !== 'all' || selectedWard !== 'all' || searchTerm) && (
         <Box sx={{ mb: 0.75, display: 'flex', justifyContent: 'flex-end' }}>
           <Chip 
             label="Filters Applied" 

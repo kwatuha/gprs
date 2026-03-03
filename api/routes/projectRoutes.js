@@ -162,15 +162,15 @@ const GET_SINGLE_PROJECT_QUERY = (DB_TYPE) => {
                 (p.data_sources->>'created_by_user_id')::integer AS "userId",
                 NULL AS "creatorFirstName",
                 NULL AS "creatorLastName",
-                (p.public_engagement->>'approved_for_public')::boolean AS "approved_for_public",
-                (p.public_engagement->>'approved_by')::integer AS "approved_by",
-                (p.public_engagement->>'approved_at')::timestamp AS "approved_at",
-                p.public_engagement->>'approval_notes' AS "approval_notes",
-                (p.public_engagement->>'revision_requested')::boolean AS "revision_requested",
-                p.public_engagement->>'revision_notes' AS "revision_notes",
-                (p.public_engagement->>'revision_requested_by')::integer AS "revision_requested_by",
-                (p.public_engagement->>'revision_requested_at')::timestamp AS "revision_requested_at",
-                (p.public_engagement->>'revision_submitted_at')::timestamp AS "revision_submitted_at",
+                (p.is_public->>'approved')::boolean AS "approved_for_public",
+                (p.is_public->>'approved_by')::integer AS "approved_by",
+                (p.is_public->>'approved_at')::timestamp AS "approved_at",
+                p.is_public->>'approval_notes' AS "approval_notes",
+                (p.is_public->>'revision_requested')::boolean AS "revision_requested",
+                p.is_public->>'revision_notes' AS "revision_notes",
+                (p.is_public->>'revision_requested_by')::integer AS "revision_requested_by",
+                (p.is_public->>'revision_requested_at')::timestamp AS "revision_requested_at",
+                (p.is_public->>'revision_submitted_at')::timestamp AS "revision_submitted_at",
                 (p.progress->>'percentage_complete')::numeric AS "overallProgress",
                 (p.budget->>'budget_id')::integer AS "budgetId",
                 p.location->>'county' AS "county",
@@ -1551,6 +1551,19 @@ router.post('/confirm-import-data', async (req, res) => {
                     ward: ward && ward.trim() !== '' ? ward.trim() : null
                 });
 
+                        // Build is_public JSONB with default approval structure
+                        const isPublic = JSON.stringify({
+                            approved: false,
+                            approved_by: null,
+                            approved_at: null,
+                            approval_notes: null,
+                            revision_requested: false,
+                            revision_notes: null,
+                            revision_requested_by: null,
+                            revision_requested_at: null,
+                            revision_submitted_at: null
+                        });
+
                         // Get department and section names if IDs are available
                         let ministry = null;
                         let stateDepartment = null;
@@ -1582,8 +1595,8 @@ router.post('/confirm-import-data', async (req, res) => {
                             INSERT INTO projects (
                                 name, description, implementing_agency, sector, ministry, state_department,
                                 timeline, budget, progress, notes, data_sources, public_engagement, location,
-                                created_at, updated_at, voided
-                            ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb, $12::jsonb, $13::jsonb, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false)
+                                is_public, created_at, updated_at, voided
+                            ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb, $12::jsonb, $13::jsonb, $14::jsonb, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false)
                             RETURNING project_id
                         `;
                         console.log('----------------------',insertQuery)
@@ -1600,7 +1613,8 @@ router.post('/confirm-import-data', async (req, res) => {
                             notes,
                             dataSources,
                             publicEngagement,
-                            location
+                            location,
+                            isPublic
                         ]);
 
                         const insertRows = getQueryRows(insertResult);
@@ -2418,15 +2432,15 @@ router.get('/', async (req, res) => {
                 (p.data_sources->>'created_by_user_id')::integer AS "userId",
                 NULL AS creatorFirstName,
                 NULL AS creatorLastName,
-                (p.public_engagement->>'approved_for_public')::boolean AS approved_for_public,
-                (p.public_engagement->>'approved_by')::integer AS approved_by,
-                (p.public_engagement->>'approved_at')::timestamp AS approved_at,
-                p.public_engagement->>'approval_notes' AS approval_notes,
-                (p.public_engagement->>'revision_requested')::boolean AS revision_requested,
-                p.public_engagement->>'revision_notes' AS revision_notes,
-                (p.public_engagement->>'revision_requested_by')::integer AS revision_requested_by,
-                (p.public_engagement->>'revision_requested_at')::timestamp AS revision_requested_at,
-                (p.public_engagement->>'revision_submitted_at')::timestamp AS revision_submitted_at,
+                (p.is_public->>'approved')::boolean AS approved_for_public,
+                (p.is_public->>'approved_by')::integer AS approved_by,
+                (p.is_public->>'approved_at')::timestamp AS approved_at,
+                p.is_public->>'approval_notes' AS approval_notes,
+                (p.is_public->>'revision_requested')::boolean AS revision_requested,
+                p.is_public->>'revision_notes' AS revision_notes,
+                (p.is_public->>'revision_requested_by')::integer AS revision_requested_by,
+                (p.is_public->>'revision_requested_at')::timestamp AS revision_requested_at,
+                (p.is_public->>'revision_submitted_at')::timestamp AS revision_submitted_at,
                 (p.progress->>'percentage_complete')::numeric AS "overallProgress",
                 (p.budget->>'budget_id')::integer AS budgetId,
                 (p.location->'geocoordinates'->>'lat')::numeric AS "latitude",
@@ -2674,6 +2688,7 @@ router.put('/:id/approval', async (req, res) => {
     }
     
     try {
+        const DB_TYPE = process.env.DB_TYPE || 'postgresql';
         const { id } = req.params;
         const { 
             approved_for_public, 
@@ -2686,94 +2701,161 @@ router.put('/:id/approval', async (req, res) => {
             revision_requested_at
         } = req.body;
 
-        // Build update query dynamically
-        let updateFields = [];
-        let updateValues = [];
+        if (DB_TYPE === 'postgresql') {
+            // PostgreSQL implementation using is_public JSONB field
+            const client = await pool.connect();
+            try {
+                await client.query('BEGIN');
 
-        if (revision_requested !== undefined) {
-            updateFields.push('revision_requested = ?');
-            updateValues.push(revision_requested ? 1 : 0);
-            
+                // Get existing is_public JSONB data
+                const existingQuery = `SELECT is_public FROM projects WHERE project_id = $1 AND voided = false`;
+                const existingResult = await client.query(existingQuery, [id]);
+                
+                if (existingResult.rows.length === 0) {
+                    await client.query('ROLLBACK');
+                    return res.status(404).json({ error: 'Project not found' });
+                }
+
+                // Get existing is_public JSONB or default to empty object
+                const existingIsPublic = existingResult.rows[0].is_public || { approved: false };
+                
+                // Build updated is_public JSONB object
+                let updatedIsPublic = { ...existingIsPublic };
+
+                // Update approval details when approved_for_public is provided
+                if (approved_for_public !== undefined) {
+                    updatedIsPublic.approved = approved_for_public === true || approved_for_public === 1 || approved_for_public === 'true';
+                    updatedIsPublic.approved_by = approved_by || req.user.userId;
+                    updatedIsPublic.approved_at = approved_at || new Date().toISOString();
+                    updatedIsPublic.approval_notes = approval_notes || null;
+                    
+                    // Clear revision request when approving/rejecting (unless revision_requested is also being set)
+                    if (revision_requested === undefined) {
+                        updatedIsPublic.revision_requested = false;
+                        updatedIsPublic.revision_notes = null;
+                        updatedIsPublic.revision_requested_by = null;
+                        updatedIsPublic.revision_requested_at = null;
+                    }
+                }
+
+                // Handle revision request
+                if (revision_requested !== undefined) {
+                    updatedIsPublic.revision_requested = revision_requested === true || revision_requested === 1 || revision_requested === 'true';
+                    updatedIsPublic.revision_notes = revision_notes || null;
+                    updatedIsPublic.revision_requested_by = revision_requested_by || req.user.userId;
+                    updatedIsPublic.revision_requested_at = revision_requested_at || new Date().toISOString();
+                    
+                    // Reset approved when revision is requested
+                    if (revision_requested) {
+                        updatedIsPublic.approved = false;
+                    }
+                }
+
+                // Update is_public JSONB field
+                const updateQuery = `
+                    UPDATE projects
+                    SET is_public = $1, updated_at = CURRENT_TIMESTAMP
+                    WHERE project_id = $2 AND voided = false
+                `;
+
+                const updateResult = await client.query(updateQuery, [JSON.stringify(updatedIsPublic), id]);
+
+                if (updateResult.rowCount === 0) {
+                    await client.query('ROLLBACK');
+                    return res.status(404).json({ error: 'Project not found' });
+                }
+
+                await client.query('COMMIT');
+
+                let message = 'Project updated successfully';
+                if (revision_requested) {
+                    message = 'Revision requested successfully';
+                } else if (approved_for_public !== undefined) {
+                    message = `Project ${approved_for_public ? 'approved' : 'revoked'} for public viewing`;
+                }
+
+                res.json({
+                    success: true,
+                    message
+                });
+            } catch (error) {
+                await client.query('ROLLBACK');
+                throw error;
+            } finally {
+                client.release();
+            }
+        } else {
+            // MySQL implementation (legacy - keeping for backward compatibility)
+            let updateFields = [];
+            let updateValues = [];
+
+            if (revision_requested !== undefined) {
+                updateFields.push('revision_requested = ?');
+                updateValues.push(revision_requested ? 1 : 0);
+                
+                if (revision_requested) {
+                    updateFields.push('revision_notes = ?');
+                    updateFields.push('revision_requested_by = ?');
+                    updateFields.push('revision_requested_at = ?');
+                    updateValues.push(revision_notes || null);
+                    updateValues.push(revision_requested_by || req.user.userId);
+                    const revisionRequestedAt = revision_requested_at ? new Date(revision_requested_at) : new Date();
+                    updateValues.push(revisionRequestedAt.toISOString().slice(0, 19).replace('T', ' '));
+                    updateFields.push('approved_for_public = 0');
+                } else {
+                    updateFields.push('revision_notes = NULL');
+                    updateFields.push('revision_requested_by = NULL');
+                    updateFields.push('revision_requested_at = NULL');
+                }
+            }
+
+            if (approved_for_public !== undefined) {
+                updateFields.push('approved_for_public = ?');
+                updateFields.push('approval_notes = ?');
+                updateFields.push('approved_by = ?');
+                updateFields.push('approved_at = ?');
+                updateValues.push(approved_for_public ? 1 : 0);
+                updateValues.push(approval_notes || null);
+                updateValues.push(approved_by || req.user.userId);
+                const approvedAt = approved_at ? new Date(approved_at) : new Date();
+                updateValues.push(approvedAt.toISOString().slice(0, 19).replace('T', ' '));
+                
+                if (revision_requested === undefined) {
+                    updateFields.push('revision_requested = 0');
+                    updateFields.push('revision_notes = NULL');
+                }
+            }
+
+            if (updateFields.length === 0) {
+                return res.status(400).json({ error: 'No update fields provided' });
+            }
+
+            updateValues.push(id);
+
+            const query = `
+                UPDATE kemri_projects
+                SET ${updateFields.join(', ')}
+                WHERE id = ? AND voided = 0
+            `;
+
+            const [result] = await pool.query(query, updateValues);
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: 'Project not found' });
+            }
+
+            let message = 'Project updated successfully';
             if (revision_requested) {
-                updateFields.push('revision_notes = ?');
-                updateFields.push('revision_requested_by = ?');
-                updateFields.push('revision_requested_at = ?');
-                updateValues.push(revision_notes || null);
-                updateValues.push(revision_requested_by || req.user.userId);
-                // Convert ISO string to MySQL datetime format (YYYY-MM-DD HH:MM:SS)
-                const revisionRequestedAt = revision_requested_at ? new Date(revision_requested_at) : new Date();
-                updateValues.push(revisionRequestedAt.toISOString().slice(0, 19).replace('T', ' '));
-                // Reset approval when revision is requested
-                updateFields.push('approved_for_public = 0');
-            } else {
-                // Clear revision fields
-                updateFields.push('revision_notes = NULL');
-                updateFields.push('revision_requested_by = NULL');
-                updateFields.push('revision_requested_at = NULL');
+                message = 'Revision requested successfully';
+            } else if (approved_for_public !== undefined) {
+                message = `Project ${approved_for_public ? 'approved' : 'revoked'} for public viewing`;
             }
+
+            res.json({
+                success: true,
+                message
+            });
         }
-
-        if (approved_for_public !== undefined) {
-            updateFields.push('approved_for_public = ?');
-            updateFields.push('approval_notes = ?');
-            updateFields.push('approved_by = ?');
-            updateFields.push('approved_at = ?');
-            updateValues.push(approved_for_public ? 1 : 0);
-            updateValues.push(approval_notes || null);
-            updateValues.push(approved_by || req.user.userId);
-            // Convert ISO string to MySQL datetime format (YYYY-MM-DD HH:MM:SS)
-            const approvedAt = approved_at ? new Date(approved_at) : new Date();
-            updateValues.push(approvedAt.toISOString().slice(0, 19).replace('T', ' '));
-            
-            // Clear revision request when approving/rejecting
-            if (revision_requested === undefined) {
-                updateFields.push('revision_requested = 0');
-                updateFields.push('revision_notes = NULL');
-            }
-        }
-
-        if (updateFields.length === 0) {
-            return res.status(400).json({ error: 'No update fields provided' });
-        }
-
-        updateValues.push(id);
-
-        const query = `
-            UPDATE kemri_projects
-            SET ${updateFields.join(', ')}
-            WHERE id = ? AND voided = 0
-        `;
-
-        console.log('=== PROJECT APPROVAL UPDATE ===');
-        console.log('Project ID:', id);
-        console.log('Update query:', query);
-        console.log('Update values:', updateValues);
-        console.log('Request body:', JSON.stringify(req.body, null, 2));
-        console.log('User:', JSON.stringify(req.user, null, 2));
-        console.log('Update fields count:', updateFields.length);
-        console.log('Update values count:', updateValues.length);
-
-        const [result] = await pool.query(query, updateValues);
-
-        console.log('Update result:', JSON.stringify(result, null, 2));
-        console.log('Affected rows:', result.affectedRows);
-        console.log('==============================');
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Project not found' });
-        }
-
-        let message = 'Project updated successfully';
-        if (revision_requested) {
-            message = 'Revision requested successfully';
-        } else if (approved_for_public !== undefined) {
-            message = `Project ${approved_for_public ? 'approved' : 'revoked'} for public viewing`;
-        }
-
-        res.json({
-            success: true,
-            message
-        });
     } catch (error) {
         console.error('=== ERROR UPDATING PROJECT APPROVAL ===');
         console.error('Error:', error);
@@ -2813,6 +2895,7 @@ router.put('/:id/progress', async (req, res) => {
     }
     
     try {
+        const DB_TYPE = process.env.DB_TYPE || 'postgresql';
         const { id } = req.params;
         const { overallProgress } = req.body;
 
@@ -2829,49 +2912,104 @@ router.put('/:id/progress', async (req, res) => {
             });
         }
 
-        // Update the project's overallProgress
-        const query = `
-            UPDATE kemri_projects
-            SET overallProgress = ?
-            WHERE id = ? AND voided = 0
-        `;
-
         console.log('=== UPDATING PROJECT PROGRESS ===');
+        console.log('DB_TYPE:', DB_TYPE);
         console.log('Project ID:', id);
         console.log('Progress Value:', progressValue);
-        console.log('Query:', query);
-        console.log('Query Params:', [progressValue, id]);
 
-        const [result] = await pool.query(query, [progressValue, id]);
+        if (DB_TYPE === 'postgresql') {
+            // PostgreSQL: Update progress JSONB field
+            const client = await pool.connect();
+            try {
+                await client.query('BEGIN');
 
-        console.log('Update result:', {
-            affectedRows: result.affectedRows,
-            insertId: result.insertId,
-            changedRows: result.changedRows
-        });
+                // Get existing progress JSONB to merge
+                const existingQuery = `SELECT progress FROM projects WHERE project_id = $1 AND voided = false`;
+                const existingResult = await client.query(existingQuery, [id]);
+                
+                if (existingResult.rows.length === 0) {
+                    await client.query('ROLLBACK');
+                    return res.status(404).json({ error: 'Project not found' });
+                }
 
-        if (result.affectedRows === 0) {
-            console.log('No rows affected - project not found or already voided');
-            return res.status(404).json({ error: 'Project not found' });
+                const existingProgress = existingResult.rows[0].progress || {};
+                
+                // Merge new percentage_complete into existing progress JSONB
+                const updatedProgress = {
+                    ...existingProgress,
+                    percentage_complete: progressValue
+                };
+
+                const updateQuery = `
+                    UPDATE projects
+                    SET progress = $1::jsonb, updated_at = CURRENT_TIMESTAMP
+                    WHERE project_id = $2 AND voided = false
+                `;
+
+                const updateResult = await client.query(updateQuery, [JSON.stringify(updatedProgress), id]);
+
+                if (updateResult.rowCount === 0) {
+                    await client.query('ROLLBACK');
+                    return res.status(404).json({ error: 'Project not found' });
+                }
+
+                await client.query('COMMIT');
+
+                console.log('=== PROGRESS UPDATE SUCCESSFUL (PostgreSQL) ===');
+
+                res.json({
+                    success: true,
+                    message: `Project progress updated to ${progressValue}%`,
+                    overallProgress: progressValue
+                });
+            } catch (error) {
+                await client.query('ROLLBACK');
+                throw error;
+            } finally {
+                client.release();
+            }
+        } else {
+            // MySQL: Update overallProgress column directly
+            const query = `
+                UPDATE kemri_projects
+                SET overallProgress = ?
+                WHERE id = ? AND voided = 0
+            `;
+
+            console.log('Query:', query);
+            console.log('Query Params:', [progressValue, id]);
+
+            const [result] = await pool.query(query, [progressValue, id]);
+
+            console.log('Update result:', {
+                affectedRows: result.affectedRows,
+                insertId: result.insertId,
+                changedRows: result.changedRows
+            });
+
+            if (result.affectedRows === 0) {
+                console.log('No rows affected - project not found or already voided');
+                return res.status(404).json({ error: 'Project not found' });
+            }
+
+            // Verify the update by fetching the updated value
+            const [verifyRows] = await pool.query(
+                'SELECT overallProgress FROM kemri_projects WHERE id = ? AND voided = 0',
+                [id]
+            );
+            
+            if (verifyRows.length > 0) {
+                console.log('Verified updated progress:', verifyRows[0].overallProgress);
+            }
+
+            console.log('=== PROGRESS UPDATE SUCCESSFUL (MySQL) ===');
+
+            res.json({
+                success: true,
+                message: `Project progress updated to ${progressValue}%`,
+                overallProgress: progressValue
+            });
         }
-
-        // Verify the update by fetching the updated value
-        const [verifyRows] = await pool.query(
-            'SELECT overallProgress FROM kemri_projects WHERE id = ? AND voided = 0',
-            [id]
-        );
-        
-        if (verifyRows.length > 0) {
-            console.log('Verified updated progress:', verifyRows[0].overallProgress);
-        }
-
-        console.log('=== PROGRESS UPDATE SUCCESSFUL ===');
-
-        res.json({
-            success: true,
-            message: `Project progress updated to ${progressValue}%`,
-            overallProgress: progressValue
-        });
     } catch (error) {
         console.error('Error updating project progress:', error);
         res.status(500).json({ 
@@ -3028,13 +3166,26 @@ router.post('/', validateProject, async (req, res) => {
                     }
                 });
 
+                // Build is_public JSONB with default approval structure
+                const isPublic = JSON.stringify({
+                    approved: false,
+                    approved_by: null,
+                    approved_at: null,
+                    approval_notes: null,
+                    revision_requested: false,
+                    revision_notes: null,
+                    revision_requested_by: null,
+                    revision_requested_at: null,
+                    revision_submitted_at: null
+                });
+
                 // Insert into PostgreSQL with JSONB structure
                 const insertQuery = `
                     INSERT INTO projects (
                         name, description, implementing_agency, sector, ministry, state_department, category_id,
                         timeline, budget, progress, notes, data_sources, public_engagement, location,
-                        created_at, updated_at, voided
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb, $12::jsonb, $13::jsonb, $14::jsonb, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false)
+                        is_public, created_at, updated_at, voided
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb, $12::jsonb, $13::jsonb, $14::jsonb, $15::jsonb, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false)
                     RETURNING project_id
                 `;
                 
@@ -3052,7 +3203,8 @@ router.post('/', validateProject, async (req, res) => {
                     notes,
                     dataSources,
                     publicEngagement,
-                    location
+                    location,
+                    isPublic
                 ]);
                 
                 newProjectId = result.rows[0].project_id;

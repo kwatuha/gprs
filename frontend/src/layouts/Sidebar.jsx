@@ -339,9 +339,6 @@ const Sidebar = ({ isPinnedOpen = false, onTogglePinned }) => {
     { title: "Project Dashboards", to: ROUTES.REPORTING_OVERVIEW, icon: <AssessmentIcon /> },
     { title: "Regional Rpts", to: ROUTES.REGIONAL_DASHBOARD, icon: <AssessmentIcon /> },
     { title: "Regional Dashboards", to: ROUTES.REGIONAL_REPORTING, icon: <AssessmentIcon /> },
-    { title: "Absorption Report", to: ROUTES.ABSORPTION_REPORT, icon: <AssessmentIcon /> },
-    { title: "Performance Management Report", to: ROUTES.PERFORMANCE_MANAGEMENT_REPORT, icon: <AssessmentIcon /> },
-    { title: "CAPR Report", to: ROUTES.CAPR_REPORT, icon: <AssessmentIcon /> },
     { title: "Quarterly Implementation Report", to: ROUTES.QUARTERLY_IMPLEMENTATION_REPORT, icon: <AssessmentIcon /> },
   ];
 

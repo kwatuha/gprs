@@ -24,11 +24,11 @@
     },
     {
       "id": "reporting",
-      "label": "Reporting",
+      "label": "Projects",
       "icon": "AssessmentIcon",
       "submenus": [
         {
-          "title": "Projects",
+          "title": "Projects Registry",
           "icon": "FolderOpenIcon",
           "route": "PROJECTS"
         },
@@ -64,17 +64,20 @@
         {
           "title": "Absorption Report",
           "icon": "AssessmentIcon",
-          "route": "ABSORPTION_REPORT"
+          "route": "ABSORPTION_REPORT",
+          "hidden": true
         },
         {
           "title": "Performance Mgmt",
           "icon": "AssessmentIcon",
-          "route": "PERFORMANCE_MANAGEMENT_REPORT"
+          "route": "PERFORMANCE_MANAGEMENT_REPORT",
+          "hidden": true
         },
         {
           "title": "CAPR Report",
           "icon": "AssessmentIcon",
-          "route": "CAPR_REPORT"
+          "route": "CAPR_REPORT",
+          "hidden": true
         },
         {
           "title": "Quarterly Impl.",

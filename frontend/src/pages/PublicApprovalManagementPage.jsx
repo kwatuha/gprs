@@ -126,7 +126,8 @@ const PublicApprovalManagementPage = () => {
   const [globalSearch, setGlobalSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [approvalStatusFilter, setApprovalStatusFilter] = useState('');
-  const [departmentFilter, setDepartmentFilter] = useState('');
+  const [ministryFilter, setMinistryFilter] = useState('');
+  const [stateDepartmentFilter, setStateDepartmentFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   
   // Bulk selection state
@@ -886,7 +887,7 @@ const PublicApprovalManagementPage = () => {
       field: 'projectName', 
       headerName: 'Project Name', 
       flex: 2, 
-      minWidth: 300,
+      minWidth: 200,
       renderCell: (params) => (
         <Typography 
           variant="body2" 
@@ -904,25 +905,35 @@ const PublicApprovalManagementPage = () => {
       )
     },
     { 
-      field: 'categoryName', 
-      headerName: 'Category', 
-      width: 130,
+      field: 'status', 
+      headerName: 'Status', 
+      width: 120,
+      renderCell: (params) => getStatusChip(params.value)
+    },
+    { 
+      field: 'ministry', 
+      headerName: 'Ministry', 
+      width: 140,
       renderCell: (params) => (
-        <Typography variant="caption" sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
-          {params.value || '-'}
+        <Typography 
+          variant="caption" 
+          sx={{ 
+            fontSize: '0.8rem', 
+            color: 'text.secondary',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}
+          title={params.value || params.row.departmentName}
+        >
+          {params.value || params.row.departmentName || '-'}
         </Typography>
       )
     },
     { 
-      field: 'status', 
-      headerName: 'Status', 
+      field: 'stateDepartment', 
+      headerName: 'State Department', 
       width: 140,
-      renderCell: (params) => getStatusChip(params.value)
-    },
-    { 
-      field: 'departmentName', 
-      headerName: 'Department', 
-      width: 160,
       renderCell: (params) => (
         <Typography 
           variant="caption" 
@@ -942,7 +953,7 @@ const PublicApprovalManagementPage = () => {
     {
       field: 'approved_for_public',
       headerName: 'Public',
-      width: 120,
+      width: 100,
       headerAlign: 'center',
       align: 'center',
       renderCell: (params) => getApprovalStatusChip(params.row)
@@ -950,7 +961,7 @@ const PublicApprovalManagementPage = () => {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 200,
+      width: 180,
       sortable: false,
       headerAlign: 'center',
       align: 'center',
@@ -1016,12 +1027,12 @@ const PublicApprovalManagementPage = () => {
                 </IconButton>
               </Tooltip>
             )}
-            {needsRevision && (
-              <Tooltip title="Revision Notes">
+            {(isApproved || needsRevision) && (
+              <Tooltip title={isApproved ? "View Approval Notes" : "View Revision Notes"}>
                 <IconButton
                   color="info"
                   size="small"
-                  onClick={() => handleOpenApprovalDialog(params.row, 'view_revision', 'project')}
+                  onClick={() => handleOpenApprovalDialog(params.row, isApproved ? 'view_approval' : 'view_revision', 'project')}
                   sx={{ 
                     p: 0.5,
                     '&:hover': {
@@ -1220,12 +1231,12 @@ const PublicApprovalManagementPage = () => {
                 </IconButton>
               </Tooltip>
             )}
-            {needsRevision && (
-              <Tooltip title="Revision Notes">
+            {(isApproved || needsRevision) && (
+              <Tooltip title={isApproved ? "View Approval Notes" : "View Revision Notes"}>
                 <IconButton
                   color="info"
                   size="small"
-                  onClick={() => handleOpenApprovalDialog(params.row, 'view_revision', 'county_project')}
+                  onClick={() => handleOpenApprovalDialog(params.row, isApproved ? 'view_approval' : 'view_revision', 'county_project')}
                   sx={{ 
                     p: 0.5,
                     '&:hover': {
@@ -1584,7 +1595,8 @@ const PublicApprovalManagementPage = () => {
           item.projectName || item.title || '',
           item.id?.toString() || '',
           item.description || '',
-          item.departmentName || item.department || '',
+          item.ministry || item.departmentName || item.department || '',
+          item.stateDepartment || item.state_department || '',
           item.categoryName || item.category || '',
           item.status || '',
           item.proposer_name || '',
@@ -1614,11 +1626,19 @@ const PublicApprovalManagementPage = () => {
       }
     }
 
-    // Apply department filter
-    if (departmentFilter) {
+    // Apply ministry filter
+    if (ministryFilter) {
       data = data.filter(item => {
-        const deptName = item.departmentName || item.department || '';
-        return deptName === departmentFilter;
+        const ministryName = item.ministry || item.departmentName || item.department || '';
+        return ministryName === ministryFilter;
+      });
+    }
+
+    // Apply state department filter
+    if (stateDepartmentFilter) {
+      data = data.filter(item => {
+        const stateDeptName = item.stateDepartment || item.state_department || '';
+        return stateDeptName === stateDepartmentFilter;
       });
     }
 
@@ -1631,7 +1651,7 @@ const PublicApprovalManagementPage = () => {
     }
 
     return data;
-  }, [projects, globalSearch, statusFilter, approvalStatusFilter, departmentFilter, categoryFilter]);
+  }, [projects, globalSearch, statusFilter, approvalStatusFilter, ministryFilter, stateDepartmentFilter, categoryFilter]);
 
   const getCurrentData = () => {
     // Only Projects tab is enabled - other tabs temporarily disabled
@@ -1640,13 +1660,14 @@ const PublicApprovalManagementPage = () => {
 
   const currentData = getCurrentData();
 
-  const hasActiveFilters = globalSearch.trim() || statusFilter || approvalStatusFilter || departmentFilter || categoryFilter;
+  const hasActiveFilters = globalSearch.trim() || statusFilter || approvalStatusFilter || ministryFilter || stateDepartmentFilter || categoryFilter;
 
   const handleClearFilters = () => {
     setGlobalSearch('');
     setStatusFilter('');
     setApprovalStatusFilter('');
-    setDepartmentFilter('');
+    setMinistryFilter('');
+    setStateDepartmentFilter('');
     setCategoryFilter('');
   };
 
@@ -1898,15 +1919,15 @@ const PublicApprovalManagementPage = () => {
                   </FormControl>
                 </Grid>
 
-                {/* Department Filter */}
+                {/* Ministry Filter */}
                 <Grid item xs={6} sm={3} md={2}>
                   <FormControl fullWidth size="small" sx={{ minWidth: 140 }}>
-                    <InputLabel id="department-label" sx={{ fontSize: '0.8125rem' }}>Department</InputLabel>
+                    <InputLabel id="ministry-label" sx={{ fontSize: '0.8125rem' }}>Ministry</InputLabel>
                     <Select
-                      labelId="department-label"
-                      value={departmentFilter}
-                      onChange={(e) => setDepartmentFilter(e.target.value)}
-                      label="Department"
+                      labelId="ministry-label"
+                      value={ministryFilter}
+                      onChange={(e) => setMinistryFilter(e.target.value)}
+                      label="Ministry"
                       sx={{ 
                         height: '32px', 
                         fontSize: '0.8125rem',
@@ -1920,6 +1941,33 @@ const PublicApprovalManagementPage = () => {
                       {departments.map(dept => (
                         <MenuItem key={dept.departmentId || dept.id} value={dept.name || dept.departmentName} sx={{ fontSize: '0.8125rem' }}>
                           {dept.name || dept.departmentName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                {/* State Department Filter */}
+                <Grid item xs={6} sm={3} md={2}>
+                  <FormControl fullWidth size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel id="state-department-label" sx={{ fontSize: '0.8125rem' }}>State Department</InputLabel>
+                    <Select
+                      labelId="state-department-label"
+                      value={stateDepartmentFilter}
+                      onChange={(e) => setStateDepartmentFilter(e.target.value)}
+                      label="State Department"
+                      sx={{ 
+                        height: '32px', 
+                        fontSize: '0.8125rem',
+                        '& .MuiSelect-select': {
+                          py: 0.5
+                        }
+                      }}
+                    >
+                      <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>All</MenuItem>
+                      {Array.from(new Set(projects.map(p => p.stateDepartment || p.state_department).filter(Boolean))).sort().map(stateDept => (
+                        <MenuItem key={stateDept} value={stateDept} sx={{ fontSize: '0.8125rem' }}>
+                          {stateDept}
                         </MenuItem>
                       ))}
                     </Select>
@@ -2018,11 +2066,24 @@ const PublicApprovalManagementPage = () => {
                       }}
                     />
                   )}
-                  {departmentFilter && (
+                  {ministryFilter && (
                     <Chip
-                      label={`Dept: ${departmentFilter}`}
+                      label={`Ministry: ${ministryFilter}`}
                       size="small"
-                      onDelete={() => setDepartmentFilter('')}
+                      onDelete={() => setMinistryFilter('')}
+                      sx={{ 
+                        height: 24, 
+                        fontSize: '0.7rem',
+                        fontWeight: 500,
+                        '& .MuiChip-deleteIcon': { fontSize: 14 }
+                      }}
+                    />
+                  )}
+                  {stateDepartmentFilter && (
+                    <Chip
+                      label={`State Dept: ${stateDepartmentFilter}`}
+                      size="small"
+                      onDelete={() => setStateDepartmentFilter('')}
                       sx={{ 
                         height: 24, 
                         fontSize: '0.7rem',
@@ -2400,9 +2461,17 @@ const PublicApprovalManagementPage = () => {
                     {selectedRows.length > 0 ? (
                       <>
                         <CheckCircleIcon color="primary" sx={{ fontSize: 20 }} />
-                        <Typography variant="body2" fontWeight="bold" color="primary">
-                          {selectedRows.length} item{selectedRows.length !== 1 ? 's' : ''} selected
-                        </Typography>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={() => {
+                            const allIds = filterData.map(item => item.id);
+                            setSelectedRows(allIds);
+                          }}
+                          sx={{ minWidth: 'auto', px: 1.5, fontSize: '0.75rem' }}
+                        >
+                          {selectedRows.length} selected
+                        </Button>
                       </>
                     ) : (
                       <>
@@ -2575,29 +2644,51 @@ const PublicApprovalManagementPage = () => {
             ? 'Request Revision'
             : approvalAction === 'view_revision'
             ? 'Revision Request Details'
+            : approvalAction === 'view_approval'
+            ? 'Approval Details'
             : 'Revoke Public Approval'}
         </DialogTitle>
         <DialogContent>
           {selectedItem && (
             <Box>
               <Typography variant="subtitle2" gutterBottom>
-                {selectedItem.title}
+                {selectedItem.title || selectedItem.projectName}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {selectedItem.description?.substring(0, 100)}...
+                {selectedItem.description?.substring(0, 100) || selectedItem.projectDescription?.substring(0, 100)}...
               </Typography>
               
-              {approvalAction === 'view_revision' && selectedItem.revision_notes && (
+              {/* Display existing approval notes if item is approved or viewing approval */}
+              {(approvalAction === 'view_approval' || (selectedItem.approved_for_public && selectedItem.approval_notes)) && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Approval Notes
+                  </Typography>
+                  <Typography variant="body2">
+                    {selectedItem.approval_notes || 'No approval notes provided.'}
+                  </Typography>
+                  {selectedItem.approved_at && (
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                      Approved on: {new Date(selectedItem.approved_at).toLocaleString()}
+                      {selectedItem.approved_by && ` by ${selectedItem.approved_by}`}
+                    </Typography>
+                  )}
+                </Alert>
+              )}
+              
+              {/* Display revision notes if revision was requested or viewing revision */}
+              {(approvalAction === 'view_revision' || (selectedItem.revision_requested && selectedItem.revision_notes)) && (
                 <Alert severity="warning" sx={{ mb: 2 }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Revision Requested
                   </Typography>
                   <Typography variant="body2">
-                    {selectedItem.revision_notes}
+                    {selectedItem.revision_notes || 'No revision notes provided.'}
                   </Typography>
                   {selectedItem.revision_requested_at && (
                     <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
                       Requested on: {new Date(selectedItem.revision_requested_at).toLocaleString()}
+                      {selectedItem.revision_requested_by && ` by ${selectedItem.revision_requested_by}`}
                     </Typography>
                   )}
                 </Alert>
@@ -2629,9 +2720,9 @@ const PublicApprovalManagementPage = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseApprovalDialog}>
-            {approvalAction === 'view_revision' ? 'Close' : 'Cancel'}
+            {(approvalAction === 'view_revision' || approvalAction === 'view_approval') ? 'Close' : 'Cancel'}
           </Button>
-          {approvalAction !== 'view_revision' && (
+          {approvalAction !== 'view_revision' && approvalAction !== 'view_approval' && (
             <Button
               onClick={handleApproveReject}
               variant="contained"

@@ -105,7 +105,7 @@ function App() {
           <Button
             color="inherit"
             component={Link}
-            to="/"
+            to="/home"
             startIcon={<Home />}
             sx={{
               fontWeight: 600,
@@ -189,7 +189,7 @@ function App() {
           <Button
             color="inherit"
             component={Link}
-            to="/public-feedback"
+            to="/"
             startIcon={<RateReview />}
             sx={{
               fontWeight: 600,
@@ -212,7 +212,7 @@ function App() {
               transition: 'all 0.2s ease-in-out'
             }}
           >
-            Feedback
+            Public Approval
           </Button>
           <Button
             color="inherit"
@@ -304,7 +304,8 @@ function App() {
       {/* Main Content */}
       <Box component="main" sx={{ minHeight: 'calc(100vh - 64px)' }}>
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<PublicFeedbackPage />} />
+          <Route path="/home" element={<HomePage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/projects" element={<ProjectsGalleryPage />} />
           <Route path="/public-feedback" element={<PublicFeedbackPage />} />
@@ -352,14 +353,14 @@ function App() {
                 Quick Links
               </Typography>
               <Box display="flex" flexDirection="column" gap={1}>
+                <MuiLink component={Link} to="/" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#3498db' } }}>
+                  Public Approval
+                </MuiLink>
                 <MuiLink component={Link} to="/dashboard" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#3498db' } }}>
                   Dashboard
                 </MuiLink>
                 <MuiLink component={Link} to="/projects" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#3498db' } }}>
                   Projects Gallery
-                </MuiLink>
-                <MuiLink component={Link} to="/feedback" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#3498db' } }}>
-                  Submit Feedback
                 </MuiLink>
                 <MuiLink component={Link} to="/public-feedback" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#3498db' } }}>
                   Feedback

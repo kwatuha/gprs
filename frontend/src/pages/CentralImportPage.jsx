@@ -114,7 +114,6 @@ const TEMPLATE_HEADERS = {
   // Canonical headers for Projects as requested
   projects: [
     'projectName',
-    'ProjectRefNum',
     'ProjectDescription',
     'Status',
     'budget',
@@ -148,7 +147,6 @@ const TEMPLATE_HEADERS = {
 const TEMPLATE_HEADER_VARIANTS = {
   projects: {
     projectName: ['Project Name', 'Name', 'Title'],
-    ProjectRefNum: ['Project Ref Num', 'Ref', 'Ref Num', 'Reference', 'Project Reference', 'ProjectReference'],
     ProjectDescription: ['Description', 'Project Description', 'Details'],
     Status: ['Project Status', 'Current Status'],
     budget: ['Budget', 'Estimated Cost', 'Budget (KES)'],

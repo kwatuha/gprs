@@ -130,21 +130,95 @@ export default function RibbonMenu({ isAdmin = false }) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Auto-navigate to Citizen feedback when Public tab is selected (for admin)
-  useEffect(() => {
-    if (isAdmin && selectedCategoryId === 'public' && (hasPrivilege?.('feedback.respond') || user?.roleName === 'admin')) {
-      // Only navigate if not already on a public route
-      const currentPath = location.pathname;
-      const publicRoutes = menuCategories.find(cat => cat.id === 'public')?.submenus?.map(s => {
-        const route = s.route && ROUTES[s.route] ? ROUTES[s.route] : s.to;
-        return route ? String(route).split('?')[0] : null;
-      }).filter(Boolean) || [];
-      
-      if (!publicRoutes.some(route => currentPath.includes(route))) {
-        navigate(ROUTES.FEEDBACK_MANAGEMENT);
+  // Define default routes for each category
+  // Special cases: Admin should default to User Management, Projects (reporting) should default to Projects Registry
+  const getDefaultRouteForCategory = (categoryId) => {
+    const category = menuCategories.find(cat => cat.id === categoryId);
+    if (!category || !category.submenus) return null;
+    
+    // Special case: Admin category defaults to User Management
+    if (categoryId === 'admin') {
+      const userManagementSubmenu = category.submenus.find(s => 
+        s.route === 'USER_MANAGEMENT' || s.to === ROUTES.USER_MANAGEMENT
+      );
+      if (userManagementSubmenu && !userManagementSubmenu.hidden) {
+        // Check if user has access
+        const hasPermission = !userManagementSubmenu.permission || (hasPrivilege && hasPrivilege(userManagementSubmenu.permission));
+        const hasRole = !userManagementSubmenu.roles || (user && userManagementSubmenu.roles.includes(user.roleName));
+        if (hasPermission && hasRole) {
+          return ROUTES.USER_MANAGEMENT;
+        }
       }
     }
-  }, [selectedCategoryId, isAdmin, hasPrivilege, user, navigate, location.pathname, menuCategories]);
+    
+    // Special case: Projects (reporting) category defaults to Projects Registry
+    if (categoryId === 'reporting') {
+      const projectsRegistrySubmenu = category.submenus.find(s => 
+        s.route === 'PROJECTS' || s.to === ROUTES.PROJECTS
+      );
+      if (projectsRegistrySubmenu && !projectsRegistrySubmenu.hidden) {
+        // Check if user has access
+        const hasPermission = !projectsRegistrySubmenu.permission || (hasPrivilege && hasPrivilege(projectsRegistrySubmenu.permission));
+        const hasRole = !projectsRegistrySubmenu.roles || (user && projectsRegistrySubmenu.roles.includes(user.roleName));
+        if (hasPermission && hasRole) {
+          return ROUTES.PROJECTS;
+        }
+      }
+    }
+    
+    // For other categories, get the first visible, accessible submenu as default
+    for (const submenu of category.submenus) {
+      // Skip hidden items
+      if (submenu.hidden) continue;
+      
+      // Check permissions
+      if (submenu.permission && hasPrivilege && !hasPrivilege(submenu.permission)) continue;
+      
+      // Check roles
+      if (submenu.roles && user && !submenu.roles.includes(user.roleName)) continue;
+      
+      // Return the route for the first accessible submenu
+      if (submenu.route && ROUTES[submenu.route]) {
+        return ROUTES[submenu.route];
+      }
+      if (submenu.to) {
+        return submenu.to;
+      }
+    }
+    return null;
+  };
+
+  // Auto-navigate to default sidebar menu when a category is selected
+  useEffect(() => {
+    if (!selectedCategoryId) return;
+    
+    const currentPath = location.pathname;
+    
+    // Get all routes for the selected category
+    const category = menuCategories.find(cat => cat.id === selectedCategoryId);
+    if (!category || !category.submenus) return;
+    
+    const categoryRoutes = category.submenus
+      .map(s => {
+        const route = s.route && ROUTES[s.route] ? ROUTES[s.route] : s.to;
+        return route ? String(route).split('?')[0] : null;
+      })
+      .filter(Boolean);
+    
+    // Check if we're already on a route in this category
+    const isOnCategoryRoute = categoryRoutes.some(route => {
+      const routePath = String(route).split('?')[0];
+      return currentPath === routePath || currentPath.startsWith(routePath + '/');
+    });
+    
+    // If not on a category route, navigate to the default
+    if (!isOnCategoryRoute) {
+      const defaultRoute = getDefaultRouteForCategory(selectedCategoryId);
+      if (defaultRoute) {
+        navigate(defaultRoute);
+      }
+    }
+  }, [selectedCategoryId, menuCategories, navigate, location.pathname, hasPrivilege, user]);
 
   // Keyboard shortcuts: Alt+1..4 to switch categories quickly
   useEffect(() => {

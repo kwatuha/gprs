@@ -36,7 +36,6 @@ import { useNavigate } from 'react-router-dom';
 import StatCard from '../components/StatCard';
 import ProjectsModal from '../components/ProjectsModal';
 import { getOverviewStats } from '../services/publicApi';
-import GPRSLogo from '../components/GPRSLogo';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -165,16 +164,6 @@ const HomePage = () => {
           <Grid container spacing={0} sx={{ py: 2 }} alignItems="center">
             {/* Logo Container */}
             <Grid item xs={12} md={3} sx={{ display: 'flex', justifyContent: { xs: 'center', md: 'flex-end' }, pr: { md: 2 } }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))',
-                }}
-              >
-                <GPRSLogo size={120} color="#1976d2" variant="full" />
-              </Box>
             </Grid>
             
             {/* Text Container */}
@@ -190,27 +179,35 @@ const HomePage = () => {
               >
                 <Typography 
                   variant="h3" 
-                  fontWeight="bold" 
-                  color="#2c3e50" 
+                  fontWeight={700} 
                   sx={{ 
                     margin: 0, 
                     mb: 1,
-                    lineHeight: 1.1
+                    lineHeight: 1.1,
+                    background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 50%, #64b5f6 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    letterSpacing: '-0.02em',
+                    fontSize: { xs: '2rem', md: '2.5rem' }
                   }}
                 >
-                  GOVERNMENT PROJECTS REPORTING SYSTEM
+                  CivicChat
                 </Typography>
                 <Typography 
                   variant="h5" 
-                  color="#6c757d" 
+                  color="#64748b" 
                   sx={{ 
                     fontWeight: 500, 
                     margin: 0, 
                     mb: 1,
-                    lineHeight: 1.2
+                    lineHeight: 1.2,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    fontSize: { xs: '0.875rem', md: '1rem' }
                   }}
                 >
-                  GPRS
+                  Civic Chat Portal
                 </Typography>
                 <Typography 
                   variant="body1" 

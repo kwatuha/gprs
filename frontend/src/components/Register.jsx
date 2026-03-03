@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import axiosInstance from '../api/axiosInstance';
-import GPRSLogo from './GPRSLogo';
 import {
     Box,
     Card,
@@ -119,17 +118,40 @@ const Register = () => {
                         <Box
                             sx={{
                                 display: 'flex',
-                                justifyContent: 'center',
+                                flexDirection: 'column',
                                 alignItems: 'center',
-                                mb: 2,
-                                transition: 'transform 0.3s ease-in-out',
-                                '&:hover': {
-                                    transform: 'scale(1.05)',
-                                },
-                                cursor: 'pointer'
+                                justifyContent: 'center',
+                                mb: 2
                             }}
                         >
-                            <GPRSLogo size={120} color="#1976d2" variant="full" />
+                            <Typography 
+                                variant="h4" 
+                                sx={{ 
+                                    fontSize: '2.5rem',
+                                    fontWeight: 700,
+                                    background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 50%, #64b5f6 100%)',
+                                    backgroundClip: 'text',
+                                    WebkitBackgroundClip: 'text',
+                                    WebkitTextFillColor: 'transparent',
+                                    letterSpacing: '-0.02em',
+                                    mb: 0.5,
+                                    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif'
+                                }}
+                            >
+                                CivicChat
+                            </Typography>
+                            <Typography 
+                                variant="subtitle1" 
+                                sx={{ 
+                                    fontSize: '0.875rem',
+                                    fontWeight: 500,
+                                    color: '#64748b',
+                                    letterSpacing: '0.05em',
+                                    textTransform: 'uppercase'
+                                }}
+                            >
+                                Civic Chat Portal
+                            </Typography>
                         </Box>
                         <Typography 
                             variant="body2" 

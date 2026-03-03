@@ -275,7 +275,6 @@ const projectHeaderMap = {
     // Canonical -> Variants (normalized)
     projectName: ['projectname', 'name', 'title', 'project', 'project_name', 'project name'],
     ProjectDescription: ['projectdescription', 'description', 'details', 'projectdesc'],
-    ProjectRefNum: ['projectrefnum', 'projectrefnumber', 'ref', 'refnum', 'refnumber', 'reference', 'projectreference', 'projectref', 'project ref num', 'project ref number'],
     Status: ['status', 'projectstatus', 'currentstatus'],
     budget: ['budget', 'estimatedcost', 'budgetkes', 'projectcost', 'costofproject'],
     amountPaid: ['amountpaid', 'disbursed', 'expenditure', 'paidout', 'amount paid'],
@@ -1054,7 +1053,6 @@ router.post('/check-metadata-mapping', async (req, res) => {
                 mappingSummary.rowsWithUnmatchedMetadata.push({
                     rowNumber: index + 2, // +2 because index is 0-based and Excel rows start at 2 (header + 1)
                     projectName: normalizeStr(row.projectName || row.Project_Name || row['Project Name']) || 
-                                normalizeStr(row.ProjectRefNum || row.Project_Ref_Num || row['Project Ref Num']) || 
                                 `Row ${index + 2}`,
                     unmatched: unmatched
                 });
@@ -1154,7 +1152,7 @@ router.post('/confirm-import-data', async (req, res) => {
     };
 
     // Helper function to update project in PostgreSQL with JSONB structure
-    const updateProjectInPostgreSQL = async (connection, projectId, projectPayload, departmentId, sectionId) => {
+    const updateProjectInPostgreSQL = async (connection, projectId, projectPayload, departmentId, sectionId, locationData = null) => {
         // Get department and section names if IDs are available
         let ministry = null;
         let stateDepartment = null;
@@ -1199,9 +1197,27 @@ router.post('/confirm-import-data', async (req, res) => {
         });
 
         const dataSources = JSON.stringify({
-            project_ref_num: projectPayload.ProjectRefNum || null,
             created_by_user_id: 1 // TODO: Get from authenticated user
         });
+
+        // Build location JSONB - use provided locationData or get existing location and merge
+        let location = null;
+        if (locationData) {
+            location = JSON.stringify({
+                county: locationData.county && locationData.county.trim() !== '' ? locationData.county.trim() : null,
+                constituency: locationData.constituency && locationData.constituency.trim() !== '' ? locationData.constituency.trim() : null,
+                ward: locationData.ward && locationData.ward.trim() !== '' ? locationData.ward.trim() : null
+            });
+        } else {
+            // Get existing location and preserve it
+            const existingLocationResult = await connection.query(
+                'SELECT location FROM projects WHERE project_id = $1 AND voided = false',
+                [projectId]
+            );
+            if (existingLocationResult.rows.length > 0 && existingLocationResult.rows[0].location) {
+                location = JSON.stringify(existingLocationResult.rows[0].location);
+            }
+        }
 
         // Update project using JSONB structure
         const updateQuery = `
@@ -1216,11 +1232,12 @@ router.post('/confirm-import-data', async (req, res) => {
                 budget = $8::jsonb,
                 progress = $9::jsonb,
                 data_sources = $10::jsonb,
+                ${location ? 'location = $11::jsonb,' : ''}
                 updated_at = CURRENT_TIMESTAMP
-            WHERE project_id = $11 AND voided = false
+            WHERE project_id = ${location ? '$12' : '$11'} AND voided = false
         `;
         
-        await connection.query(updateQuery, [
+        const updateParams = [
             projectPayload.projectName,
             projectPayload.projectDescription,
             projectPayload.implementing_agency || projectPayload.directorate,
@@ -1230,9 +1247,15 @@ router.post('/confirm-import-data', async (req, res) => {
             timeline,
             budget,
             progress,
-            dataSources,
-            projectId
-        ]);
+            dataSources
+        ];
+        
+        if (location) {
+            updateParams.push(location);
+        }
+        updateParams.push(projectId);
+        
+        await connection.query(updateQuery, updateParams);
     };
 
     try {
@@ -1246,7 +1269,6 @@ router.post('/confirm-import-data', async (req, res) => {
             try {
                 await connection.query(`SAVEPOINT ${savepointName}`);
                 const projectName = normalizeStr(row.projectName || row.Project_Name || row['Project Name']);
-                const projectRef = normalizeStr(row.ProjectRefNum || row.Project_Ref_Num || row['Project Ref Num']);
                 
                 // Skip rows where project name is empty, null, or has less than 3 characters
                 const projectNameStr = (projectName || '').toString().trim();
@@ -1254,8 +1276,8 @@ router.post('/confirm-import-data', async (req, res) => {
                     continue; // Skip this row
                 }
                 
-                if (!projectName && !projectRef) {
-                    throw new Error('Missing projectName and ProjectRefNum');
+                if (!projectName) {
+                    throw new Error('Missing projectName');
                 }
 
                 // Resolve departmentId by name or alias (DO NOT create if missing) - case-insensitive
@@ -1412,7 +1434,6 @@ router.post('/confirm-import-data', async (req, res) => {
                 };
                 const projectPayload = {
                     projectName: projectName || null,
-                    ProjectRefNum: projectRef || null,
                     projectDescription: normalizeStr(row.ProjectDescription || row.Description) || null,
                     status: normalizeStr(row.Status) || null,
                     costOfProject: toMoney(row.budget),
@@ -1436,13 +1457,21 @@ router.post('/confirm-import-data', async (req, res) => {
                     }
                 });
 
-                // Upsert by ProjectRefNum first, else by projectName
+                // Extract location data from row (county, constituency, ward) for updates
+                const countyName = normalizeStr(row.County || row.county || row['County Name']);
+                const constituencyName = normalizeStr(row.Constituency || row.constituency || row['Constituency Name']);
+                const wardName = normalizeStr(row.ward || row.Ward || row['Ward Name']);
+                const locationData = {
+                    county: countyName,
+                    constituency: constituencyName,
+                    ward: wardName
+                };
+
+                // Upsert by projectName
                 // Check batch map first to avoid duplicate inserts within same batch
-                const batchKey = projectPayload.ProjectRefNum 
-                    ? `ref:${normalizeStr(projectPayload.ProjectRefNum).toLowerCase()}`
-                    : projectPayload.projectName 
-                        ? `name:${normalizeStr(projectPayload.projectName).toLowerCase()}`
-                        : null;
+                const batchKey = projectPayload.projectName 
+                    ? `name:${normalizeStr(projectPayload.projectName).toLowerCase()}`
+                    : null;
                 
                 let projectId = null;
                 
@@ -1454,28 +1483,7 @@ router.post('/confirm-import-data', async (req, res) => {
                     }
                 }
                 
-                // Check database if not found in batch map
-                if (!projectId && projectPayload.ProjectRefNum) {
-                    const refColumn = "data_sources->>'project_ref_num'";
-                    const existByRefResult = await connection.query(
-                        `SELECT ${projectIdColumn} FROM ${projectsTable} WHERE ${refColumn} = $1 AND ${voidedCondition}`, 
-                        [projectPayload.ProjectRefNum]
-                    );
-                    const rows = getQueryRows(existByRefResult);
-                    if (rows.length > 0) {
-                        projectId = rows[0][projectIdColumn];
-                        // Log payload for debugging if there are issues
-                        if (process.env.NODE_ENV === 'development') {
-                            console.log(`Row ${i + 2}: Updating project ${projectId} with payload:`, JSON.stringify(projectPayload, null, 2));
-                        }
-                        // Update existing project with JSONB structure
-                        await updateProjectInPostgreSQL(connection, projectId, projectPayload, departmentId, sectionId);
-                        summary.projectsUpdated++;
-                        if (batchKey) {
-                            batchProjectMap.set(batchKey, projectId);
-                        }
-                    }
-                }
+                // Check database if not found in batch map - lookup by projectName
                 if (!projectId && projectPayload.projectName) {
                     const nameColumn = 'name';
                     const existByNameResult = await connection.query(
@@ -1489,8 +1497,8 @@ router.post('/confirm-import-data', async (req, res) => {
                         if (process.env.NODE_ENV === 'development') {
                             console.log(`Row ${i + 2}: Updating project ${projectId} with payload:`, JSON.stringify(projectPayload, null, 2));
                         }
-                        // Update existing project with JSONB structure
-                        await updateProjectInPostgreSQL(connection, projectId, projectPayload, departmentId, sectionId);
+                        // Update existing project with JSONB structure including location
+                        await updateProjectInPostgreSQL(connection, projectId, projectPayload, departmentId, sectionId, locationData);
                         summary.projectsUpdated++;
                         if (batchKey) {
                             batchProjectMap.set(batchKey, projectId);
@@ -1503,6 +1511,11 @@ router.post('/confirm-import-data', async (req, res) => {
                         console.log(`Row ${i + 2}: Inserting new project with payload:`, JSON.stringify(projectPayload, null, 2));
                     }
                     try {
+                        // Extract location data from row (county, constituency, ward)
+                        const countyName = normalizeStr(row.County || row.county || row['County Name']);
+                        const constituencyName = normalizeStr(row.Constituency || row.constituency || row['Constituency Name']);
+                        const wardName = normalizeStr(row.ward || row.Ward || row['Ward Name']);
+
                         // Build JSONB objects for PostgreSQL projects table
                         const timeline = JSON.stringify({
                             start_date: projectPayload.startDate || null,
@@ -1529,7 +1542,6 @@ router.post('/confirm-import-data', async (req, res) => {
                         });
 
                         const dataSources = JSON.stringify({
-                            project_ref_num: projectPayload.ProjectRefNum || null,
                             created_by_user_id: 1 // TODO: Get from authenticated user
                         });
 
@@ -1545,11 +1557,12 @@ router.post('/confirm-import-data', async (req, res) => {
                             revision_submitted_at: null
                         });
 
-                const location = JSON.stringify({
-                    county: county && county.trim() !== '' ? county.trim() : null,
-                    constituency: constituency && constituency.trim() !== '' ? constituency.trim() : null,
-                    ward: ward && ward.trim() !== '' ? ward.trim() : null
-                });
+                        // Store location data in location JSONB field (county, constituency, ward)
+                        const location = JSON.stringify({
+                            county: countyName && countyName.trim() !== '' ? countyName.trim() : null,
+                            constituency: constituencyName && constituencyName.trim() !== '' ? constituencyName.trim() : null,
+                            ward: wardName && wardName.trim() !== '' ? wardName.trim() : null
+                        });
 
                         // Build is_public JSONB with default approval structure
                         const isPublic = JSON.stringify({
@@ -1635,33 +1648,24 @@ router.post('/confirm-import-data', async (req, res) => {
                             (insertErr.message && insertErr.message.includes('duplicate key') && insertErr.message.includes('projects_pkey'))) {
                             console.warn(`Row ${i + 2}: Duplicate key detected, attempting to find existing project...`);
                             
-                            // Try to find existing project by name or ref
+                            // Try to find existing project by name
                             let findResult = null;
-                            if (projectPayload.ProjectRefNum) {
-                                const refColumn = "data_sources->>'project_ref_num'";
+                            if (projectPayload.projectName) {
+                                const nameColumn = 'name';
                                 const result = await connection.query(
-                                    `SELECT ${projectIdColumn} FROM ${projectsTable} WHERE ${refColumn} = $1 AND ${voidedCondition} LIMIT 1`, 
-                                    [projectPayload.ProjectRefNum]
+                                    `SELECT ${projectIdColumn} FROM ${projectsTable} WHERE ${nameColumn} = $1 AND ${voidedCondition} LIMIT 1`, 
+                                    [projectPayload.projectName]
                                 );
                                 findResult = getQueryRows(result);
-                            }
-                            if (!findResult || findResult.length === 0) {
-                                if (projectPayload.projectName) {
-                                    const nameColumn = 'name';
-                                    const result = await connection.query(
-                                        `SELECT ${projectIdColumn} FROM ${projectsTable} WHERE ${nameColumn} = $1 AND ${voidedCondition} LIMIT 1`, 
-                                        [projectPayload.projectName]
-                                    );
-                                    findResult = getQueryRows(result);
-                                }
                             }
                             
                             if (findResult && findResult.length > 0) {
                                 projectId = findResult[0][projectIdColumn];
                                 console.log(`Row ${i + 2}: Found existing project ${projectId}, updating instead...`);
                                 
-                                // Update existing project with JSONB structure
-                                await updateProjectInPostgreSQL(connection, projectId, projectPayload, departmentId, sectionId);
+                                // Update existing project with JSONB structure including location
+                                // Location data was extracted earlier in the scope
+                                await updateProjectInPostgreSQL(connection, projectId, projectPayload, departmentId, sectionId, locationData);
                                 summary.projectsUpdated++;
                                 // Track in batch map
                                 if (batchKey) {
@@ -1679,44 +1683,8 @@ router.post('/confirm-import-data', async (req, res) => {
                     }
                 }
 
-                // Save location data to project_sites table (county, constituency, ward as text fields)
-                const countyName = normalizeStr(row.County || row.county || row['County Name']);
-                const constituencyName = normalizeStr(row.Constituency || row.constituency || row['Constituency Name']);
-                const wardName = normalizeStr(row.ward || row.Ward || row['Ward Name']);
-                
-                // Only create project_sites entry if we have at least one location field
-                if (countyName || constituencyName || wardName) {
-                    try {
-                        // Check if site already exists for this project with same location
-                        const existingSiteResult = await connection.query(
-                            `SELECT site_id FROM project_sites 
-                             WHERE project_id = $1 AND county = $2 AND constituency = $3 AND ward = $4
-                             LIMIT 1`,
-                            [projectId, countyName || null, constituencyName || null, wardName || null]
-                        );
-                        const existingSites = getQueryRows(existingSiteResult);
-                        
-                        if (existingSites.length === 0) {
-                            // Insert into project_sites table with county, constituency, ward as text
-                            await connection.query(
-                                `INSERT INTO project_sites (project_id, county, constituency, ward, site_name, site_level, created_at, updated_at)
-                                 VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-                                [
-                                    projectId,
-                                    countyName || null,
-                                    constituencyName || null,
-                                    wardName || null,
-                                    projectPayload.projectName || 'Main Site', // Use project name as site name
-                                    'site' // Default site level
-                                ]
-                            );
-                            summary.linksCreated++;
-                        }
-                    } catch (siteErr) {
-                        // Log but don't fail the import if site creation fails
-                        console.warn(`Row ${i + 2}: Could not create project site for project ${projectId}:`, siteErr.message);
-                    }
-                }
+                // Location data is now stored in the location JSONB field of the projects table
+                // No need to create project_sites entries anymore
 
             } catch (rowErr) {
                 console.error(`Error processing row ${i + 2}:`, rowErr);

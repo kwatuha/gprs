@@ -18,7 +18,6 @@ import { MenuCategoryProvider } from '../context/MenuCategoryContext.jsx';
 import { SidebarProvider, useSidebar } from '../context/SidebarContext.jsx';
 import { usePageTitleEffect } from '../hooks/usePageTitle.js';
 import { ROUTES } from '../configs/appConfig.js';
-import GPRSLogo from '../components/GPRSLogo';
 import { useTheme } from "@mui/material";
 // ✨ Removed old theme system imports
 import Topbar from "./Topbar.jsx";
@@ -111,12 +110,9 @@ function MainLayoutContent() {
             </IconButton>
             
             <Box sx={{ display: 'flex', alignItems: 'center', minWidth: '180px' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <GPRSLogo size={32} color="#ffffff" showText={false} variant="icon" />
-                <Typography variant="h6" noWrap component="div" sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem' }}>
-                  GPRS
-                </Typography>
-              </Box>
+              <Typography variant="h6" noWrap component="div" sx={{ color: 'white', fontWeight: 700, fontSize: '1.1rem', letterSpacing: '-0.01em' }}>
+                CivicChat
+              </Typography>
             </Box>
             
             <Topbar />

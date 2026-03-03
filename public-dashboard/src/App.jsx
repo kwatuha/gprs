@@ -37,7 +37,6 @@ import PublicFeedbackPage from './pages/PublicFeedbackPage';
 import CitizenProposalsPage from './pages/CitizenProposalsPage';
 import CountyProposedProjectsPage from './pages/CountyProposedProjectsPage';
 import AnnouncementsPage from './pages/AnnouncementsPage';
-import GPRSLogo from './components/GPRSLogo';
 
 function App() {
   return (
@@ -58,16 +57,6 @@ function App() {
           <Grid container spacing={0} alignItems="center" sx={{ flexGrow: 1 }}>
             {/* Logo Container */}
             <Grid item sx={{ display: 'flex', alignItems: 'center', pr: 1 }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
-                }}
-              >
-                <GPRSLogo size={40} color="#ffffff" showText={false} variant="icon" />
-              </Box>
             </Grid>
             
             {/* Text Container */}
@@ -76,15 +65,16 @@ function App() {
                 variant="h6" 
                 component="div" 
                 sx={{ 
-                  fontWeight: 'bold',
-                  fontSize: '1.1rem',
+                  fontWeight: 700,
+                  fontSize: '1.3rem',
                   lineHeight: 1.2,
                   color: 'white',
                   textShadow: '0 1px 2px rgba(0,0,0,0.3)',
-                  margin: 0
+                  margin: 0,
+                  letterSpacing: '-0.01em'
                 }}
               >
-                GPRS
+                CivicChat
               </Typography>
               <Typography 
                 variant="caption" 
@@ -97,7 +87,7 @@ function App() {
                   margin: 0
                 }}
               >
-                Government Projects Reporting System
+                Civic Chat Portal
               </Typography>
             </Grid>
           </Grid>
@@ -329,16 +319,13 @@ function App() {
           <Grid container spacing={4}>
             {/* Brand Section */}
             <Grid item xs={12} md={4}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <GPRSLogo size={35} color="#ffffff" showText={false} variant="icon" />
-                <Box>
-                  <Typography variant="h6" fontWeight="bold" sx={{ lineHeight: 1.2, mb: 0.5 }}>
-                    GPRS
-                  </Typography>
-                  <Typography variant="body2" color="rgba(255, 255, 255, 0.8)">
-                    Government Projects Reporting System
-                  </Typography>
-                </Box>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="h6" fontWeight={700} sx={{ lineHeight: 1.2, mb: 0.5, letterSpacing: '-0.01em' }}>
+                  CivicChat
+                </Typography>
+                <Typography variant="body2" color="rgba(255, 255, 255, 0.8)">
+                  Civic Chat Portal
+                </Typography>
               </Box>
               
               <Typography variant="body2" color="rgba(255, 255, 255, 0.7)">
@@ -377,7 +364,7 @@ function App() {
                 <Box display="flex" alignItems="center" gap={1}>
                   <LocationOn sx={{ fontSize: 16, color: '#3498db' }} />
                   <Typography variant="body2" color="rgba(255, 255, 255, 0.8)">
-                    Government Projects Reporting System<br />
+                    Civic Chat Portal<br />
                     Multi-County Platform
                   </Typography>
                 </Box>
@@ -390,13 +377,13 @@ function App() {
                 <Box display="flex" alignItems="center" gap={1}>
                   <Email sx={{ fontSize: 16, color: '#3498db' }} />
                   <Typography variant="body2" color="rgba(255, 255, 255, 0.8)">
-                    info@gprs.go.ke
+                    info@civicchat.go.ke
                   </Typography>
                 </Box>
                 <Box display="flex" alignItems="center" gap={1}>
                   <Language sx={{ fontSize: 16, color: '#3498db' }} />
                   <Typography variant="body2" color="rgba(255, 255, 255, 0.8)">
-                    www.gprs.go.ke
+                    www.civicchat.go.ke
                   </Typography>
                 </Box>
               </Box>
@@ -474,7 +461,7 @@ function App() {
           {/* Copyright */}
           <Box textAlign="center">
             <Typography variant="body2" color="rgba(255, 255, 255, 0.7)">
-              © {new Date().getFullYear()} Government Projects Reporting System. All rights reserved.
+              © {new Date().getFullYear()} Civic Chat Portal. All rights reserved.
             </Typography>
             <Typography variant="caption" color="rgba(255, 255, 255, 0.5)" sx={{ mt: 1, display: 'block' }}>
               Built with transparency and accountability in mind

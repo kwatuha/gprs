@@ -81,6 +81,8 @@ export const ROUTES = {
     BUDGET_MANAGEMENT: '/budget-management', // ✨ NEW: Budget Management route
     PROJECT_TYPES: '/project-types', // ✨ NEW: Project Types management route
     JOB_CATEGORIES: '/job-categories', // ✨ NEW: Job Categories management route
+    KENYA_WARDS: '/kenya-wards', // ✨ NEW: Kenya Wards management route
+    AGENCIES: '/agencies', // ✨ NEW: Agencies management route
 
     // Sub-routes with dynamic parameters
     PROJECT_DETAILS: '/projects/:projectId',

@@ -2177,6 +2177,22 @@ router.get('/participants-per-project', async (req, res) => {
 router.get('/:projectId/contractors', async (req, res) => {
     const { projectId } = req.params;
     try {
+        // Check if table exists first
+        const DB_TYPE = process.env.DB_TYPE || 'mysql';
+        let tableCheck;
+        if (DB_TYPE === 'postgresql') {
+            tableCheck = await pool.query(`
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'kemri_contractors'
+                );
+            `);
+            if (!tableCheck.rows[0]?.exists) {
+                return res.status(200).json([]);
+            }
+        }
+        
         const [rows] = await pool.query(
             `SELECT c.* FROM kemri_contractors c
              JOIN kemri_project_contractor_assignments pca ON c.contractorId = pca.contractorId
@@ -2186,6 +2202,11 @@ router.get('/:projectId/contractors', async (req, res) => {
         res.status(200).json(rows);
     } catch (error) {
         console.error('Error fetching contractors for project:', error);
+        // If table doesn't exist, return empty array instead of error
+        const errorMessage = error.message || '';
+        if (errorMessage.includes('does not exist') || errorMessage.includes('relation') || error.code === '42P01') {
+            return res.status(200).json([]);
+        }
         res.status(500).json({ message: 'Error fetching contractors for project', error: error.message });
     }
 });
@@ -2241,20 +2262,6 @@ router.delete('/:projectId/remove-contractor/:contractorId', async (req, res) =>
 });
 
 
-// NEW: Route for fetching payment requests for a project
-router.get('/:projectId/payment-requests', async (req, res) => {
-    const { projectId } = req.params;
-    try {
-        const [rows] = await pool.query(
-            'SELECT * FROM kemri_project_payment_requests WHERE projectId = ? ORDER BY submittedAt DESC',
-            [projectId]
-        );
-        res.status(200).json(rows);
-    } catch (error) {
-        console.error('Error fetching payment requests for project:', error);
-        res.status(500).json({ message: 'Error fetching payment requests for project', error: error.message });
-    }
-});
 
 
 

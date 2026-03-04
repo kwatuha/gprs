@@ -39,7 +39,6 @@ import {
   Refresh as RefreshIcon,
   Notifications as NotificationsIcon,
   Event as EventIcon,
-  Gavel as ApprovalIcon,
   PieChart as PieChartIcon,
   Business as BusinessIcon,
   Apartment as ApartmentIcon,
@@ -71,12 +70,13 @@ const HomePage = () => {
     loading: true,
   });
 
+  // Cache full project list once so we don't refetch it in multiple effects
+  const [allProjects, setAllProjects] = useState([]);
+
   const [recentProjects, setRecentProjects] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [upcomingMilestones, setUpcomingMilestones] = useState([]);
   const [loadingMilestones, setLoadingMilestones] = useState(false);
-  const [pendingApprovals, setPendingApprovals] = useState([]);
-  const [loadingApprovals, setLoadingApprovals] = useState(false);
   const [projectStatusData, setProjectStatusData] = useState([]);
   const [loadingStatusData, setLoadingStatusData] = useState(false);
   const [projectCategoryData, setProjectCategoryData] = useState([]);
@@ -152,6 +152,7 @@ const HomePage = () => {
           console.warn('Response keys:', response ? Object.keys(response) : 'null');
           console.warn('Is error response?', response?.message || response?.error);
           setProjectStats({ total: 0, active: 0, completed: 0, pending: 0, loading: false });
+          setAllProjects([]);
           setRecentProjects([]);
           return;
         }
@@ -235,6 +236,7 @@ const HomePage = () => {
         });
         
         setProjectStats({ ...stats, loading: false });
+        setAllProjects(projects);
         
         // Get recent projects (last 5) - sort by updatedAt or createdAt
         const recent = projects
@@ -291,9 +293,8 @@ const HomePage = () => {
       try {
         setLoadingMilestones(true);
         console.log('Fetching upcoming milestones...');
-        const projects = await apiService.projects.getProjects() || [];
-        const projectsArray = Array.isArray(projects) ? projects : [];
-        console.log('Projects for milestones:', projectsArray.length);
+        const projectsArray = Array.isArray(allProjects) ? allProjects : [];
+        console.log('Projects for milestones (from cache):', projectsArray.length);
         
         if (projectsArray.length === 0) {
           setUpcomingMilestones([]);
@@ -301,24 +302,38 @@ const HomePage = () => {
         }
         
         const allMilestones = [];
-        
-        // Fetch milestones for each project (limit to first 20 to avoid too many API calls)
-        for (const project of projectsArray.slice(0, 20)) {
-          try {
-            if (!project?.id) continue;
-            const milestones = await apiService.milestones.getMilestonesForProject(project.id) || [];
-            if (Array.isArray(milestones) && milestones.length > 0) {
-              allMilestones.push(...milestones.map(m => ({ 
-                ...m, 
-                projectName: project.projectName || 'Unknown Project', 
-                projectId: project.id 
-              })));
+        const projectsToFetch = projectsArray
+          .filter(p => p?.id)
+          .slice(0, 5); // Reduced from 20 to 5 to improve performance
+
+        // Fetch milestones for each project in parallel (faster than sequential awaits)
+        // Use Promise.allSettled to prevent one failure from blocking others
+        const milestoneResults = await Promise.allSettled(
+          projectsToFetch.map(async (project) => {
+            try {
+              const milestones = await apiService.milestones.getMilestonesForProject(project.id) || [];
+              if (Array.isArray(milestones) && milestones.length > 0) {
+                return milestones.map(m => ({
+                  ...m,
+                  projectName: project.projectName || 'Unknown Project',
+                  projectId: project.id,
+                }));
+              }
+              return [];
+            } catch (err) {
+              // Skip projects without milestones - this is normal
+              console.debug('No milestones for project:', project?.id);
+              return [];
             }
-          } catch (err) {
-            // Skip projects without milestones - this is normal
-            console.debug('No milestones for project:', project?.id);
+          }),
+        );
+        
+        // Extract successful results
+        milestoneResults.forEach(result => {
+          if (result.status === 'fulfilled' && Array.isArray(result.value)) {
+            allMilestones.push(...result.value);
           }
-        }
+        });
         
         console.log('Total milestones found:', allMilestones.length);
         
@@ -357,63 +372,14 @@ const HomePage = () => {
       }
     };
 
-    // Only fetch if we have projects loaded
-    if (projectStats.total > 0) {
+    // Only fetch if we have cached projects loaded
+    if (Array.isArray(allProjects) && allProjects.length > 0) {
       fetchUpcomingMilestones();
     }
-  }, [projectStats.total]);
+  }, [allProjects]);
 
-  // Fetch pending approvals (payment requests)
-  useEffect(() => {
-    const fetchPendingApprovals = async () => {
-      try {
-        setLoadingApprovals(true);
-        console.log('Fetching pending approvals...');
-        // Try to fetch payment requests with pending status
-        const projects = await apiService.projects.getProjects() || [];
-        const projectsArray = Array.isArray(projects) ? projects : [];
-        console.log('Projects for approvals:', projectsArray.length);
-        const pending = [];
-        
-        for (const project of projectsArray.slice(0, 10)) {
-          try {
-            if (!project?.id) continue;
-            const requests = await apiService.paymentRequests.getRequestsForProject(project.id) || [];
-            const requestsArray = Array.isArray(requests) ? requests : [];
-            const pendingRequests = requestsArray.filter(r => {
-              const status = (r?.status || '').toLowerCase();
-              return status === 'pending' || status === 'submitted' || status === 'under_review' || status.includes('pending');
-            });
-            if (pendingRequests.length > 0) {
-              pending.push(...pendingRequests.map(r => ({
-                ...r,
-                projectName: project.projectName || 'Unknown Project',
-                projectId: project.id,
-              })));
-            }
-          } catch (err) {
-            // Skip if no payment requests
-            console.debug('No payment requests for project:', project?.id, err.message);
-          }
-        }
-        
-        console.log('Pending approvals found:', pending.length);
-        setPendingApprovals(pending.slice(0, 5));
-      } catch (error) {
-        console.error('Error fetching pending approvals:', error);
-        setPendingApprovals([]);
-      } finally {
-        setLoadingApprovals(false);
-      }
-    };
 
-    // Only fetch if we have projects loaded
-    if (projectStats.total > 0) {
-      fetchPendingApprovals();
-    }
-  }, [projectStats.total]);
-
-  // Fetch project status distribution
+  // Fetch project status distribution - lazy load after initial render
   useEffect(() => {
     const fetchStatusDistribution = async () => {
       try {
@@ -431,10 +397,12 @@ const HomePage = () => {
       }
     };
 
-    fetchStatusDistribution();
+    // Delay this fetch to prioritize critical data
+    const timeoutId = setTimeout(fetchStatusDistribution, 500);
+    return () => clearTimeout(timeoutId);
   }, []);
 
-  // Fetch project category distribution
+  // Fetch project category distribution - lazy load after initial render
   useEffect(() => {
     const fetchCategoryDistribution = async () => {
       try {
@@ -465,10 +433,12 @@ const HomePage = () => {
       }
     };
 
-    fetchCategoryDistribution();
+    // Delay this fetch to prioritize critical data
+    const timeoutId = setTimeout(fetchCategoryDistribution, 1000);
+    return () => clearTimeout(timeoutId);
   }, []);
 
-  // Fetch sub-county distribution from public API
+  // Fetch sub-county distribution from public API - lazy load after initial render
   useEffect(() => {
     const fetchSubCountyDistribution = async () => {
       try {
@@ -505,8 +475,9 @@ const HomePage = () => {
       }
     };
 
-    // Fetch immediately (doesn't depend on projectStats)
-    fetchSubCountyDistribution();
+    // Delay this fetch to prioritize critical data
+    const timeoutId = setTimeout(fetchSubCountyDistribution, 1500);
+    return () => clearTimeout(timeoutId);
   }, []);
 
   // Fetch department distribution from public API
@@ -546,8 +517,9 @@ const HomePage = () => {
       }
     };
 
-    // Fetch immediately (doesn't depend on projectStats)
-    fetchDepartmentDistribution();
+    // Delay this fetch to prioritize critical data
+    const timeoutId = setTimeout(fetchDepartmentDistribution, 2000);
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const quickAccessItems = [
@@ -567,7 +539,7 @@ const HomePage = () => {
     totalProjects: projectStats.total || 0,
     activeProjects: projectStats.active || 0,
     completedProjects: projectStats.completed || 0,
-    pendingApprovals: pendingApprovals.length || metrics.pendingApprovals || 0,
+    pendingApprovals: 0, // Payment requests feature removed
     budgetUtilization: metrics.budgetUtilization || 0,
     teamMembers: metrics.teamMembers || 0,
   };
@@ -1150,70 +1122,6 @@ const HomePage = () => {
             </Card>
           </Grid>
 
-          {/* Pending Approvals */}
-          <Grid item xs={12} md={6}>
-            <Card elevation={2} sx={{ borderRadius: 2, height: '100%' }}>
-              <CardContent sx={{ p: 1.25 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                  <Box display="flex" alignItems="center" gap={0.75}>
-                    <ApprovalIcon sx={{ color: '#9c27b0', fontSize: 20 }} />
-                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', fontSize: '0.875rem' }}>
-                      Pending Approvals
-                    </Typography>
-                  </Box>
-                  <Chip 
-                    label={pendingApprovals.length} 
-                    size="small" 
-                    sx={{ bgcolor: '#9c27b015', color: '#9c27b0', fontWeight: 'bold' }}
-                  />
-                </Box>
-                {loadingApprovals ? (
-                  <Box display="flex" justifyContent="center" p={3}>
-                    <CircularProgress size={24} />
-                  </Box>
-                ) : pendingApprovals.length > 0 ? (
-                  <List sx={{ p: 0 }}>
-                    {pendingApprovals.map((approval, index) => (
-                      <React.Fragment key={approval.requestId || index}>
-                        <ListItem
-                          button
-                          onClick={() => navigate(`${ROUTES.PROJECTS}/${approval.projectId}`)}
-                          sx={{
-                            borderRadius: 1,
-                            mb: 0.5,
-                            '&:hover': {
-                              bgcolor: 'action.hover',
-                            },
-                          }}
-                        >
-                          <ListItemIcon>
-                            <ApprovalIcon sx={{ color: '#9c27b0', fontSize: 20 }} />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={
-                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                Payment Request #{approval.requestId}
-                              </Typography>
-                            }
-                            secondary={
-                              <Typography variant="caption" color="text.secondary">
-                                {approval.projectName} • {approval.status || 'Pending'}
-                              </Typography>
-                            }
-                          />
-                        </ListItem>
-                        {index < pendingApprovals.length - 1 && <Divider />}
-                      </React.Fragment>
-                    ))}
-                  </List>
-                ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
-                    No pending approvals
-                  </Typography>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
         </Grid>
 
         {/* Project Distribution Charts */}
@@ -1418,16 +1326,6 @@ const HomePage = () => {
                           {actualMetrics.budgetUtilization || 0}%
                         </Typography>
                       </Box>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontSize: '0.875rem' }}>
-                        Pending Approvals
-                      </Typography>
-                      <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#ff9800' }}>
-                        {actualMetrics.pendingApprovals || 0}
-                      </Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={6}>

@@ -1,15 +1,16 @@
 // src/components/ProjectFormDialog.jsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box, Typography, Button, TextField, Dialog, DialogTitle,
   DialogContent, DialogActions, Select, MenuItem, FormControl, InputLabel,
-  Stack, useTheme, Paper, Grid, OutlinedInput, Chip,
+  Stack, useTheme, Paper, Grid, OutlinedInput, Chip, Autocomplete,
 } from '@mui/material';
 import useProjectForm from '../hooks/useProjectForm';
 import { getProjectStatusBackgroundColor, getProjectStatusTextColor } from '../utils/projectStatusColors';
 import { tokens } from '../pages/dashboard/theme';
 import { DEFAULT_COUNTY } from '../configs/appConfig';
 import { normalizeProjectStatus } from '../utils/projectStatusNormalizer';
+import apiService from '../api';
 
 const ProjectFormDialog = ({
   open,
@@ -35,6 +36,114 @@ const ProjectFormDialog = ({
     formSubcounties,
     formWards,
   } = useProjectForm(currentProject, allMetadata, onFormSuccess, setSnackbar, user);
+
+  // State for Kenya wards dropdowns
+  const [counties, setCounties] = useState([]);
+  const [constituencies, setConstituencies] = useState([]);
+  const [wards, setWards] = useState([]);
+  const [loadingCounties, setLoadingCounties] = useState(false);
+  const [loadingConstituencies, setLoadingConstituencies] = useState(false);
+  const [loadingWards, setLoadingWards] = useState(false);
+
+  // Fetch counties on mount - only if dialog is open
+  useEffect(() => {
+    if (!open) return;
+    
+    const fetchCounties = async () => {
+      setLoadingCounties(true);
+      try {
+        const data = await apiService.kenyaWards.getCounties();
+        setCounties(data);
+      } catch (error) {
+        console.error('Error fetching counties:', error);
+        // Don't show snackbar on mount - might be too aggressive
+        // setSnackbar({ 
+        //   open: true, 
+        //   message: 'Failed to load counties. Please try again.', 
+        //   severity: 'error' 
+        // });
+      } finally {
+        setLoadingCounties(false);
+      }
+    };
+    fetchCounties();
+  }, [open]);
+
+  // Fetch constituencies when county changes
+  useEffect(() => {
+    if (!open) return;
+    
+    const fetchConstituencies = async () => {
+      if (!formData.county) {
+        setConstituencies([]);
+        setWards([]);
+        // Clear constituency and ward when county is cleared
+        if (formData.constituency || formData.ward) {
+          // Use a ref to avoid infinite loops - update formData directly via setFormData if available
+          // For now, just clear the local state
+        }
+        return;
+      }
+      setLoadingConstituencies(true);
+      try {
+        const data = await apiService.kenyaWards.getConstituenciesByCounty(formData.county);
+        setConstituencies(data);
+        // Clear constituency and ward when county changes - use a flag to prevent re-triggering
+        const hadConstituency = formData.constituency;
+        const hadWard = formData.ward;
+        if (hadConstituency || hadWard) {
+          // Update formData directly to avoid triggering handleChange which might cause loops
+          // We'll let the parent handle this through the formData prop
+        }
+      } catch (error) {
+        console.error('Error fetching constituencies:', error);
+        // Only show error if dialog is open and user is interacting
+        if (open) {
+          setSnackbar({ 
+            open: true, 
+            message: 'Failed to load constituencies. Please try again.', 
+            severity: 'error' 
+          });
+        }
+      } finally {
+        setLoadingConstituencies(false);
+      }
+    };
+    fetchConstituencies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.county, open]);
+
+  // Fetch wards when constituency changes
+  useEffect(() => {
+    if (!open) return;
+    
+    const fetchWards = async () => {
+      if (!formData.constituency) {
+        setWards([]);
+        return;
+      }
+      setLoadingWards(true);
+      try {
+        const data = await apiService.kenyaWards.getWardsByConstituency(formData.constituency);
+        setWards(data);
+        // Don't clear ward here - let user keep their selection if they change constituency back
+      } catch (error) {
+        console.error('Error fetching wards:', error);
+        // Only show error if dialog is open
+        if (open) {
+          setSnackbar({ 
+            open: true, 
+            message: 'Failed to load wards. Please try again.', 
+            severity: 'error' 
+          });
+        }
+      } finally {
+        setLoadingWards(false);
+      }
+    };
+    fetchWards();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.constituency, open]);
 
   // Format currency
   const formatCurrency = (amount) => {
@@ -798,88 +907,171 @@ const ProjectFormDialog = ({
             </Typography>
           </Typography>
           <Grid container spacing={2}>
-            {/* Free text fields for County, Constituency, Ward */}
+            {/* Searchable dropdowns for County, Constituency, Ward */}
             <Grid item xs={12} sm={4}>
-              <TextField
-                name="county"
-                label="County"
-                type="text"
-                fullWidth
-                variant="outlined"
-                size="small"
-                value={formData.county || ''}
-                onChange={handleChange}
-                placeholder="e.g., Kisumu"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: colorMode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[400],
-                      borderWidth: '2px',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: colorMode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[300],
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: colorMode === 'dark' ? colors.greenAccent[500] : colors.greenAccent[400],
-                      borderWidth: '2px',
-                    },
-                  },
+              <Autocomplete
+                options={counties}
+                value={formData.county || null}
+                onChange={(event, newValue) => {
+                  const newCounty = newValue || '';
+                  handleChange({ target: { name: 'county', value: newCounty } });
+                  // Clear constituency and ward if county changes
+                  if (newCounty !== formData.county) {
+                    if (formData.constituency) {
+                      handleChange({ target: { name: 'constituency', value: '' } });
+                    }
+                    if (formData.ward) {
+                      handleChange({ target: { name: 'ward', value: '' } });
+                    }
+                  }
+                }}
+                loading={loadingCounties}
+                freeSolo
+                sx={{ minWidth: 200 }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    name="county"
+                    label="County"
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search or select county"
+                    sx={{
+                      minWidth: 200,
+                      '& .MuiOutlinedInput-root': {
+                        '& fieldset': {
+                          borderColor: colorMode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[400],
+                          borderWidth: '2px',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: colorMode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[300],
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: colorMode === 'dark' ? colors.greenAccent[500] : colors.greenAccent[400],
+                          borderWidth: '2px',
+                        },
+                      },
+                    }}
+                  />
+                )}
+                filterOptions={(options, params) => {
+                  const filtered = options.filter((option) =>
+                    option.toLowerCase().includes(params.inputValue.toLowerCase())
+                  );
+                  return filtered;
                 }}
               />
             </Grid>
             <Grid item xs={12} sm={4}>
-              <TextField
-                name="constituency"
-                label="Constituency"
-                type="text"
-                fullWidth
-                variant="outlined"
-                size="small"
-                value={formData.constituency || ''}
-                onChange={handleChange}
-                placeholder="e.g., Kisumu Central"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: colorMode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[400],
-                      borderWidth: '2px',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: colorMode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[300],
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: colorMode === 'dark' ? colors.greenAccent[500] : colors.greenAccent[400],
-                      borderWidth: '2px',
-                    },
-                  },
+              <Autocomplete
+                options={constituencies}
+                value={formData.constituency || null}
+                onChange={(event, newValue) => {
+                  const newConstituency = newValue || '';
+                  handleChange({ target: { name: 'constituency', value: newConstituency } });
+                  // Clear ward if constituency changes
+                  if (newConstituency !== formData.constituency && formData.ward) {
+                    handleChange({ target: { name: 'ward', value: '' } });
+                  }
+                }}
+                loading={loadingConstituencies}
+                disabled={!formData.county}
+                freeSolo
+                sx={{ minWidth: 200 }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    name="constituency"
+                    label="Constituency"
+                    variant="outlined"
+                    size="small"
+                    placeholder={formData.county ? "Search or select constituency" : "Select county first"}
+                    sx={{
+                      minWidth: 200,
+                      '& .MuiOutlinedInput-root': {
+                        '& fieldset': {
+                          borderColor: colorMode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[400],
+                          borderWidth: '2px',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: colorMode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[300],
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: colorMode === 'dark' ? colors.greenAccent[500] : colors.greenAccent[400],
+                          borderWidth: '2px',
+                        },
+                      },
+                    }}
+                  />
+                )}
+                filterOptions={(options, params) => {
+                  const filtered = options.filter((option) =>
+                    option.toLowerCase().includes(params.inputValue.toLowerCase())
+                  );
+                  return filtered;
                 }}
               />
             </Grid>
             <Grid item xs={12} sm={4}>
-              <TextField
-                name="ward"
-                label="Ward"
-                type="text"
-                fullWidth
-                variant="outlined"
-                size="small"
-                value={formData.ward || ''}
-                onChange={handleChange}
-                placeholder="e.g., Milimani"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: colorMode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[400],
-                      borderWidth: '2px',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: colorMode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[300],
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: colorMode === 'dark' ? colors.greenAccent[500] : colors.greenAccent[400],
-                      borderWidth: '2px',
-                    },
-                  },
+              <Autocomplete
+                options={wards}
+                getOptionLabel={(option) => {
+                  if (!option) return '';
+                  if (typeof option === 'string') return option;
+                  return option.name || '';
+                }}
+                value={wards.find(w => {
+                  const wardName = typeof w === 'string' ? w : w.name || '';
+                  return wardName === formData.ward;
+                }) || null}
+                onChange={(event, newValue) => {
+                  let value = '';
+                  if (newValue) {
+                    value = typeof newValue === 'string' ? newValue : (newValue.name || '');
+                  }
+                  handleChange({ target: { name: 'ward', value } });
+                }}
+                loading={loadingWards}
+                disabled={!formData.constituency}
+                freeSolo
+                sx={{ minWidth: 200 }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    name="ward"
+                    label="Ward"
+                    variant="outlined"
+                    size="small"
+                    placeholder={formData.constituency ? "Search or select ward" : "Select constituency first"}
+                    sx={{
+                      minWidth: 200,
+                      '& .MuiOutlinedInput-root': {
+                        '& fieldset': {
+                          borderColor: colorMode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[400],
+                          borderWidth: '2px',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: colorMode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[300],
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: colorMode === 'dark' ? colors.greenAccent[500] : colors.greenAccent[400],
+                          borderWidth: '2px',
+                        },
+                      },
+                    }}
+                  />
+                )}
+                filterOptions={(options, params) => {
+                  const filtered = options.filter((option) => {
+                    const name = typeof option === 'string' ? option : (option.name || '');
+                    return name.toLowerCase().includes(params.inputValue.toLowerCase());
+                  });
+                  return filtered;
+                }}
+                isOptionEqualToValue={(option, value) => {
+                  const optionName = typeof option === 'string' ? option : (option.name || '');
+                  const valueName = typeof value === 'string' ? value : (value.name || '');
+                  return optionName === valueName;
                 }}
               />
             </Grid>

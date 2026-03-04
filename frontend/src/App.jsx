@@ -70,6 +70,10 @@ import ProjectAnalyticsPage from './pages/ProjectAnalyticsPage';
 import BudgetManagementPage from './pages/BudgetManagementPage';
 // ✨ NEW: Import the Job Categories page
 import JobCategoriesPage from './pages/JobCategoriesPage';
+// ✨ NEW: Import the Kenya Wards page
+import KenyaWardsPage from './pages/KenyaWardsPage';
+// ✨ NEW: Import the Agencies page
+import AgenciesPage from './pages/AgenciesPage';
  
 import ReportingView from './components/ReportingView';
 import RegionalReportsView from './components/RegionalReportsView';
@@ -243,6 +247,14 @@ const router = createBrowserRouter([
       {
         path: 'job-categories',
         element: <JobCategoriesPage />,
+      },
+      {
+        path: 'kenya-wards',
+        element: <KenyaWardsPage />,
+      },
+      {
+        path: 'agencies',
+        element: <AgenciesPage />,
       },
       {
         path: 'budgets',

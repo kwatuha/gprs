@@ -323,8 +323,11 @@ function JobCategoriesPage() {
               borderBottom: `1px solid ${isLight ? colors.grey[200] : colors.grey[700]}`,
             },
             '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: isLight ? colors.grey[100] : colors.grey[800],
-              borderBottom: `2px solid ${isLight ? colors.grey[300] : colors.grey[700]}`,
+              backgroundColor: isLight ? colors.blueAccent[100] : colors.blueAccent[800],
+              borderBottom: `2px solid ${isLight ? colors.blueAccent[300] : colors.blueAccent[600]}`,
+            },
+            '& .MuiDataGrid-columnHeaderTitle': {
+              fontWeight: 700,
             },
           }}
         />
@@ -332,38 +335,43 @@ function JobCategoriesPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={openDialog} onClose={() => { setOpenDialog(false); resetForm(); }} maxWidth="sm" fullWidth>
-        <DialogTitle>
+        <DialogTitle sx={{ backgroundColor: theme.palette.primary.main, color: 'white' }}>
           {currentCategory ? 'Edit Job Category' : 'Add Job Category'}
         </DialogTitle>
-        <DialogContent>
-          <Stack spacing={3} sx={{ mt: 1 }}>
+        <DialogContent dividers sx={{ backgroundColor: theme.palette.background.default }}>
+          <Stack spacing={2}>
             <TextField
+              autoFocus
+              margin="dense"
               label="Job Category"
               fullWidth
               required
+              variant="outlined"
               value={formData.jobCategory}
               onChange={(e) => handleInputChange('jobCategory', e.target.value)}
               error={!!formErrors.jobCategory}
               helperText={formErrors.jobCategory}
+              sx={{ mb: 2 }}
             />
             <TextField
+              margin="dense"
               label="Description"
               fullWidth
+              variant="outlined"
               multiline
-              rows={4}
+              rows={3}
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
-              error={!!formErrors.description}
-              helperText={formErrors.description}
+              sx={{ mb: 2 }}
             />
           </Stack>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => { setOpenDialog(false); resetForm(); }}>
+        <DialogActions sx={{ padding: '16px 24px' }}>
+          <Button onClick={() => { setOpenDialog(false); resetForm(); }} color="primary" variant="outlined">
             Cancel
           </Button>
-          <Button onClick={handleSave} variant="contained" color="primary">
-            {currentCategory ? 'Update' : 'Create'}
+          <Button onClick={handleSave} color="primary" variant="contained">
+            {currentCategory ? 'Update Job Category' : 'Create Job Category'}
           </Button>
         </DialogActions>
       </Dialog>

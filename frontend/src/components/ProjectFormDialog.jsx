@@ -403,53 +403,62 @@ const ProjectFormDialog = ({
             </Grid>
             {/* Sector Field */}
             <Grid item xs={12} sm={6}>
-              <FormControl 
-                fullWidth 
-                variant="outlined" 
-                size="small" 
+              <Autocomplete
+                options={sectors}
+                getOptionLabel={(option) => typeof option === 'string' ? option : (option.sectorName || option.name || '')}
+                value={sectors.find(s => (s.sectorName || s.name) === formData.sector) || null}
+                onChange={(event, newValue) => {
+                  if (newValue) {
+                    handleChange({ target: { name: 'sector', value: newValue.sectorName || newValue.name } });
+                  } else {
+                    handleChange({ target: { name: 'sector', value: '' } });
+                  }
+                }}
+                loading={loadingSectors}
+                freeSolo
                 sx={{ minWidth: 200 }}
-              >
-                <InputLabel sx={{ color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200], fontWeight: 'bold' }}>
-                  Sector
-                </InputLabel>
-                <Select 
-                  name="sector" 
-                  label="Sector"
-                  value={formData.sector || ''} 
-                  onChange={handleChange}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': {
-                        borderColor: colors.blueAccent[600],
-                        borderWidth: '2px',
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    name="sector"
+                    label="Sector"
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search or select sector"
+                    helperText="Select the government sector for this project"
+                    sx={{
+                      minWidth: 200,
+                      '& .MuiOutlinedInput-root': {
+                        '& fieldset': {
+                          borderColor: colorMode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[400],
+                          borderWidth: '2px',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: colorMode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[300],
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: colorMode === 'dark' ? colors.greenAccent[500] : colors.greenAccent[400],
+                          borderWidth: '2px',
+                        },
                       },
-                      '&:hover fieldset': {
-                        borderColor: colors.blueAccent[500],
+                      '& .MuiInputLabel-root': {
+                        color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
+                        fontWeight: 'bold',
                       },
-                      '&.Mui-focused fieldset': {
-                        borderColor: colors.greenAccent[500],
-                        borderWidth: '2px',
+                      '& .MuiInputBase-input': {
+                        color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200],
                       },
-                    },
-                  }}
-                >
-                  {loadingSectors ? (
-                    <MenuItem disabled value="">
-                      Loading sectors...
-                    </MenuItem>
-                  ) : sectors.length === 0 ? (
-                    <MenuItem disabled value="">
-                      No sectors available
-                    </MenuItem>
-                  ) : (
-                    sectors.map((sector) => (
-                      <MenuItem key={sector.id} value={sector.sectorName || sector.name}>
-                        {sector.sectorName || sector.name}
-                      </MenuItem>
-                    ))
-                  )}
-                </Select>
-              </FormControl>
+                    }}
+                  />
+                )}
+                filterOptions={(options, params) => {
+                  const filtered = options.filter((option) => {
+                    const sectorName = typeof option === 'string' ? option : (option.sectorName || option.name || '');
+                    return sectorName.toLowerCase().includes(params.inputValue.toLowerCase());
+                  });
+                  return filtered;
+                }}
+              />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField 
@@ -518,20 +527,28 @@ const ProjectFormDialog = ({
                     label="Implementing Agency"
                     variant="outlined"
                     size="small"
+                    required
                     placeholder="Search or select agency"
-                    helperText="The organization responsible for project implementation"
+                    helperText={formErrors.directorate || "The organization responsible for project implementation"}
+                    error={!!formErrors.directorate}
                     sx={{
                       minWidth: 200,
                       '& .MuiOutlinedInput-root': {
                         '& fieldset': {
-                          borderColor: colorMode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[400],
+                          borderColor: formErrors.directorate 
+                            ? (colorMode === 'dark' ? colors.redAccent[500] : colors.redAccent[400])
+                            : (colorMode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[400]),
                           borderWidth: '2px',
                         },
                         '&:hover fieldset': {
-                          borderColor: colorMode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[300],
+                          borderColor: formErrors.directorate 
+                            ? (colorMode === 'dark' ? colors.redAccent[600] : colors.redAccent[500])
+                            : (colorMode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[300]),
                         },
                         '&.Mui-focused fieldset': {
-                          borderColor: colorMode === 'dark' ? colors.greenAccent[500] : colors.greenAccent[400],
+                          borderColor: formErrors.directorate 
+                            ? (colorMode === 'dark' ? colors.redAccent[500] : colors.redAccent[400])
+                            : (colorMode === 'dark' ? colors.greenAccent[500] : colors.greenAccent[400]),
                           borderWidth: '2px',
                         },
                       },

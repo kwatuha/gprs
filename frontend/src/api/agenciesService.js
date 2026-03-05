@@ -29,14 +29,36 @@ const agenciesService = {
    */
   getAllAgencies: async (search = '') => {
     try {
-      const response = await axiosInstance.get('/agencies', {
-        params: {
-          limit: 1000,
-          page: 1,
-          search
+      // Try public endpoint first (no authentication required)
+      try {
+        const response = await axiosInstance.get('/public/agencies', {
+          params: { search }
+        });
+        console.log('Public agencies endpoint response:', response.data); // Debug
+        return response.data.data || [];
+      } catch (publicError) {
+        console.warn('Public endpoint failed, trying export endpoint:', publicError);
+        // Fallback to export endpoint
+        try {
+          const response = await axiosInstance.get('/agencies/export/all', {
+            params: { search }
+          });
+          console.log('Export endpoint response:', response.data); // Debug
+          return response.data.data || [];
+        } catch (exportError) {
+          console.warn('Export endpoint failed, trying paginated endpoint:', exportError);
+          // Fallback to paginated endpoint
+          const response = await axiosInstance.get('/agencies', {
+            params: {
+              limit: 1000,
+              page: 1,
+              search
+            }
+          });
+          console.log('Paginated endpoint response:', response.data); // Debug
+          return response.data.data || [];
         }
-      });
-      return response.data.data || [];
+      }
     } catch (error) {
       console.error('Error fetching all agencies:', error);
       throw error;

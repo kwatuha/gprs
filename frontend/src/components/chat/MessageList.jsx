@@ -455,11 +455,10 @@ const MessageList = ({ messages, currentUser, onReply, room }) => {
               variant="caption"
               sx={{
                 color: '#555555',
-                fontWeight: '500',
+                fontWeight: 500,
                 mt: 0.5,
                 mx: 1,
-                opacity: 0.9,
-                fontWeight: 500
+                opacity: 0.9
               }}
             >
               {formatTime(message.created_at)}

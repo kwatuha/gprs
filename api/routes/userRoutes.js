@@ -15,24 +15,68 @@ router.get('/users', async (req, res) => {
         let query;
         
         if (DB_TYPE === 'postgresql') {
+            // PostgreSQL: base users listing, optionally include phone_number if column exists
+            let hasPhoneNumber = false;
+            try {
+                const colResult = await pool.query(`
+                    SELECT 1 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'users' 
+                      AND column_name = 'phone_number'
+                    LIMIT 1
+                `);
+                hasPhoneNumber = Array.isArray(colResult.rows) ? colResult.rows.length > 0 : !!colResult.rows;
+            } catch (colErr) {
+                console.warn('Warning: Failed to check for phone_number column on users table:', colErr.message);
+            }
+
             query = `
                 SELECT 
-                    u.userid AS "userId", u.username, u.email, u.firstname AS "firstName", u.lastname AS "lastName", 
-                    u.id_number AS "idNumber", u.employee_number AS "employeeNumber",
-                    u.createdat AS "createdAt", u.updatedat AS "updatedAt", u.isactive AS "isActive", 
-                    u.roleid AS "roleId", r.name AS role
+                    u.userid AS "userId", 
+                    u.username, 
+                    u.email${hasPhoneNumber ? ', u.phone_number AS "phoneNumber"' : ''}, 
+                    u.firstname AS "firstName", 
+                    u.lastname AS "lastName", 
+                    u.id_number AS "idNumber", 
+                    u.employee_number AS "employeeNumber",
+                    u.createdat AS "createdAt", 
+                    u.updatedat AS "updatedAt", 
+                    u.isactive AS "isActive", 
+                    u.roleid AS "roleId", 
+                    r.name AS role,
+                    u.ministry, 
+                    u.state_department AS "stateDepartment", 
+                    u.agency_id AS "agencyId", 
+                    a.agency_name AS "agencyName"
                 FROM users u
                 LEFT JOIN roles r ON u.roleid = r.roleid
+                LEFT JOIN agencies a ON u.agency_id = a.id
                 WHERE u.voided = false
                 ORDER BY u.createdat DESC
             `;
         } else {
+            // MySQL users listing
             query = `
                 SELECT 
-                    u.userId, u.username, u.email, u.firstName, u.lastName, u.idNumber, u.employeeNumber,
-                    u.createdAt, u.updatedAt, u.isActive, u.roleId, r.roleName AS role
+                    u.userId, 
+                    u.username, 
+                    u.email,
+                    u.firstName, 
+                    u.lastName, 
+                    u.idNumber, 
+                    u.employeeNumber,
+                    u.createdAt, 
+                    u.updatedAt, 
+                    u.isActive, 
+                    u.roleId, 
+                    r.roleName AS role,
+                    u.ministry, 
+                    u.state_department AS stateDepartment, 
+                    u.agency_id AS agencyId, 
+                    a.agency_name AS agencyName
                 FROM users u
                 LEFT JOIN roles r ON u.roleId = r.roleId
+                LEFT JOIN agencies a ON u.agency_id = a.id
                 WHERE u.voided = 0
                 ORDER BY u.createdAt DESC
             `;
@@ -61,10 +105,18 @@ router.get('/users/:id', async (req, res) => {
         if (DB_TYPE === 'postgresql') {
             query = `
                 SELECT 
-                    u.userid AS "userId", u.username, u.email, u.firstname AS "firstName", u.lastname AS "lastName", 
-                    u.id_number AS "idNumber", u.employee_number AS "employeeNumber",
-                    u.createdat AS "createdAt", u.updatedat AS "updatedAt", u.isactive AS "isActive", 
-                    u.roleid AS "roleId", r.name AS role
+                    u.userid AS "userId", 
+                    u.username, 
+                    u.email, 
+                    u.firstname AS "firstName", 
+                    u.lastname AS "lastName", 
+                    u.id_number AS "idNumber", 
+                    u.employee_number AS "employeeNumber",
+                    u.createdat AS "createdAt", 
+                    u.updatedat AS "updatedAt", 
+                    u.isactive AS "isActive", 
+                    u.roleid AS "roleId", 
+                    r.name AS role
                 FROM users u
                 LEFT JOIN roles r ON u.roleid = r.roleid
                 WHERE u.userid = $1
@@ -73,8 +125,18 @@ router.get('/users/:id', async (req, res) => {
         } else {
             query = `
                 SELECT 
-                    u.userId, u.username, u.email, u.firstName, u.lastName, u.idNumber, u.employeeNumber,
-                    u.createdAt, u.updatedAt, u.isActive, u.roleId, r.roleName AS role
+                    u.userId, 
+                    u.username, 
+                    u.email, 
+                    u.firstName, 
+                    u.lastName, 
+                    u.idNumber, 
+                    u.employeeNumber,
+                    u.createdAt, 
+                    u.updatedAt, 
+                    u.isActive, 
+                    u.roleId, 
+                    r.roleName AS role
                 FROM users u
                 LEFT JOIN roles r ON u.roleId = r.roleId
                 WHERE u.userId = ?
@@ -101,7 +163,7 @@ router.get('/users/:id', async (req, res) => {
  * @description Create a new user in the users table.
  */
 router.post('/users', async (req, res) => {
-    const { username, email, password, firstName, lastName, roleId, idNumber, employeeNumber } = req.body;
+    const { username, email, password, firstName, lastName, roleId, idNumber, employeeNumber, ministry, state_department, agency_id } = req.body;
 
     if (!username || !email || !password || !firstName || !lastName || !roleId) {
         return res.status(400).json({ error: 'Please enter all required fields: username, email, password, first name, last name, and role ID.' });
@@ -133,16 +195,15 @@ router.post('/users', async (req, res) => {
 
         let insertedUserId;
         if (DB_TYPE === 'postgresql') {
-            // PostgreSQL: Use explicit INSERT with RETURNING
             const insertResult = await pool.query(
-                `INSERT INTO users (username, email, passwordhash, firstname, lastname, roleid, id_number, employee_number, createdat, updatedat, isactive, voided)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $9, false)
-                 RETURNING userid`,
-                [username, email, passwordHash, firstName, lastName, roleId, idNumber || null, employeeNumber || null, true]
+                `INSERT INTO users (username, email, passwordhash, firstname, lastname, roleid, id_number, employee_number, ministry, state_department, agency_id, createdat, updatedat, isactive, voided)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $12, false)
+                RETURNING userid`,
+                [username, email, passwordHash, firstName, lastName, roleId, idNumber || null, employeeNumber || null, ministry || null, state_department || null, agency_id || null, true]
             );
             insertedUserId = insertResult.rows[0].userid;
         } else {
-            // MySQL: Use SET syntax
+            // MySQL: Use SET syntax (current schema has no phoneNumber column)
             const newUser = {
                 username,
                 email,
@@ -152,6 +213,9 @@ router.post('/users', async (req, res) => {
                 roleId,
                 idNumber: idNumber || null,
                 employeeNumber: employeeNumber || null,
+                ministry: ministry || null,
+                state_department: state_department || null,
+                agency_id: agency_id || null,
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 isActive: true,
@@ -164,27 +228,56 @@ router.post('/users', async (req, res) => {
         let fetchQuery;
         let fetchParams;
         if (DB_TYPE === 'postgresql') {
-            fetchQuery = `
-                SELECT 
-                    u.userid AS "userId", u.username, u.email, u.firstname AS "firstName", u.lastname AS "lastName", 
-                    u.id_number AS "idNumber", u.employee_number AS "employeeNumber",
-                    u.roleid AS "roleId", r.name AS role, u.createdat AS "createdAt", u.updatedat AS "updatedAt", u.isactive AS "isActive"
-                FROM users u
-                LEFT JOIN roles r ON u.roleid = r.roleid
-                WHERE u.userid = $1
-            `;
-            fetchParams = [insertedUserId];
-        } else {
-            fetchQuery = `
-                SELECT 
-                    u.userId, u.username, u.email, u.firstName, u.lastName, u.idNumber, u.employeeNumber,
-                    u.roleId, r.roleName AS role, u.createdAt, u.updatedAt, u.isActive
-                FROM users u
-                LEFT JOIN roles r ON u.roleId = r.roleId
-                WHERE u.userId = ?
-            `;
-            fetchParams = [insertedUserId];
-        }
+                fetchQuery = `
+                    SELECT 
+                        u.userid AS "userId", 
+                        u.username, 
+                        u.email, 
+                        u.firstname AS "firstName", 
+                        u.lastname AS "lastName", 
+                        u.id_number AS "idNumber", 
+                        u.employee_number AS "employeeNumber",
+                        u.roleid AS "roleId", 
+                        r.name AS role, 
+                        u.createdat AS "createdAt", 
+                        u.updatedat AS "updatedAt", 
+                        u.isactive AS "isActive",
+                        u.ministry, 
+                        u.state_department AS "stateDepartment", 
+                        u.agency_id AS "agencyId", 
+                        a.agency_name AS "agencyName"
+                    FROM users u
+                    LEFT JOIN roles r ON u.roleid = r.roleid
+                    LEFT JOIN agencies a ON u.agency_id = a.id
+                    WHERE u.userid = $1
+                `;
+                fetchParams = [insertedUserId];
+            } else {
+                fetchQuery = `
+                    SELECT 
+                        u.userId, 
+                        u.username, 
+                        u.email, 
+                        u.firstName, 
+                        u.lastName, 
+                        u.idNumber, 
+                        u.employeeNumber,
+                        u.roleId, 
+                        r.roleName AS role, 
+                        u.createdAt, 
+                        u.updatedAt, 
+                        u.isActive,
+                        u.ministry, 
+                        u.state_department AS stateDepartment, 
+                        u.agency_id AS agencyId, 
+                        a.agency_name AS agencyName
+                    FROM users u
+                    LEFT JOIN roles r ON u.roleId = r.roleId
+                    LEFT JOIN agencies a ON u.agency_id = a.id
+                    WHERE u.userId = ?
+                `;
+                fetchParams = [insertedUserId];
+            }
         
         const fetchResult = await pool.query(fetchQuery, fetchParams);
         const rows = DB_TYPE === 'postgresql' ? fetchResult.rows : (Array.isArray(fetchResult) ? fetchResult[0] : fetchResult);
@@ -232,7 +325,12 @@ router.put('/users/:id', async (req, res) => {
                 idNumber: 'id_number',
                 employeeNumber: 'employee_number',
                 roleId: 'roleid',
-                isActive: 'isactive'
+                isActive: 'isactive',
+                ministry: 'ministry',
+                stateDepartment: 'state_department',
+                state_department: 'state_department',
+                agencyId: 'agency_id',
+                agency_id: 'agency_id'
             };
             
             for (const [key, value] of Object.entries(otherFieldsToUpdate)) {
@@ -251,6 +349,8 @@ router.put('/users/:id', async (req, res) => {
         } else {
             // MySQL: Use SET syntax
             const fieldsToUpdate = { ...otherFieldsToUpdate, updatedAt: new Date() };
+            // Current MySQL schema does not include phoneNumber, so drop it to avoid SQL errors
+            delete fieldsToUpdate.phoneNumber;
             const [mysqlResult] = await pool.query('UPDATE users SET ? WHERE userId = ?', [fieldsToUpdate, id]);
             result = mysqlResult;
         }
@@ -266,9 +366,11 @@ router.put('/users/:id', async (req, res) => {
                     SELECT 
                         u.userid AS "userId", u.username, u.email, u.firstname AS "firstName", u.lastname AS "lastName", 
                         u.id_number AS "idNumber", u.employee_number AS "employeeNumber",
-                        u.roleid AS "roleId", r.name AS role, u.createdat AS "createdAt", u.updatedat AS "updatedAt", u.isactive AS "isActive"
+                        u.roleid AS "roleId", r.name AS role, u.createdat AS "createdAt", u.updatedat AS "updatedAt", u.isactive AS "isActive",
+                        u.ministry, u.state_department AS "stateDepartment", u.agency_id AS "agencyId", a.agency_name AS "agencyName"
                     FROM users u
                     LEFT JOIN roles r ON u.roleid = r.roleid
+                    LEFT JOIN agencies a ON u.agency_id = a.id
                     WHERE u.userid = $1
                 `;
                 fetchParams = [id];
@@ -276,9 +378,11 @@ router.put('/users/:id', async (req, res) => {
                 fetchQuery = `
                     SELECT 
                         u.userId, u.username, u.email, u.firstName, u.lastName, u.idNumber, u.employeeNumber,
-                        u.roleId, r.roleName AS role, u.createdAt, u.updatedAt, u.isActive
+                        u.roleId, r.roleName AS role, u.createdAt, u.updatedAt, u.isActive,
+                        u.ministry, u.state_department AS stateDepartment, u.agency_id AS agencyId, a.agency_name AS agencyName
                     FROM users u
                     LEFT JOIN roles r ON u.roleId = r.roleId
+                    LEFT JOIN agencies a ON u.agency_id = a.id
                     WHERE u.userId = ?
                 `;
                 fetchParams = [id];

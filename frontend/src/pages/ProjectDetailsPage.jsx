@@ -3560,22 +3560,14 @@ function ProjectDetailsPage() {
                                             const maleCountInt = parseInt(newValue, 10) || 0;
                                             const femaleCountInt = parseInt(jobFormData.femaleCount, 10) || 0;
                                             
-                                            // Auto-fill Female if Jobs Created is filled and Female is empty
-                                            let updatedFemale = jobFormData.femaleCount;
-                                            if (jobsCountInt > 0 && newValue && !jobFormData.femaleCount && maleCountInt <= jobsCountInt) {
-                                                updatedFemale = String(Math.max(0, jobsCountInt - maleCountInt));
-                                            }
-                                            
                                             setJobFormData(prev => ({ 
                                                 ...prev, 
-                                                maleCount: newValue,
-                                                femaleCount: updatedFemale !== prev.femaleCount ? updatedFemale : prev.femaleCount
+                                                maleCount: newValue
                                             }));
                                             
                                             // Real-time validation: male + female cannot exceed jobs
                                             const errors = { ...jobFormErrors };
-                                            const finalFemaleInt = parseInt(updatedFemale, 10) || 0;
-                                            if (jobsCountInt > 0 && maleCountInt + finalFemaleInt > jobsCountInt) {
+                                            if (jobsCountInt > 0 && maleCountInt + femaleCountInt > jobsCountInt) {
                                                 errors.maleCount = 'Male + Female cannot exceed total jobs';
                                                 errors.femaleCount = 'Male + Female cannot exceed total jobs';
                                             } else {
@@ -3601,22 +3593,14 @@ function ProjectDetailsPage() {
                                             const maleCountInt = parseInt(jobFormData.maleCount, 10) || 0;
                                             const femaleCountInt = parseInt(newValue, 10) || 0;
                                             
-                                            // Auto-fill Male if Jobs Created is filled and Male is empty
-                                            let updatedMale = jobFormData.maleCount;
-                                            if (jobsCountInt > 0 && newValue && !jobFormData.maleCount && femaleCountInt <= jobsCountInt) {
-                                                updatedMale = String(Math.max(0, jobsCountInt - femaleCountInt));
-                                            }
-                                            
                                             setJobFormData(prev => ({ 
                                                 ...prev, 
-                                                femaleCount: newValue,
-                                                maleCount: updatedMale !== prev.maleCount ? updatedMale : prev.maleCount
+                                                femaleCount: newValue
                                             }));
                                             
                                             // Real-time validation: male + female cannot exceed jobs
                                             const errors = { ...jobFormErrors };
-                                            const finalMaleInt = parseInt(updatedMale, 10) || 0;
-                                            if (jobsCountInt > 0 && finalMaleInt + femaleCountInt > jobsCountInt) {
+                                            if (jobsCountInt > 0 && maleCountInt + femaleCountInt > jobsCountInt) {
                                                 errors.maleCount = 'Male + Female cannot exceed total jobs';
                                                 errors.femaleCount = 'Male + Female cannot exceed total jobs';
                                             } else {
@@ -3642,22 +3626,14 @@ function ProjectDetailsPage() {
                                             const directJobsInt = parseInt(newValue, 10) || 0;
                                             const indirectJobsInt = parseInt(jobFormData.indirectJobs, 10) || 0;
                                             
-                                            // Auto-fill Indirect Jobs if Jobs Created is filled and Indirect Jobs is empty
-                                            let updatedIndirect = jobFormData.indirectJobs;
-                                            if (jobsCountInt > 0 && newValue && !jobFormData.indirectJobs && directJobsInt <= jobsCountInt) {
-                                                updatedIndirect = String(Math.max(0, jobsCountInt - directJobsInt));
-                                            }
-                                            
                                             setJobFormData(prev => ({ 
                                                 ...prev, 
-                                                directJobs: newValue,
-                                                indirectJobs: updatedIndirect !== prev.indirectJobs ? updatedIndirect : prev.indirectJobs
+                                                directJobs: newValue
                                             }));
                                             
                                             // Real-time validation: direct + indirect cannot exceed jobs
                                             const errors = { ...jobFormErrors };
-                                            const finalIndirectInt = parseInt(updatedIndirect, 10) || 0;
-                                            if (jobsCountInt > 0 && directJobsInt + finalIndirectInt > jobsCountInt) {
+                                            if (jobsCountInt > 0 && directJobsInt + indirectJobsInt > jobsCountInt) {
                                                 errors.directJobs = 'Direct + Indirect jobs cannot exceed total jobs';
                                                 errors.indirectJobs = 'Direct + Indirect jobs cannot exceed total jobs';
                                             } else {
@@ -3683,22 +3659,14 @@ function ProjectDetailsPage() {
                                             const directJobsInt = parseInt(jobFormData.directJobs, 10) || 0;
                                             const indirectJobsInt = parseInt(newValue, 10) || 0;
                                             
-                                            // Auto-fill Direct Jobs if Jobs Created is filled and Direct Jobs is empty
-                                            let updatedDirect = jobFormData.directJobs;
-                                            if (jobsCountInt > 0 && newValue && !jobFormData.directJobs && indirectJobsInt <= jobsCountInt) {
-                                                updatedDirect = String(Math.max(0, jobsCountInt - indirectJobsInt));
-                                            }
-                                            
                                             setJobFormData(prev => ({ 
                                                 ...prev, 
-                                                indirectJobs: newValue,
-                                                directJobs: updatedDirect !== prev.directJobs ? updatedDirect : prev.directJobs
+                                                indirectJobs: newValue
                                             }));
                                             
                                             // Real-time validation: direct + indirect cannot exceed jobs
                                             const errors = { ...jobFormErrors };
-                                            const finalDirectInt = parseInt(updatedDirect, 10) || 0;
-                                            if (jobsCountInt > 0 && finalDirectInt + indirectJobsInt > jobsCountInt) {
+                                            if (jobsCountInt > 0 && directJobsInt + indirectJobsInt > jobsCountInt) {
                                                 errors.directJobs = 'Direct + Indirect jobs cannot exceed total jobs';
                                                 errors.indirectJobs = 'Direct + Indirect jobs cannot exceed total jobs';
                                             } else {
@@ -3939,79 +3907,6 @@ function ProjectDetailsPage() {
 
                 {/* M&E Tab Content - Removed */}
                 {/* Documents Tab Content - Removed */}
-
-                {activeTab === 1 && (
-                    <Box>
-                        {/* Sites Tab */}
-                        <Typography variant="h6" sx={{ 
-                            mb: 2, 
-                            fontWeight: 'bold',
-                            color: theme.palette.mode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[600],
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            fontSize: '1rem'
-                        }}>
-                            <LocationOnIcon /> Project Sites
-                        </Typography>
-                        
-                        {loadingSites ? (
-                            <Box display="flex" justifyContent="center" alignItems="center" minHeight="150px">
-                                <CircularProgress />
-                            </Box>
-                        ) : sitesError ? (
-                            <Alert severity="error" sx={{ mb: 2 }}>
-                                {sitesError}
-                            </Alert>
-                        ) : (
-                            <Box>
-                                {/* Action Buttons */}
-                                <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-                                    <Button
-                                        variant="contained"
-                                        startIcon={<AddIcon />}
-                                        onClick={() => {
-                                            setEditingSite(null);
-                                            setSiteFormData({
-                                                siteName: '',
-                                                county: '',
-                                                constituency: '',
-                                                ward: '',
-                                                status: '',
-                                                progress: '',
-                                                approvedCost: '',
-                                            });
-                                            setSiteFormErrors({});
-                                            setOpenSiteDialog(true);
-                                        }}
-                                        sx={{
-                                            backgroundColor: colors.greenAccent[600],
-                                            '&:hover': {
-                                                backgroundColor: colors.greenAccent[700]
-                                            }
-                                        }}
-                                    >
-                                        Add Site
-                                    </Button>
-                                    <Button
-                                        variant="outlined"
-                                        startIcon={<DownloadIcon />}
-                                        onClick={handleDownloadSitesTemplate}
-                                    >
-                                        Download Template
-                                    </Button>
-                                    <Button
-                                        variant="outlined"
-                                        startIcon={<UploadIcon />}
-                                        onClick={() => setOpenImportSitesDialog(true)}
-                                    >
-                                        Import Sites
-                                    </Button>
-                                </Box>
-                            </Box>
-                        )}
-                    </Box>
-                )}
 
                 {activeTab === 5 && (
                     <Box>

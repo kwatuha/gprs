@@ -1,5 +1,5 @@
 // src/components/Register.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import axiosInstance from '../api/axiosInstance';
 import {
@@ -15,25 +15,197 @@ import {
     Container,
     Checkbox,
     FormControlLabel,
-    FormHelperText
+    FormHelperText,
+    Autocomplete
 } from '@mui/material';
+import apiService from '../api';
 
 const Register = () => {
     const [formData, setFormData] = useState({
         username: '',
         email: '',
         password: '',
+        phoneNumber: '',
         firstName: '',
         lastName: '',
         idNumber: '',
         employeeNumber: '',
+        ministry: '',
+        stateDepartment: '',
+        agencyId: '',
     });
     const [consentGiven, setConsentGiven] = useState(false);
     const [emailError, setEmailError] = useState('');
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [loading, setLoading] = useState(false);
+    const [loadingAgencies, setLoadingAgencies] = useState(false);
+    const [agencies, setAgencies] = useState([]);
+    const [filteredAgencies, setFilteredAgencies] = useState([]);
+    const [filteredStateDepartments, setFilteredStateDepartments] = useState([]);
+    const [ministries, setMinistries] = useState([]);
+    const [formErrors, setFormErrors] = useState({});
     const navigate = useNavigate();
+
+    // Fetch agencies on component mount
+    useEffect(() => {
+        const fetchAgencies = async () => {
+            setLoadingAgencies(true);
+            try {
+                const response = await apiService.agencies.getAllAgencies();
+                console.log('Agencies API response:', response); // Debug log
+                
+                // Handle different response structures
+                let agenciesList = [];
+                if (Array.isArray(response)) {
+                    agenciesList = response;
+                } else if (response && Array.isArray(response.data)) {
+                    agenciesList = response.data;
+                } else if (response && response.data && Array.isArray(response.data.data)) {
+                    agenciesList = response.data.data;
+                }
+                
+                console.log('Agencies list:', agenciesList); // Debug log
+                console.log('Number of agencies:', agenciesList.length); // Debug log
+                
+                if (agenciesList.length === 0) {
+                    console.warn('No agencies found in response');
+                    setError('No agencies found. Please contact administrator.');
+                }
+                
+                setAgencies(agenciesList);
+                
+                // Extract unique ministries - handle both snake_case and camelCase
+                const ministriesList = agenciesList
+                    .map(agency => {
+                        // Try multiple possible field names
+                        return agency.ministry || agency.ministryName || agency.ministry_name || '';
+                    })
+                    .filter(Boolean);
+                
+                const uniqueMinistries = [...new Set(ministriesList)].sort();
+                console.log('Unique ministries:', uniqueMinistries); // Debug log
+                console.log('Number of unique ministries:', uniqueMinistries.length); // Debug log
+                
+                if (uniqueMinistries.length === 0 && agenciesList.length > 0) {
+                    console.warn('No ministries found in agencies. Sample agency:', agenciesList[0]);
+                }
+                
+                setMinistries(uniqueMinistries);
+            } catch (err) {
+                console.error('Error fetching agencies:', err);
+                console.error('Error details:', {
+                    message: err.message,
+                    response: err.response?.data,
+                    status: err.response?.status,
+                    statusText: err.response?.statusText,
+                    config: {
+                        url: err.config?.url,
+                        method: err.config?.method,
+                        baseURL: err.config?.baseURL
+                    },
+                    code: err.code,
+                    request: err.request
+                });
+                
+                // Show more specific error message
+                let errorMessage = 'Failed to load agencies. ';
+                
+                if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+                    errorMessage += 'Request timed out. Please check your connection and try again.';
+                } else if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
+                    errorMessage += 'Network error. Please check your internet connection.';
+                } else if (err.response?.status === 401) {
+                    errorMessage += 'Authentication required. Please try again or contact support.';
+                } else if (err.response?.status === 403) {
+                    errorMessage += 'Access denied. Please contact support.';
+                } else if (err.response?.status === 404) {
+                    errorMessage += 'Agencies endpoint not found. Please contact support.';
+                } else if (err.response?.status >= 500) {
+                    errorMessage += 'Server error. Please try again later.';
+                } else if (err.response?.data?.message) {
+                    errorMessage += err.response.data.message;
+                } else if (err.message) {
+                    errorMessage += err.message;
+                } else {
+                    errorMessage += 'Unknown error. Please check the browser console for details.';
+                }
+                
+                setError(errorMessage);
+            } finally {
+                setLoadingAgencies(false);
+            }
+        };
+        fetchAgencies();
+    }, []);
+
+    // Filter state departments when ministry changes
+    useEffect(() => {
+        if (formData.ministry) {
+            const filtered = agencies
+                .filter(agency => {
+                    const agencyMinistry = agency.ministry || agency.ministryName;
+                    return agencyMinistry && agencyMinistry.toLowerCase() === formData.ministry.toLowerCase();
+                })
+                .map(agency => agency.state_department || agency.stateDepartment)
+                .filter(Boolean);
+            const uniqueStateDepartments = [...new Set(filtered)].sort();
+            setFilteredStateDepartments(uniqueStateDepartments);
+            
+            // Clear state department and agency if current selection doesn't match the ministry
+            if (formData.stateDepartment) {
+                const selectedAgency = agencies.find(a => {
+                    const agencyMinistry = a.ministry || a.ministryName;
+                    const agencyStateDept = a.state_department || a.stateDepartment;
+                    return agencyStateDept?.toLowerCase() === formData.stateDepartment.toLowerCase() &&
+                           agencyMinistry?.toLowerCase() === formData.ministry.toLowerCase();
+                });
+                if (!selectedAgency) {
+                    setFormData(prev => ({ ...prev, stateDepartment: '', agencyId: '' }));
+                }
+            }
+            if (formData.agencyId) {
+                const selectedAgency = agencies.find(a => a.id === formData.agencyId || a.agencyId === formData.agencyId);
+                const agencyMinistry = selectedAgency?.ministry || selectedAgency?.ministryName;
+                if (!selectedAgency || agencyMinistry?.toLowerCase() !== formData.ministry.toLowerCase()) {
+                    setFormData(prev => ({ ...prev, agencyId: '' }));
+                }
+            }
+        } else {
+            setFilteredStateDepartments([]);
+            setFormData(prev => ({ ...prev, stateDepartment: '', agencyId: '' }));
+        }
+    }, [formData.ministry, agencies]);
+
+    // Filter agencies when state department changes
+    useEffect(() => {
+        if (formData.ministry && formData.stateDepartment) {
+            const filtered = agencies.filter(agency => {
+                const agencyMinistry = agency.ministry || agency.ministryName;
+                const agencyStateDept = agency.state_department || agency.stateDepartment;
+                return agencyMinistry && agencyMinistry.toLowerCase() === formData.ministry.toLowerCase() &&
+                       agencyStateDept && agencyStateDept.toLowerCase() === formData.stateDepartment.toLowerCase();
+            });
+            setFilteredAgencies(filtered);
+            
+            // Clear agency if current selection doesn't match the state department
+            if (formData.agencyId) {
+                const selectedAgency = agencies.find(a => a.id === formData.agencyId || a.agencyId === formData.agencyId);
+                const agencyMinistry = selectedAgency?.ministry || selectedAgency?.ministryName;
+                const agencyStateDept = selectedAgency?.state_department || selectedAgency?.stateDepartment;
+                if (!selectedAgency || 
+                    agencyMinistry?.toLowerCase() !== formData.ministry.toLowerCase() ||
+                    agencyStateDept?.toLowerCase() !== formData.stateDepartment.toLowerCase()) {
+                    setFormData(prev => ({ ...prev, agencyId: '' }));
+                }
+            }
+        } else {
+            setFilteredAgencies([]);
+            if (!formData.stateDepartment) {
+                setFormData(prev => ({ ...prev, agencyId: '' }));
+            }
+        }
+    }, [formData.ministry, formData.stateDepartment, agencies]);
 
     // Email validation function
     const validateEmail = (email) => {
@@ -63,7 +235,26 @@ const Register = () => {
         setLoading(true);
 
         // Basic client-side validation for required fields
+        const errors = {};
         if (!formData.username || !formData.email || !formData.password || !formData.firstName || !formData.lastName || !formData.idNumber || !formData.employeeNumber) {
+            setError('Please fill in all required fields.');
+            setLoading(false);
+            return;
+        }
+
+        // Validate ministry, state department, and agency
+        if (!formData.ministry) {
+            errors.ministry = 'Ministry is required';
+        }
+        if (!formData.stateDepartment) {
+            errors.stateDepartment = 'State Department is required';
+        }
+        if (!formData.agencyId) {
+            errors.agencyId = 'Agency is required';
+        }
+
+        if (Object.keys(errors).length > 0) {
+            setFormErrors(errors);
             setError('Please fill in all required fields.');
             setLoading(false);
             return;
@@ -94,7 +285,9 @@ const Register = () => {
             // Call the register API endpoint using axiosInstance
             const response = await axiosInstance.post('/auth/register', {
                 ...formData,
-                consentGiven: consentGiven
+                consentGiven: consentGiven,
+                agency_id: formData.agencyId,
+                state_department: formData.stateDepartment
             });
             const data = response.data;
             
@@ -105,12 +298,17 @@ const Register = () => {
                 username: '',
                 email: '',
                 password: '',
+                phoneNumber: '',
                 firstName: '',
                 lastName: '',
                 idNumber: '',
                 employeeNumber: '',
+                ministry: '',
+                stateDepartment: '',
+                agencyId: '',
             });
             setConsentGiven(false);
+            setFormErrors({});
             
             // Redirect to login page after a delay to let user read the message
             setTimeout(() => {
@@ -210,6 +408,145 @@ const Register = () => {
                     </Box>
 
                     <Box component="form" onSubmit={handleSubmit}>
+                        {/* Personal Information */}
+                        <TextField
+                            fullWidth
+                            label="First Name"
+                            id="firstName"
+                            name="firstName"
+                            value={formData.firstName}
+                            onChange={handleChange}
+                            required
+                            disabled={loading}
+                            sx={{ 
+                                mb: 2,
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: 2,
+                                    backgroundColor: '#f8fafc',
+                                    transition: 'all 0.3s ease-in-out',
+                                    '&:hover': {
+                                        backgroundColor: '#f1f5f9',
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: '#3b82f6',
+                                            borderWidth: 2
+                                        }
+                                    },
+                                    '&.Mui-focused': {
+                                        backgroundColor: 'white',
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: '#1e3a8a',
+                                            borderWidth: 2
+                                        }
+                                    }
+                                }
+                            }}
+                            variant="outlined"
+                        />
+                        <TextField
+                            fullWidth
+                            label="Last Name"
+                            id="lastName"
+                            name="lastName"
+                            value={formData.lastName}
+                            onChange={handleChange}
+                            required
+                            disabled={loading}
+                            sx={{ 
+                                mb: 2,
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: 2,
+                                    backgroundColor: '#f8fafc',
+                                    transition: 'all 0.3s ease-in-out',
+                                    '&:hover': {
+                                        backgroundColor: '#f1f5f9',
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: '#3b82f6',
+                                            borderWidth: 2
+                                        }
+                                    },
+                                    '&.Mui-focused': {
+                                        backgroundColor: 'white',
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: '#1e3a8a',
+                                            borderWidth: 2
+                                        }
+                                    }
+                                }
+                            }}
+                            variant="outlined"
+                        />
+                        <TextField
+                            fullWidth
+                            label="ID Number"
+                            id="idNumber"
+                            name="idNumber"
+                            value={formData.idNumber}
+                            onChange={handleChange}
+                            required
+                            disabled={loading}
+                            inputProps={{ maxLength: 20 }}
+                            helperText="Enter your national ID number"
+                            sx={{ 
+                                mb: 2,
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: 2,
+                                    backgroundColor: '#f8fafc',
+                                    transition: 'all 0.3s ease-in-out',
+                                    '&:hover': {
+                                        backgroundColor: '#f1f5f9',
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: '#3b82f6',
+                                            borderWidth: 2
+                                        }
+                                    },
+                                    '&.Mui-focused': {
+                                        backgroundColor: 'white',
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: '#1e3a8a',
+                                            borderWidth: 2
+                                        }
+                                    }
+                                }
+                            }}
+                            variant="outlined"
+                        />
+                        <TextField
+                            fullWidth
+                            label="Employee Number"
+                            id="employeeNumber"
+                            name="employeeNumber"
+                            value={formData.employeeNumber}
+                            onChange={handleChange}
+                            required
+                            disabled={loading}
+                            inputProps={{ maxLength: 20 }}
+                            helperText="Enter your employee number"
+                            sx={{ 
+                                mb: 2,
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: 2,
+                                    backgroundColor: '#f8fafc',
+                                    transition: 'all 0.3s ease-in-out',
+                                    '&:hover': {
+                                        backgroundColor: '#f1f5f9',
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: '#3b82f6',
+                                            borderWidth: 2
+                                        }
+                                    },
+                                    '&.Mui-focused': {
+                                        backgroundColor: 'white',
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: '#1e3a8a',
+                                            borderWidth: 2
+                                        }
+                                    }
+                                }
+                            }}
+                            variant="outlined"
+                        />
+
+                        {/* Account & Contact Details */}
                         <TextField
                             fullWidth
                             label="Username"
@@ -280,7 +617,42 @@ const Register = () => {
                             }}
                             variant="outlined"
                         />
-                        
+
+                        <TextField
+                            fullWidth
+                            label="Phone Number"
+                            id="phoneNumber"
+                            name="phoneNumber"
+                            type="tel"
+                            value={formData.phoneNumber}
+                            onChange={handleChange}
+                            disabled={loading}
+                            helperText="Optional: Include a contact phone number"
+                            sx={{ 
+                                mb: 2,
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: 2,
+                                    backgroundColor: '#f8fafc',
+                                    transition: 'all 0.3s ease-in-out',
+                                    '&:hover': {
+                                        backgroundColor: '#f1f5f9',
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: '#3b82f6',
+                                            borderWidth: 2
+                                        }
+                                    },
+                                    '&.Mui-focused': {
+                                        backgroundColor: 'white',
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: '#1e3a8a',
+                                            borderWidth: 2
+                                        }
+                                    }
+                                }
+                            }}
+                            variant="outlined"
+                        />
+
                         <TextField
                             fullWidth
                             label="Password"
@@ -317,144 +689,151 @@ const Register = () => {
                             variant="outlined"
                         />
 
-                        <TextField
+                        {/* Organization Details */}
+
+                        <Autocomplete
                             fullWidth
-                            label="First Name"
-                            id="firstName"
-                            name="firstName"
-                            value={formData.firstName}
-                            onChange={handleChange}
-                            required
-                            disabled={loading}
-                            sx={{ 
-                                mb: 2,
-                                '& .MuiOutlinedInput-root': {
-                                    borderRadius: 2,
-                                    backgroundColor: '#f8fafc',
-                                    transition: 'all 0.3s ease-in-out',
-                                    '&:hover': {
-                                        backgroundColor: '#f1f5f9',
-                                        '& .MuiOutlinedInput-notchedOutline': {
-                                            borderColor: '#3b82f6',
-                                            borderWidth: 2
-                                        }
-                                    },
-                                    '&.Mui-focused': {
-                                        backgroundColor: 'white',
-                                        '& .MuiOutlinedInput-notchedOutline': {
-                                            borderColor: '#1e3a8a',
-                                            borderWidth: 2
-                                        }
-                                    }
-                                }
+                            options={ministries}
+                            value={formData.ministry || null}
+                            onChange={(event, newValue) => {
+                                setFormData(prev => ({ 
+                                    ...prev, 
+                                    ministry: newValue || '',
+                                    stateDepartment: '', // Clear state department when ministry changes
+                                    agencyId: '' // Clear agency when ministry changes
+                                }));
+                                setFormErrors(prev => ({ ...prev, ministry: '', stateDepartment: '', agencyId: '' }));
                             }}
-                            variant="outlined"
+                            loading={loadingAgencies}
+                            disabled={loading}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Ministry"
+                                    required
+                                    error={!!formErrors.ministry}
+                                    helperText={formErrors.ministry || 'Select your ministry'}
+                                    sx={{ 
+                                        mb: 2,
+                                        '& .MuiOutlinedInput-root': {
+                                            borderRadius: 2,
+                                            backgroundColor: '#f8fafc',
+                                            transition: 'all 0.3s ease-in-out',
+                                            '&:hover': {
+                                                backgroundColor: '#f1f5f9',
+                                                '& .MuiOutlinedInput-notchedOutline': {
+                                                    borderColor: '#3b82f6',
+                                                    borderWidth: 2
+                                                }
+                                            },
+                                            '&.Mui-focused': {
+                                                backgroundColor: 'white',
+                                                '& .MuiOutlinedInput-notchedOutline': {
+                                                    borderColor: '#1e3a8a',
+                                                    borderWidth: 2
+                                                }
+                                            }
+                                        }
+                                    }}
+                                />
+                            )}
                         />
 
-                        <TextField
+                        <Autocomplete
                             fullWidth
-                            label="Last Name"
-                            id="lastName"
-                            name="lastName"
-                            value={formData.lastName}
-                            onChange={handleChange}
-                            required
-                            disabled={loading}
-                            sx={{ 
-                                mb: 2,
-                                '& .MuiOutlinedInput-root': {
-                                    borderRadius: 2,
-                                    backgroundColor: '#f8fafc',
-                                    transition: 'all 0.3s ease-in-out',
-                                    '&:hover': {
-                                        backgroundColor: '#f1f5f9',
-                                        '& .MuiOutlinedInput-notchedOutline': {
-                                            borderColor: '#3b82f6',
-                                            borderWidth: 2
-                                        }
-                                    },
-                                    '&.Mui-focused': {
-                                        backgroundColor: 'white',
-                                        '& .MuiOutlinedInput-notchedOutline': {
-                                            borderColor: '#1e3a8a',
-                                            borderWidth: 2
-                                        }
-                                    }
-                                }
+                            options={filteredStateDepartments}
+                            value={formData.stateDepartment || null}
+                            onChange={(event, newValue) => {
+                                setFormData(prev => ({ 
+                                    ...prev, 
+                                    stateDepartment: newValue || '',
+                                    agencyId: '' // Clear agency when state department changes
+                                }));
+                                setFormErrors(prev => ({ ...prev, stateDepartment: '', agencyId: '' }));
                             }}
-                            variant="outlined"
+                            loading={loadingAgencies}
+                            disabled={loading || !formData.ministry}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="State Department"
+                                    required
+                                    error={!!formErrors.stateDepartment}
+                                    helperText={formErrors.stateDepartment || (formData.ministry ? 'Select your state department' : 'Please select a ministry first')}
+                                    sx={{ 
+                                        mb: 2,
+                                        '& .MuiOutlinedInput-root': {
+                                            borderRadius: 2,
+                                            backgroundColor: '#f8fafc',
+                                            transition: 'all 0.3s ease-in-out',
+                                            '&:hover': {
+                                                backgroundColor: '#f1f5f9',
+                                                '& .MuiOutlinedInput-notchedOutline': {
+                                                    borderColor: '#3b82f6',
+                                                    borderWidth: 2
+                                                }
+                                            },
+                                            '&.Mui-focused': {
+                                                backgroundColor: 'white',
+                                                '& .MuiOutlinedInput-notchedOutline': {
+                                                    borderColor: '#1e3a8a',
+                                                    borderWidth: 2
+                                                }
+                                            }
+                                        }
+                                    }}
+                                />
+                            )}
                         />
 
-                        <TextField
+                        <Autocomplete
                             fullWidth
-                            label="ID Number"
-                            id="idNumber"
-                            name="idNumber"
-                            value={formData.idNumber}
-                            onChange={handleChange}
-                            required
-                            disabled={loading}
-                            inputProps={{ maxLength: 20 }}
-                            helperText="Enter your national ID number"
-                            sx={{ 
-                                mb: 2,
-                                '& .MuiOutlinedInput-root': {
-                                    borderRadius: 2,
-                                    backgroundColor: '#f8fafc',
-                                    transition: 'all 0.3s ease-in-out',
-                                    '&:hover': {
-                                        backgroundColor: '#f1f5f9',
-                                        '& .MuiOutlinedInput-notchedOutline': {
-                                            borderColor: '#3b82f6',
-                                            borderWidth: 2
-                                        }
-                                    },
-                                    '&.Mui-focused': {
-                                        backgroundColor: 'white',
-                                        '& .MuiOutlinedInput-notchedOutline': {
-                                            borderColor: '#1e3a8a',
-                                            borderWidth: 2
-                                        }
-                                    }
-                                }
+                            options={filteredAgencies}
+                            value={filteredAgencies.find(agency => 
+                                (agency.id === formData.agencyId || agency.agencyId === formData.agencyId)
+                            ) || null}
+                            getOptionLabel={(option) => {
+                                const name = option.agency_name || option.agencyName || option.name || '';
+                                return name;
                             }}
-                            variant="outlined"
-                        />
-
-                        <TextField
-                            fullWidth
-                            label="Employee Number"
-                            id="employeeNumber"
-                            name="employeeNumber"
-                            value={formData.employeeNumber}
-                            onChange={handleChange}
-                            required
-                            disabled={loading}
-                            inputProps={{ maxLength: 20 }}
-                            helperText="Enter your employee number"
-                            sx={{ 
-                                mb: 2,
-                                '& .MuiOutlinedInput-root': {
-                                    borderRadius: 2,
-                                    backgroundColor: '#f8fafc',
-                                    transition: 'all 0.3s ease-in-out',
-                                    '&:hover': {
-                                        backgroundColor: '#f1f5f9',
-                                        '& .MuiOutlinedInput-notchedOutline': {
-                                            borderColor: '#3b82f6',
-                                            borderWidth: 2
-                                        }
-                                    },
-                                    '&.Mui-focused': {
-                                        backgroundColor: 'white',
-                                        '& .MuiOutlinedInput-notchedOutline': {
-                                            borderColor: '#1e3a8a',
-                                            borderWidth: 2
-                                        }
-                                    }
-                                }
+                            onChange={(event, newValue) => {
+                                const agencyId = newValue ? (newValue.id || newValue.agencyId) : '';
+                                setFormData(prev => ({ ...prev, agencyId }));
+                                setFormErrors(prev => ({ ...prev, agencyId: '' }));
                             }}
-                            variant="outlined"
+                            loading={loadingAgencies}
+                            disabled={loading || !formData.ministry || !formData.stateDepartment}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Agency"
+                                    required
+                                    error={!!formErrors.agencyId}
+                                    helperText={formErrors.agencyId || (formData.ministry && formData.stateDepartment ? 'Select your agency' : 'Please select a ministry and state department first')}
+                                    sx={{ 
+                                        mb: 2,
+                                        '& .MuiOutlinedInput-root': {
+                                            borderRadius: 2,
+                                            backgroundColor: '#f8fafc',
+                                            transition: 'all 0.3s ease-in-out',
+                                            '&:hover': {
+                                                backgroundColor: '#f1f5f9',
+                                                '& .MuiOutlinedInput-notchedOutline': {
+                                                    borderColor: '#3b82f6',
+                                                    borderWidth: 2
+                                                }
+                                            },
+                                            '&.Mui-focused': {
+                                                backgroundColor: 'white',
+                                                '& .MuiOutlinedInput-notchedOutline': {
+                                                    borderColor: '#1e3a8a',
+                                                    borderWidth: 2
+                                                }
+                                            }
+                                        }
+                                    }}
+                                />
+                            )}
                         />
 
                         <Box sx={{ mb: 2 }}>

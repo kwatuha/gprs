@@ -1,0 +1,1424 @@
+id,iebc_ward_name,count,province,district,division,pcode,status,no,shape_type,status_1,created_at,updated_at,voided,county,constituency
+413,Kahawa Wendan,1,Central,Thika,Ruiru,KE0414,,573,Polygon,spelling,2026-03-04 16:05:53.484241,2026-03-04 16:27:35.341469,f,,Ruiru
+25,Amukura Central,5,Western,Teso,Amukura,KE0026,,1132,Polygon,,2026-03-04 16:05:49.9408,2026-03-04 16:27:31.79267,f,,Amukura
+26,Amukura East,9,Western,Teso,Amukura,KE0027,,1131,Polygon,,2026-03-04 16:05:49.952879,2026-03-04 16:27:31.804977,f,,Amukura
+27,Amukura West,6,Western,Teso,Amukura,KE0028,,1130,Polygon,,2026-03-04 16:05:49.966707,2026-03-04 16:27:31.813052,f,,Amukura
+28,Angata Barikoi,5,Rift Valley,Transmara,Lolgorian,KE0029,,883,Polygon,done,2026-03-04 16:05:49.982267,2026-03-04 16:27:31.821963,f,,Lolgorian
+29,Ang'orom,3,Western,Teso,Chakol,KE0030,,1127,Polygon,,2026-03-04 16:05:49.995769,2026-03-04 16:27:31.828946,f,,Chakol
+30,Ang'urai East,7,Western,Teso,Ang'urai,KE0031,,1125,Polygon,spelling,2026-03-04 16:05:50.032218,2026-03-04 16:27:31.835815,f,,Ang'urai
+31,Ang'urai North,8,Western,Teso,Ang'urai,KE0032,,1124,Polygon,,2026-03-04 16:05:50.04574,2026-03-04 16:27:31.842374,f,,Ang'urai
+32,Ang'urai South,8,Western,Teso,Ang'urai,KE0033,,1123,Polygon,,2026-03-04 16:05:50.061345,2026-03-04 16:27:31.855337,f,,Ang'urai
+39,Athi,9,Eastern,Kitui,Ikutha,KE0040,,370,Polygon,,2026-03-04 16:05:50.154434,2026-03-04 16:27:31.980853,f,Kitui,Ikutha
+66,Batalu,2,North Eastern,Wajir,Buna,KE0067,,165,Polygon,,2026-03-04 16:05:50.76546,2026-03-04 16:27:32.109946,f,Wajir,Buna
+98,Bukembe East,2,Western,Bungoma,Kanduyi,KE0099,,1097,Polygon,,2026-03-04 16:05:50.985583,2026-03-04 16:27:32.27702,f,Bungoma,Kanduyi
+124,Butsotso East,3,Western,Kakamega,Lurambi,KE0125,,1009,Polygon,,2026-03-04 16:05:51.24201,2026-03-04 16:27:32.55262,f,Kakamega,Lurambi
+125,Butsotso South,3,Western,Kakamega,Lurambi,KE0126,,1010,Polygon,,2026-03-04 16:05:51.24853,2026-03-04 16:27:32.56819,f,Kakamega,Lurambi
+162,Chemundu/Kapng'entuny,3,Rift Valley,Nandi,Kapsabet,KE0163,,765,Polygon,spelling,2026-03-04 16:05:51.620636,2026-03-04 16:27:33.019061,f,Nandi,Kapsabet
+191,Churo/Amaya,5,Rift Valley,Baringo,Tangulbei,KE0192,,787,Polygon,,2026-03-04 16:05:51.772772,2026-03-04 16:27:33.453338,f,Baringo,Tangulbei
+227,East Wanga,3,Western,Kakamega,East Wanga,KE0228,,1026,Polygon,,2026-03-04 16:05:52.108768,2026-03-04 16:27:33.672617,f,Kakamega,East Wanga
+247,Emsoo,6,Rift Valley,Elgeyo Marakwet,Tambach,KE0248,,742,Polygon,,2026-03-04 16:05:52.219146,2026-03-04 16:27:33.889449,f,Elgeyo Marakwet,Tambach
+269,Ganyure,3,North Eastern,Wajir,Griftu,KE0270,,179,Polygon,spelling,2026-03-04 16:05:52.486331,2026-03-04 16:27:34.12,f,Wajir,Griftu
+279,Gathanji,2,Central,Nyandarua,Ol Joro Orok,KE0280,,458,Polygon,,2026-03-04 16:05:52.538405,2026-03-04 16:27:34.195747,f,Nyandarua,Ol Joro Orok
+320,Habaswein,6,North Eastern,Wajir,Habaswein,KE0321,,187,Polygon,spelling,2026-03-04 16:05:52.832302,2026-03-04 16:27:34.570175,f,Wajir,Habaswein
+364,Imbirikani/Eselenkei,3,Rift Valley,Kajiado,Loitokitok,KE0365,,932,Polygon,spelling,2026-03-04 16:05:53.181323,2026-03-04 16:27:34.996543,f,Kajiado,Loitokitok
+388,Kabarnet,10,Rift Valley,Baringo,Kabarnet,KE0389,,793,Polygon,,2026-03-04 16:05:53.304576,2026-03-04 16:27:35.237048,f,Baringo,Kabarnet
+395,Kabiemit,11,Rift Valley,Elgeyo Marakwet,Chepkorio,KE0396,,749,Polygon,,2026-03-04 16:05:53.341925,2026-03-04 16:27:35.281403,f,Elgeyo Marakwet,Chepkorio
+433,Kamacharia,4,Central,Murang'a,Mathioya,KE0434,,521,Polygon,,2026-03-04 16:05:53.596619,2026-03-04 16:27:35.497658,f,Murang'a,Mathioya
+467,Kapchemutwa,10,Rift Valley,Elgeyo Marakwet,Kamariny,KE0468,,744,Polygon,,2026-03-04 16:05:53.889251,2026-03-04 16:27:35.667572,f,Elgeyo Marakwet,Kamariny
+469,Kapchorwa,11,Rift Valley,Nandi,Nandi Hills,KE0470,,764,Polygon,spelling,2026-03-04 16:05:53.900583,2026-03-04 16:27:35.693245,f,Nandi,Nandi Hills
+483,Kapsaos,3,Rift Valley,Kericho,Ainamoi,KE0484,,712,Polygon,,2026-03-04 16:05:53.968614,2026-03-04 16:27:35.824848,f,Kericho,Ainamoi
+516,Karuna/Meibeki,6,Rift Valley,Uasin Gishu,Moiben,KE0517,,716,Polygon,,2026-03-04 16:05:54.151816,2026-03-04 16:27:36.057025,f,Uasin Gishu,Moiben
+586,Kilibwoni,30,Rift Valley,Nandi,Kilibwoni,KE0587,,773,Polygon,,2026-03-04 16:05:54.600594,2026-03-04 16:27:36.482581,f,Nandi,Kilibwoni
+615,Kipipiri,3,Central,Nyandarua,Kipipiri,KE0616,,450,Polygon,,2026-03-04 16:05:54.758978,2026-03-04 16:27:36.859326,f,Nyandarua,Kipipiri
+642,Kitengela,3,Rift Valley,Kajiado,Isinya,KE0643,,922,Polygon,,2026-03-04 16:05:54.993927,2026-03-04 16:27:37.233405,f,Kajiado,Isinya
+683,Kuku,3,Rift Valley,Kajiado,Loitokitok,KE0684,,933,Polygon,,2026-03-04 16:05:55.209793,2026-03-04 16:27:37.82065,f,Kajiado,Loitokitok
+2,Kachieng',8,Nyanza,Migori,Karungu,KE0003,,1282,Polygon,,2026-03-04 16:05:19.877949,2026-03-04 16:09:19.444422,f,Migori,Nyatike
+3,Kendu Bay Town,6,Nyanza,Rachuonyo,East Karachuonyo,KE0004,,1236,Polygon,,2026-03-04 16:05:19.8917,2026-03-04 16:09:19.453985,f,Homa Bay,Karachuonyo
+5,Abogeta East,10,Eastern,Meru Central,Abogeta,KE0006,,293,Polygon,,2026-03-04 16:05:49.649038,2026-03-04 16:09:19.469328,f,Meru,Imenti Central
+6,Abogeta West,3,Eastern,Meru Central,Abogeta,KE0007,,294,Polygon,,2026-03-04 16:05:49.661093,2026-03-04 16:09:19.477788,f,Meru,Imenti Central
+7,Abothuguchi Central,10,Eastern,Meru Central,Abothuguchi Central,KE0008,,286,Polygon,,2026-03-04 16:05:49.673314,2026-03-04 16:09:19.48445,f,Meru,Imenti Central
+8,Abothuguchi West,22,Eastern,Meru Central,Abothuguchi West,KE0009,,287,Polygon,,2026-03-04 16:05:49.687371,2026-03-04 16:09:19.491011,f,Meru,Imenti Central
+9,Adamsajide,3,North Eastern,Wajir,Hadado,KE0010,,178,Polygon,spelling,2026-03-04 16:05:49.698952,2026-03-04 16:09:19.497248,f,Wajir,Wajir South
+10,Adu,8,Coast,Malindi,Malindi,KE0011,,83,Polygon,,2026-03-04 16:05:49.711556,2026-03-04 16:09:19.503132,f,Kilifi,Malindi
+11,Baraki,2,North Eastern,Garissa,Shant-abak,KE0012,,145,Polygon,done,2026-03-04 16:05:49.724764,2026-03-04 16:09:19.508557,f,Garissa,Fafi
+13,Ahero,7,Nyanza,Nyando,Kadibo,KE0014,,1208,Polygon,,2026-03-04 16:05:49.752883,2026-03-04 16:09:19.520329,f,Kisumu,Nyando
+18,Akachiu,8,Eastern,Meru North,Igembe South West,KE0019,,254,Polygon,,2026-03-04 16:05:49.825267,2026-03-04 16:09:19.546123,f,Meru,Igembe Central
+19,Akirang'ondu,2,Eastern,Meru North,Laare,KE0020,,256,Polygon,,2026-03-04 16:05:49.838604,2026-03-04 16:09:19.550991,f,Meru,Igembe Central
+24,Amuathi,2,Eastern,Meru North,Mutuati,KE0025,,265,Polygon,spelling,2026-03-04 16:05:49.930082,2026-03-04 16:09:19.578362,f,Meru,Meru North
+34,Antuambui,2,Eastern,Meru North,Laare,KE0035,,261,Polygon,,2026-03-04 16:05:50.087072,2026-03-04 16:09:19.701353,f,Meru,Igembe Central
+41,Athiru Gaiti,6,Eastern,Meru North,Igembe South East,KE0042,,253,Polygon,,2026-03-04 16:05:50.182437,2026-03-04 16:09:19.739978,f,Meru,Meru North
+43,Athwana,6,Eastern,Meru North,Akithi,KE0044,,266,Polygon,,2026-03-04 16:05:50.21571,2026-03-04 16:09:19.749735,f,Meru,Meru North
+44,Atuabetwe Kiongo,7,Eastern,Meru North,Ndoleli,KE0045,,263,Polygon,spelling,2026-03-04 16:05:50.25679,2026-03-04 16:09:19.754764,f,Meru,Meru North
+45,Awasi/Onjiko,5,Nyanza,Nyando,Nyando,KE0046,,1207,Polygon,,2026-03-04 16:05:50.289522,2026-03-04 16:09:19.760005,f,Kisumu,Nyando
+58,Malindi Town,1,Coast,Malindi,Malindi,KE0059,,78,Polygon,done,2026-03-04 16:05:50.640827,2026-03-04 16:09:19.822614,f,Kilifi,Malindi
+65,Basuba,4,Coast,Lamu,Kiunga,KE0066,,103,Polygon,,2026-03-04 16:05:50.743899,2026-03-04 16:27:32.09238,f,Lamu,Kiunga
+83,Boito,7,Rift Valley,Bureti,Kimulot,KE0084,,989,Polygon,,2026-03-04 16:05:50.889155,2026-03-04 16:27:32.238115,f,,Kimulot
+104,Bukira Central/Ikerege,3,Nyanza,Kuria,Kehancha,KE0105,,1290,Polygon,spelling,2026-03-04 16:05:51.118169,2026-03-04 16:27:32.338215,f,,Kehancha
+105,Bukira East,2,Nyanza,Kuria,Kehancha,KE0106,,1289,Polygon,,2026-03-04 16:05:51.125722,2026-03-04 16:27:32.344011,f,,Kehancha
+122,Butiye,5,Eastern,Moyale,Central,KE0123,,221,Polygon,,2026-03-04 16:05:51.230168,2026-03-04 16:27:32.480184,f,,Imenti Central
+716,Langas,1,Rift Valley,Uasin Gishu,Kapsaret,KE0717,,726,Polygon,,2026-03-04 16:05:55.462556,2026-03-04 16:27:38.023569,f,Uasin Gishu,Kapsaret
+723,Lembus Central,5,Rift Valley,Baringo,Eldama Ravine,KE0724,,806,Polygon,spelling,2026-03-04 16:05:55.512145,2026-03-04 16:27:38.054795,f,Baringo,Eldama Ravine
+748,Lomut,14,Rift Valley,West Pokot,Chesegon,KE0749,,649,Polygon,,2026-03-04 16:05:55.69944,2026-03-04 16:27:38.16204,f,West Pokot,Chesegon
+781,Maeni,2,Western,Bungoma,Kimilili,KE0782,,1113,Polygon,,2026-03-04 16:05:55.877943,2026-03-04 16:27:38.590575,f,Bungoma,Kimilili
+814,Manda/Shivanga,4,Western,Kakamega,Kabras,KE0815,,1006,Polygon,spelling,2026-03-04 16:05:56.13338,2026-03-04 16:27:38.701433,f,Kakamega,Kabras
+840,Marothile,2,North Eastern,Mandera,As-habito,KE0841,,203,Polygon,,2026-03-04 16:05:56.351502,2026-03-04 16:27:38.908944,f,Mandera,As-habito
+887,Megun,3,Rift Valley,Uasin Gishu,Kesses,KE0888,,725,Polygon,,2026-03-04 16:05:56.746203,2026-03-04 16:27:39.170234,f,Uasin Gishu,Kesses
+902,Milangine,2,Central,Nyandarua,Ol Kalou,KE0903,,455,Polygon,spelling,2026-03-04 16:05:56.823831,2026-03-04 16:27:39.220028,f,Nyandarua,Ol Kalou
+924,Moiben/Kuserwo,7,Rift Valley,Elgeyo Marakwet,Chebiemit,KE0925,,738,Polygon,,2026-03-04 16:05:56.934311,2026-03-04 16:27:39.410571,f,Elgeyo Marakwet,Chebiemit
+968,Mungoma,4,Western,Vihiga,Vihiga,KE0969,,1054,Polygon,,2026-03-04 16:05:57.230871,2026-03-04 16:27:39.581077,f,Vihiga,
+992,Mutonguni,9,Eastern,Kitui,Mutonguni,KE0993,,346,Polygon,spelling,2026-03-04 16:05:57.470028,2026-03-04 16:27:39.755351,f,Kitui,Mutonguni
+1020,Nabiswa,1,Rift Valley,Trans Nzoia,Kiminini,KE1021,,693,Polygon,,2026-03-04 16:05:57.60547,2026-03-04 16:27:39.919358,f,Trans Nzoia,Kiminini
+1033,Namwela,3,Western,Bungoma,Sirisia,KE1034,,1082,Polygon,,2026-03-04 16:05:57.680991,2026-03-04 16:27:39.975843,f,Bungoma,Sirisia
+1071,Nguumo,8,Eastern,Makueni,Makindu,KE1072,,432,Polygon,,2026-03-04 16:05:57.864466,2026-03-04 16:27:40.104267,f,Makueni,Makindu
+1128,Nzaui/kilili/Kalamba,12,Eastern,Makueni,Matiliku,KE1129,,429,Polygon,spelling,2026-03-04 16:05:58.222967,2026-03-04 16:27:40.333548,f,Makueni,Matiliku
+1174,Ruguru/Ngandori,8,Eastern,Embu,Manyatta,KE1175,,311,Polygon,spelling,2026-03-04 16:05:58.610665,2026-03-04 16:27:40.58793,f,Embu,Manyatta
+1182,Rware,1,Central,Nyeri,Nyeri Municipality,KE1183,,492,Polygon,,2026-03-04 16:05:58.724377,2026-03-04 16:27:40.613469,f,Nyeri,Nyeri Municipality
+1209,Sergoit,3,Rift Valley,Uasin Gishu,Moiben,KE1210,,715,Polygon,,2026-03-04 16:05:58.863311,2026-03-04 16:27:40.702125,f,Uasin Gishu,Moiben
+1235,Sikhendu,1,Rift Valley,Trans Nzoia,Kiminini,KE1236,,692,Polygon,,2026-03-04 16:05:59.067803,2026-03-04 16:27:40.894516,f,Trans Nzoia,Kiminini
+1256,Sook,11,Rift Valley,West Pokot,Chepareria,KE1257,,646,Polygon,,2026-03-04 16:05:59.167812,2026-03-04 16:27:41.033066,f,West Pokot,Chepareria
+1295,Tapach,9,Rift Valley,West Pokot,Tapach,KE1296,,660,Polygon,,2026-03-04 16:05:59.490871,2026-03-04 16:27:41.270483,f,West Pokot,Tapach
+1336,Tulwet/Chuiyat,4,Rift Valley,Uasin Gishu,Kesses,KE1337,,729,Polygon,spelling,2026-03-04 16:05:59.796221,2026-03-04 16:27:41.498733,f,Uasin Gishu,Kesses
+1394,West Bunyore,5,Western,Vihiga,Luanda,KE1395,,1075,Polygon,,2026-03-04 16:06:00.187998,2026-03-04 16:27:41.704645,f,Vihiga,Luanda
+72,Birongo,2,Nyanza,Kisii Central,Keumbu,KE0073,,1335,Polygon,,2026-03-04 16:05:50.822986,2026-03-04 16:09:19.983037,f,Kisii,Kisii Central
+73,Bobaracho,4,Nyanza,Kisii Central,Kiogoro,KE0074,,1331,Polygon,,2026-03-04 16:05:50.829803,2026-03-04 16:09:19.991757,f,Kisii,Kisii Central
+74,Bobasi Chache,4,Nyanza,Gucha (kisii South),Sameta,KE0075,,1320,Polygon,,2026-03-04 16:05:50.836746,2026-03-04 16:09:19.996916,f,Kisii,Gucha (kisii South)
+77,Bogeka,2,Nyanza,Kisii Central,Mosocho,KE0078,,1342,Polygon,,2026-03-04 16:05:50.854922,2026-03-04 16:09:20.011514,f,Kisii,Kisii Central
+78,Bogertenga,3,Nyanza,Gucha (kisii South),Nyamarambe,KE0079,,1307,Polygon,spelling,2026-03-04 16:05:50.860271,2026-03-04 16:09:20.015971,f,Kisii,Gucha (kisii South)
+79,Bogiakumu,5,Nyanza,Kisii Central,Suneka,KE0080,,1302,Polygon,,2026-03-04 16:05:50.865563,2026-03-04 16:09:20.020792,f,Kisii,Kisii Central
+80,Bogichora,6,Nyanza,Kisii North (Nyamira),Nyamaiya,KE0081,,1353,Polygon,,2026-03-04 16:05:50.871048,2026-03-04 16:09:20.026236,f,Kisii,Kisii North (Nyamira)
+81,Bogisero,4,Nyanza,Kisii Central,Mosocho,KE0082,,1341,Polygon,spelling,2026-03-04 16:05:50.877531,2026-03-04 16:09:20.031498,f,Kisii,Kisii Central
+84,Bokeira,4,Nyanza,Kisii North (Nyamira),Nyamusi,KE0085,,1359,Polygon,,2026-03-04 16:05:50.894805,2026-03-04 16:09:20.047505,f,Kisii,Kisii North (Nyamira)
+85,Bokeire,2,Nyanza,Kisii Central,Suneka,KE0086,,,,,2026-03-04 16:05:50.900518,2026-03-04 16:09:20.053225,f,Kisii,Kisii Central
+86,Bokimonge,2,Nyanza,Gucha (kisii South),Kenyenya,KE0087,,1313,Polygon,,2026-03-04 16:05:50.906114,2026-03-04 16:09:20.058033,f,Kisii,Gucha (kisii South)
+88,Bomani,1,Coast,Taita,Taita/taveta,KE0089,,113,Polygon,,2026-03-04 16:05:50.917908,2026-03-04 16:09:20.067201,f,Taita Taveta,Taita
+89,Bomariba,5,Nyanza,Kisii Central,Suneka,KE0090,,1301,Polygon,,2026-03-04 16:05:50.924091,2026-03-04 16:09:20.072028,f,Kisii,Kisii Central
+91,Bonyamatuta,3,Nyanza,Kisii North (Nyamira),Nyamira,KE0092,,1355,Polygon,,2026-03-04 16:05:50.937864,2026-03-04 16:09:20.081187,f,Kisii,Kisii North (Nyamira)
+92,Boochi Borabu,3,Nyanza,Gucha (kisii South),Kenyenya,KE0093,,1312,Polygon,,2026-03-04 16:05:50.944131,2026-03-04 16:09:20.085762,f,Kisii,Gucha (kisii South)
+93,Boochi/Tendere,4,Nyanza,Gucha (kisii South),Ogembo,KE0094,,1324,Polygon,,2026-03-04 16:05:50.950184,2026-03-04 16:09:20.090179,f,Kisii,Gucha (kisii South)
+94,Borabu Masaba,2,Nyanza,Gucha (kisii South),Kenyenya,KE0095,,,,,2026-03-04 16:05:50.956515,2026-03-04 16:09:20.095154,f,Kisii,Gucha (kisii South)
+95,Borabu/Chitago,6,Nyanza,Gucha (kisii South),Etago,KE0096,,1308,Polygon,,2026-03-04 16:05:50.963085,2026-03-04 16:09:20.099305,f,Kisii,Gucha (kisii South)
+97,Bosoti/Sengera,2,Nyanza,Gucha (kisii South),Ogembo,KE0098,,1325,Polygon,,2026-03-04 16:05:50.977031,2026-03-04 16:09:20.107966,f,Kisii,Gucha (kisii South)
+114,Bura,11,Coast,Taita,Mwatate,KE0115,,122,Polygon,,2026-03-04 16:05:51.185781,2026-03-04 16:09:20.181155,f,Taita Taveta,Taita
+59,Bartabwa,8,Rift Valley,Baringo,Bartabwa,KE0060,,792,Polygon,,2026-03-04 16:05:50.65475,2026-03-04 16:27:32.06451,f,Baringo,Bartabwa
+143,Chakol North,6,Western,Teso,Chakol,KE0144,,1129,Polygon,,2026-03-04 16:05:51.518443,2026-03-04 16:27:32.754235,f,,Chakol
+144,Chakol South,9,Western,Teso,Chakol,KE0145,,1128,Polygon,,2026-03-04 16:05:51.525115,2026-03-04 16:27:32.769116,f,,Chakol
+152,Cheboin,8,Rift Valley,Bureti,Bureti,KE0153,,952,Polygon,,2026-03-04 16:05:51.571487,2026-03-04 16:27:32.945301,f,,Bureti
+156,Chemagel,7,Rift Valley,Bureti,Sotik,KE0157,,967,Polygon,,2026-03-04 16:05:51.592822,2026-03-04 16:27:32.977992,f,,Sotik
+160,Chemosot,7,Rift Valley,Bureti,Roret,KE0161,,953,Polygon,,2026-03-04 16:05:51.611508,2026-03-04 16:27:33.005231,f,,Roret
+170,Cheplanget,6,Rift Valley,Bureti,Bureti,KE0171,,955,Polygon,,2026-03-04 16:05:51.658358,2026-03-04 16:27:33.229379,f,,Bureti
+173,Cheptais,4,Western,Mt. Elgon,Cheptais,KE0174,,1076,Polygon,,2026-03-04 16:05:51.671564,2026-03-04 16:27:33.254569,f,,Cheptais
+177,Chepyuk,6,Western,Mt. Elgon,Kopsiro,KE0178,,1078,Polygon,,2026-03-04 16:05:51.690524,2026-03-04 16:27:33.276235,f,,Kopsiro
+181,Chesikak,4,Western,Mt. Elgon,Cheptais,KE0182,,1077,Polygon,spelling,2026-03-04 16:05:51.711062,2026-03-04 16:27:33.298668,f,,Cheptais
+560,Kiamwangi,4,Central,Thika,Gatundu South,KE0561,,551,Polygon,,2026-03-04 16:05:54.466077,2026-03-04 16:27:36.278713,f,,Gatundu South
+133,Central Kamagambo,3,Nyanza,Migori,Rongo,KE0134,,1262,Polygon,,2026-03-04 16:05:51.367096,2026-03-04 16:09:20.345089,f,Migori,Rongo
+134,Central Kanyamkago,5,Nyanza,Migori,Uriri,KE0135,,1279,Polygon,,2026-03-04 16:05:51.427362,2026-03-04 16:09:20.349852,f,Migori,Uriri
+135,Central Kasipul,5,Nyanza,Rachuonyo,Kasipul,KE0136,,1223,Polygon,,2026-03-04 16:05:51.450874,2026-03-04 16:09:20.35471,f,Homa Bay,Rachuonyo
+138,Central Nyakach,6,Nyanza,Nyando,Lower Nyakach,KE0139,,1218,Polygon,,2026-03-04 16:05:51.479951,2026-03-04 16:09:20.370101,f,Kisumu,Nyando
+145,Chala,3,Coast,Taita,Taita/taveta,KE0146,,111,Polygon,,2026-03-04 16:05:51.531032,2026-03-04 16:09:20.405146,f,Taita Taveta,Taita
+151,Chawia,4,Coast,Taita,Mwatate,KE0152,,123,Polygon,,2026-03-04 16:05:51.565976,2026-03-04 16:09:20.431188,f,Taita Taveta,Taita
+158,Chemelil,8,Nyanza,Nyando,Muhoroni,KE0159,,1214,Polygon,,2026-03-04 16:05:51.602088,2026-03-04 16:09:20.462365,f,Kisumu,Nyando
+14,Ainabkoi/Olare,11,Rift Valley,Uasin Gishu,Ainabkoi,KE0015,,721,Polygon,,2026-03-04 16:05:49.775238,2026-03-04 16:27:31.612639,f,Uasin Gishu,Ainabkoi
+207,Dekaharia,3,North Eastern,Ijara,Hulugho,KE0208,,153,Polygon,,2026-03-04 16:05:51.868534,2026-03-04 16:27:33.491922,f,,Hulugho
+245,Embomos,11,Rift Valley,Bureti,Konoin,KE0246,,990,Polygon,,2026-03-04 16:05:52.209003,2026-03-04 16:27:33.789986,f,,Konoin
+246,Emining,11,Rift Valley,Koibatek,Emining,KE0247,,803,Polygon,,2026-03-04 16:05:52.213733,2026-03-04 16:27:33.879196,f,,Emining
+189,Chogoria,10,Eastern,Meru South,Mwimbi,KE0190,,300,Polygon,,2026-03-04 16:05:51.760981,2026-03-04 16:09:20.624989,f,Meru,Meru South
+195,Dadaab,1,North Eastern,Garissa,Dadaab,KE0196,,147,Polygon,,2026-03-04 16:05:51.795123,2026-03-04 16:09:20.652322,f,Garissa,Dadaab
+198,Damajale,3,North Eastern,Garissa,Dadaab,KE0199,,149,Polygon,,2026-03-04 16:05:51.814821,2026-03-04 16:09:20.666035,f,Garissa,Dadaab
+210,Dertu,1,North Eastern,Garissa,Dadaab,KE0211,,146,Polygon,,2026-03-04 16:05:51.983675,2026-03-04 16:09:20.776897,f,Garissa,Dadaab
+216,East Asembo,5,Nyanza,Bondo,Rarieda,KE0217,,1181,Polygon,,2026-03-04 16:05:52.046696,2026-03-04 16:09:20.810869,f,Siaya,Bondo
+220,East Kamagak,2,Nyanza,Rachuonyo,Kasipul,KE0221,,1224,Polygon,,2026-03-04 16:05:52.070415,2026-03-04 16:09:20.833559,f,Homa Bay,Rachuonyo
+221,East Kamagambo,6,Nyanza,Migori,Rongo,KE0222,,1263,Polygon,,2026-03-04 16:05:52.075818,2026-03-04 16:09:20.838609,f,Migori,Rongo
+223,East Kanyamkago,2,Nyanza,Migori,Uriri,KE0224,,1281,Polygon,,2026-03-04 16:05:52.087045,2026-03-04 16:09:20.84954,f,Migori,Uriri
+231,Ekerenyo,1,Nyanza,Kisii North (Nyamira),Ekerenyo,KE0232,,1361,Polygon,,2026-03-04 16:05:52.129499,2026-03-04 16:09:20.958385,f,Kisii,Kisii North (Nyamira)
+15,Ainamoi,2,Rift Valley,Kericho,Ainamoi,KE0016,,945,Polygon,,2026-03-04 16:05:49.787824,2026-03-04 16:27:31.632688,f,Kericho,Ainamoi
+264,Gaichanjiru,5,Central,Maragwa,Kandara,KE0265,,542,Polygon,,2026-03-04 16:05:52.453903,2026-03-04 16:27:34.08445,f,,Kandara
+276,Gatanga,4,Central,Thika,Gatanga,KE0277,,549,Polygon,,2026-03-04 16:05:52.523497,2026-03-04 16:27:34.177747,f,,Gatanga
+278,Gathaite,8,Central,Thika,Kamwangi,KE0279,,,,,2026-03-04 16:05:52.533573,2026-03-04 16:27:34.189558,f,,Kamwangi
+284,Gatongora,1,Central,Thika,Ruiru,KE0285,,571,Polygon,,2026-03-04 16:05:52.564694,2026-03-04 16:27:34.219628,f,,Ruiru
+291,Gembe,6,Nyanza,Suba,Mbita,KE0292,,1255,Polygon,,2026-03-04 16:05:52.600519,2026-03-04 16:27:34.250928,f,,Mbita
+303,Githumu/Gichagi-ini,3,Central,Maragwa,Kandara,KE0304,,,,,2026-03-04 16:05:52.661868,2026-03-04 16:27:34.457359,f,,Kandara
+306,Gitothua,2,Central,Thika,Ruiru,KE0307,,569,Polygon,,2026-03-04 16:05:52.698704,2026-03-04 16:27:34.465338,f,,Ruiru
+307,Gituamba,6,Central,Thika,Kamwangi,KE0308,,555,Polygon,,2026-03-04 16:05:52.728119,2026-03-04 16:27:34.471328,f,,Kamwangi
+311,Gokeharaka/Getembw,4,Nyanza,Kuria,Kehancha,KE0312,,1296,Polygon,spelling,2026-03-04 16:05:52.775143,2026-03-04 16:27:34.489795,f,,Kehancha
+312,Golbo,7,Eastern,Moyale,Golbo,KE0313,,224,Polygon,,2026-03-04 16:05:52.782207,2026-03-04 16:27:34.49608,f,,Golbo
+253,Esise,3,Nyanza,Kisii North (Nyamira),Borabu,KE0254,,1365,Polygon,,2026-03-04 16:05:52.253951,2026-03-04 16:09:21.137268,f,Kisii,Kisii North (Nyamira)
+255,Evurore,8,Eastern,Mbeere,Evurore,KE0256,,330,Polygon,,2026-03-04 16:05:52.295446,2026-03-04 16:09:21.146709,f,Embu,Mbeere
+263,Gachuba,3,Nyanza,Kisii North (Nyamira),Rigoma,KE0264,,1347,Polygon,,2026-03-04 16:05:52.446238,2026-03-04 16:09:21.18463,f,Kisii,Kisii North (Nyamira)
+267,Ganda,4,Coast,Malindi,Malindi,KE0268,,77,Polygon,,2026-03-04 16:05:52.473296,2026-03-04 16:09:21.224733,f,Kilifi,Malindi
+268,Ganga,4,Eastern,Meru South,Mwimbi,KE0269,,299,Polygon,,2026-03-04 16:05:52.479309,2026-03-04 16:09:21.24314,f,Meru,Meru South
+270,Garashi,9,Coast,Malindi,Marafa,KE0271,,84,Polygon,,2026-03-04 16:05:52.491687,2026-03-04 16:09:21.280167,f,Kilifi,Malindi
+285,Gatunga,6,Eastern,Tharaka,Tharaka North,KE0286,,306,Polygon,,2026-03-04 16:05:52.569929,2026-03-04 16:09:21.372944,f,Tharaka Nithi,Tharaka
+289,Gem East/Rangwe,4,Nyanza,Homa Bay,Rangwe,KE0290,,,,,2026-03-04 16:05:52.591248,2026-03-04 16:09:21.392065,f,Homa Bay,Rangwe
+290,Gem West,3,Nyanza,Homa Bay,Rangwe,KE0291,,,,,2026-03-04 16:05:52.595828,2026-03-04 16:09:21.396543,f,Homa Bay,Rangwe
+293,Gesusu,9,Nyanza,Kisii Central,Kiamokama,KE0294,,1329,Polygon,,2026-03-04 16:05:52.609854,2026-03-04 16:09:21.410248,f,Kisii,Kisii Central
+295,Getenga,3,Nyanza,Gucha (kisii South),Etago,KE0296,,1310,Polygon,,2026-03-04 16:05:52.620255,2026-03-04 16:09:21.420388,f,Kisii,Gucha (kisii South)
+17,Airport,1,Coast,Mombasa,Changamwe,KE0018,,3,Polygon,,2026-03-04 16:05:49.813662,2026-03-04 16:27:31.709602,f,Mombasa,Changamwe
+318,Gwassi North,7,Nyanza,Suba,Gwassi,KE0319,,1258,Polygon,,2026-03-04 16:05:52.821071,2026-03-04 16:27:34.552134,f,,Gwassi
+16,Airbase,1,Nairobi,Nairobi,Pumwani,KE0017,,1437,Polygon,,2026-03-04 16:05:49.801235,2026-03-04 16:26:00.435401,f,Nairobi,Pumwani
+319,Gwassi South,8,Nyanza,Suba,Gwassi,KE0320,,1257,Polygon,,2026-03-04 16:05:52.82641,2026-03-04 16:27:34.560691,f,,Gwassi
+323,Heillu,5,Eastern,Moyale,Central,KE0324,,223,Polygon,spelling,2026-03-04 16:05:52.848716,2026-03-04 16:27:34.588622,f,,Imenti Central
+333,Hulugho,4,North Eastern,Ijara,Hulugho,KE0334,,157,Polygon,,2026-03-04 16:05:52.903146,2026-03-04 16:27:34.770351,f,,Hulugho
+337,Ichagaki,4,Central,Maragwa,Maragwa,KE0338,,537,Polygon,,2026-03-04 16:05:52.923003,2026-03-04 16:27:34.788092,f,,Maragwa
+349,Ijara,10,North Eastern,Ijara,Ijara,KE0350,,159,Polygon,,2026-03-04 16:05:52.990749,2026-03-04 16:27:34.908855,f,,Ijara
+369,Isibania,1,Nyanza,Kuria,Kehancha,KE0370,,1291,Polygon,,2026-03-04 16:05:53.21023,2026-03-04 16:27:35.020852,f,,Kehancha
+371,Ithanga,3,Central,Thika,Kakuzi,KE0372,,545,Polygon,,2026-03-04 16:05:53.220949,2026-03-04 16:27:35.033467,f,,Kakuzi
+372,Ithiru,5,Central,Maragwa,Kandara,KE0373,,543,Polygon,,2026-03-04 16:05:53.225788,2026-03-04 16:27:35.039547,f,,Kandara
+314,Gongoni,4,Coast,Malindi,Magarini,KE0315,,82,Polygon,,2026-03-04 16:05:52.796708,2026-03-04 16:09:21.514078,f,Kilifi,Malindi
+321,Hadado/Adhibohol,4,North Eastern,Wajir,Hadado,KE0322,,177,Polygon,spelling,2026-03-04 16:05:52.837704,2026-03-04 16:09:21.644652,f,Wajir,Wajir South
+335,Ibeno,5,Nyanza,Kisii Central,Keumbu,KE0336,,1336,Polygon,,2026-03-04 16:05:52.913226,2026-03-04 16:09:21.755091,f,Kisii,Kisii Central
+338,Ichuni,5,Nyanza,Kisii Central,Kiamokama,KE0339,,1326,Polygon,,2026-03-04 16:05:52.927732,2026-03-04 16:09:21.770522,f,Kisii,Kisii Central
+344,Igambang'ombe,12,Eastern,Meru South,Igambangombe,KE0345,,305,Polygon,,2026-03-04 16:05:52.959677,2026-03-04 16:09:21.798649,f,Meru,Meru South
+345,Igembe South,7,Eastern,Meru North,Igembe East,KE0346,,,,,2026-03-04 16:05:52.966407,2026-03-04 16:09:21.80314,f,Meru,Meru North
+346,Igoji East,8,Eastern,Meru Central,Igoji,KE0347,,291,Polygon,,2026-03-04 16:05:52.973061,2026-03-04 16:09:21.807542,f,Meru,Meru Central
+347,Igoji West,8,Eastern,Meru Central,Abothuguchi West,KE0348,,292,Polygon,,2026-03-04 16:05:52.979581,2026-03-04 16:09:21.811794,f,Meru,Imenti Central
+373,Itibo,5,Nyanza,Kisii North (Nyamira),Ekerenyo,KE0374,,1357,Polygon,,2026-03-04 16:05:53.230835,2026-03-04 16:09:22.047449,f,Kisii,Kisii North (Nyamira)
+21,Alale,15,Rift Valley,West Pokot,Alale,KE0022,,656,Polygon,,2026-03-04 16:05:49.865564,2026-03-04 16:27:31.728633,f,West Pokot,Alale
+382,Juja,1,Central,Thika,Ruiru,KE0383,,561,Polygon,,2026-03-04 16:05:53.275484,2026-03-04 16:27:35.078146,f,,Ruiru
+411,Kagunduini,5,Central,Maragwa,Kandara,KE0412,,541,Polygon,,2026-03-04 16:05:53.469673,2026-03-04 16:27:35.336117,f,,Kandara
+415,Kahawa/Sukari,1,Central,Thika,Ruiru,KE0416,,572,Polygon,,2026-03-04 16:05:53.500621,2026-03-04 16:27:35.34723,f,,Ruiru
+416,Kahumbu,5,Central,Maragwa,Maragwa,KE0417,,528,Polygon,,2026-03-04 16:05:53.506495,2026-03-04 16:27:35.352141,f,,Maragwa
+420,Kaksingiri West,5,Nyanza,Suba,Central,KE0421,,1259,Polygon,,2026-03-04 16:05:53.52921,2026-03-04 16:27:35.367584,f,,Imenti Central
+423,Kakuzi/ Mitubiri,4,Central,Thika,Kakuzi,KE0424,,546,Polygon,,2026-03-04 16:05:53.545466,2026-03-04 16:27:35.380146,f,,Kakuzi
+429,Kalimoni,1,Central,Thika,Ruiru,KE0430,,563,Polygon,,2026-03-04 16:05:53.574426,2026-03-04 16:27:35.463673,f,,Ruiru
+435,Kamahuha,4,Central,Maragwa,Makuyu,KE0436,,536,Polygon,,2026-03-04 16:05:53.60764,2026-03-04 16:27:35.522517,f,,Makuyu
+380,Jilore,6,Coast,Malindi,Malindi,KE0381,,75,Polygon,,2026-03-04 16:05:53.265504,2026-03-04 16:09:22.083126,f,Kilifi,Malindi
+396,Kabiri,12,Nyanza,Rachuonyo,West Karachuonyo,KE0397,,,,,2026-03-04 16:05:53.347469,2026-03-04 16:09:22.210432,f,Homa Bay,Karachuonyo
+400,Kabondo East,6,Nyanza,Rachuonyo,Kabondo,KE0401,,1226,Polygon,,2026-03-04 16:05:53.36918,2026-03-04 16:09:22.2635,f,Homa Bay,Rachuonyo
+401,Kabondo West,8,Nyanza,Rachuonyo,Kabondo,KE0402,,1227,Polygon,,2026-03-04 16:05:53.374538,2026-03-04 16:09:22.270386,f,Homa Bay,Rachuonyo
+402,Kabonyo/Kanyagwal,11,Nyanza,Nyando,Kadibo,KE0403,,1209,Polygon,spelling,2026-03-04 16:05:53.380603,2026-03-04 16:09:22.276647,f,Kisumu,Nyando
+410,Kagan,10,Nyanza,Homa Bay,Rangwe,KE0411,,1239,Polygon,,2026-03-04 16:05:53.461715,2026-03-04 16:09:22.322068,f,Homa Bay,Rangwe
+422,Kakuyuni,4,Coast,Malindi,Malindi,KE0423,,76,Polygon,,2026-03-04 16:05:53.540073,2026-03-04 16:09:22.386237,f,Kilifi,Malindi
+428,Kaler,2,Nyanza,Migori,Nyatike,KE0429,,1286,Polygon,,2026-03-04 16:05:53.569845,2026-03-04 16:09:22.464579,f,Migori,Nyatike
+432,Kaloleni,6,Coast,Taita,Voi,KE0433,,127,Polygon,,2026-03-04 16:05:53.590896,2026-03-04 16:09:22.495231,f,Taita Taveta,Taita
+22,Alango Gof,1,North Eastern,Mandera,Lafey,KE0023,,220,Polygon,spelling,2026-03-04 16:05:49.885091,2026-03-04 16:27:31.749784,f,Mandera,Lafey
+440,Kambiti,7,Central,Maragwa,Makuyu,KE0441,,535,Polygon,,2026-03-04 16:05:53.633464,2026-03-04 16:27:35.578642,f,,Makuyu
+442,Kamenu,1,Central,Thika,Thika Municipality,KE0443,,565,Polygon,,2026-03-04 16:05:53.643497,2026-03-04 16:27:35.584921,f,,Thika Municipality
+445,Kamwangi,5,Central,Thika,Kamwangi,KE0446,,,,,2026-03-04 16:05:53.658776,2026-03-04 16:27:35.596819,f,,Kamwangi
+449,Kangare,3,Central,Maragwa,Kigumo,KE0450,,531,Polygon,,2026-03-04 16:05:53.680469,2026-03-04 16:27:35.614601,f,,Kigumo
+473,Kapkateny,8,Western,Mt. Elgon,Kopsiro,KE0474,,1079,Polygon,,2026-03-04 16:05:53.919869,2026-03-04 16:27:35.721397,f,,Kopsiro
+474,Kapkatet,4,Rift Valley,Bureti,Bureti,KE0475,,956,Polygon,,2026-03-04 16:05:53.924489,2026-03-04 16:27:35.730154,f,,Bureti
+479,Kapletundo,13,Rift Valley,Bureti,Sotik,KE0480,,969,Polygon,,2026-03-04 16:05:53.949391,2026-03-04 16:27:35.781584,f,,Sotik
+484,Kapsasian,2,Rift Valley,Transmara,Kirindon,KE0485,,890,Polygon,,2026-03-04 16:05:53.974238,2026-03-04 16:27:35.831482,f,,Kirindon
+487,Kapsokwony,12,Western,Mt. Elgon,Kapsokwony,KE0488,,,,,2026-03-04 16:05:53.990593,2026-03-04 16:27:35.849412,f,,Kapsokwony
+492,Kaptama,7,Western,Mt. Elgon,Kaptama,KE0493,,1080,Polygon,,2026-03-04 16:05:54.015843,2026-03-04 16:27:35.87837,f,,Kaptama
+443,Masogo/Nyang'oma,9,Nyanza,Nyando,Miwani,KE0444,,1213,Polygon,,2026-03-04 16:05:53.648602,2026-03-04 16:09:22.556059,f,Kisumu,Nyando
+451,Kangeta,6,Eastern,Meru North,Igembe North,KE0452,,260,Polygon,,2026-03-04 16:05:53.693107,2026-03-04 16:09:22.593086,f,Meru,Meru North
+457,Kanuni,8,Eastern,Meru North,Igembe South,KE0458,,255,Polygon,,2026-03-04 16:05:53.816893,2026-03-04 16:09:22.620168,f,Meru,Meru North
+459,Kanyaluo,7,Nyanza,Rachuonyo,East Karachuonyo,KE0460,,1233,Polygon,,2026-03-04 16:05:53.834227,2026-03-04 16:09:22.629466,f,Homa Bay,Karachuonyo
+461,Kanyamwa/Kosewe,4,Nyanza,Homa Bay,Ndhiwa,KE0462,,1251,Polygon,,2026-03-04 16:05:53.849052,2026-03-04 16:09:22.639628,f,Homa Bay,Ndhiwa
+23,Amalo,5,Rift Valley,Nakuru,Gilgil,KE0024,,849,Polygon,,2026-03-04 16:05:49.91289,2026-03-04 16:27:31.76576,f,Nakuru,Gilgil
+35,Arabia,5,North Eastern,Mandera,Fino,KE0036,,211,Polygon,,2026-03-04 16:05:50.100135,2026-03-04 16:27:31.879522,f,Mandera,Fino
+509,Kariara,7,Central,Thika,Gatanga,KE0510,,550,Polygon,,2026-03-04 16:05:54.114145,2026-03-04 16:27:36.032993,f,,Gatanga
+523,Kasgunga East,3,Nyanza,Suba,Mbita,KE0524,,1254,Polygon,,2026-03-04 16:05:54.193183,2026-03-04 16:27:36.07953,f,,Mbita
+540,Keiyan,11,Rift Valley,Transmara,Keiyan,KE0541,,882,Polygon,spelling,2026-03-04 16:05:54.299848,2026-03-04 16:27:36.207606,f,,Keiyan
+503,Karama,4,Eastern,Meru North,Tigania North,KE0504,,275,Polygon,,2026-03-04 16:05:54.080336,2026-03-04 16:09:22.97246,f,Meru,Meru North
+511,Karingani,6,Eastern,Meru South,Chuka,KE0512,,302,Polygon,,2026-03-04 16:05:54.125012,2026-03-04 16:09:23.089582,f,Meru,Meru South
+524,Kasigau,3,Coast,Taita,Voi,KE0525,,129,Polygon,,2026-03-04 16:05:54.199252,2026-03-04 16:09:23.27873,f,Taita Taveta,Taita
+549,Keumbu,2,Nyanza,Kisii Central,Keumbu,KE0550,,1333,Polygon,,2026-03-04 16:05:54.407203,2026-03-04 16:09:23.678308,f,Kisii,Kisii Central
+555,Kiagu,6,Eastern,Meru Central,Abothuguchi East,KE0556,,288,Polygon,,2026-03-04 16:05:54.441193,2026-03-04 16:09:23.762611,f,Meru,Meru Central
+558,Kiambere,4,Eastern,Mbeere,Gachoka,KE0559,,327,Polygon,,2026-03-04 16:05:54.456232,2026-03-04 16:09:23.810074,f,Embu,Mbeere
+559,Kiamokama,5,Nyanza,Kisii Central,Kiamokama,KE0560,,1330,Polygon,,2026-03-04 16:05:54.461329,2026-03-04 16:09:23.821251,f,Kisii,Kisii Central
+561,Kianjai,7,Eastern,Meru North,Tigania West,KE0562,,268,Polygon,,2026-03-04 16:05:54.471133,2026-03-04 16:09:23.844599,f,Meru,Meru North
+569,Kiganjo,14,Central,Thika,Gatundu South,KE0570,,552,Polygon,,2026-03-04 16:05:54.512036,2026-03-04 16:27:36.314572,f,,Gatundu South
+573,Kihara,2,Central,Kiambu,Kiambaa,KE0574,,590,Polygon,,2026-03-04 16:05:54.531648,2026-03-04 16:26:04.553468,f,Kiambu,Kiambaa
+572,Kigumo,6,Central,Maragwa,Kigumo,KE0573,,530,Polygon,,2026-03-04 16:05:54.526951,2026-03-04 16:27:36.339742,f,,Kigumo
+575,Kihumbu-Ini,4,Central,Thika,Gatanga,KE0576,,548,Polygon,,2026-03-04 16:05:54.54126,2026-03-04 16:27:36.395217,f,,Gatanga
+585,Kilgoris Central,13,Rift Valley,Transmara,Pirrar,KE0586,,881,Polygon,,2026-03-04 16:05:54.593941,2026-03-04 16:27:36.470445,f,,Pirrar
+594,Kimintet,11,Rift Valley,Transmara,Kirindon,KE0595,,885,Polygon,,2026-03-04 16:05:54.651216,2026-03-04 16:27:36.612122,f,,Kirindon
+595,Kimorori/Wempa,3,Central,Maragwa,Makuyu,KE0596,,533,Polygon,,2026-03-04 16:05:54.657006,2026-03-04 16:27:36.623771,f,,Makuyu
+596,Kimulot,5,Rift Valley,Bureti,Kimulot,KE0597,,987,Polygon,,2026-03-04 16:05:54.662383,2026-03-04 16:27:36.634967,f,,Kimulot
+607,Kinyona,4,Central,Maragwa,Kigumo,KE0608,,532,Polygon,,2026-03-04 16:05:54.719657,2026-03-04 16:27:36.748249,f,,Kigumo
+568,Kiegoi/Antubochiu,8,Eastern,Meru North,Igembe Central,KE0569,,252,Polygon,,2026-03-04 16:05:54.506705,2026-03-04 16:09:23.931566,f,Meru,Meru North
+571,Kiguchwa,4,Eastern,Meru North,Tigania Central,KE0572,,273,Polygon,spelling,2026-03-04 16:05:54.522032,2026-03-04 16:09:23.972023,f,Meru,Meru North
+578,Kiirua/Naari,7,Eastern,Meru Central,Buuri,KE0579,,283,Polygon,spelling,2026-03-04 16:05:54.555855,2026-03-04 16:09:24.078609,f,Meru,Meru Central
+609,Kiogoro,3,Nyanza,Kisii Central,Kiogoro,KE0610,,1334,Polygon,,2026-03-04 16:05:54.729084,2026-03-04 16:09:24.556193,f,Kisii,Kisii Central
+36,Arbajahan,5,North Eastern,Wajir,Griftu,KE0037,,176,Polygon,,2026-03-04 16:05:50.114446,2026-03-04 16:27:31.90855,f,Wajir,Griftu
+629,Kirimari,4,Eastern,Embu,Manyatta,KE0630,,315,Polygon,,2026-03-04 16:05:54.826199,2026-03-04 16:27:37.069642,f,Embu,Manyatta
+636,Kisanana,22,Rift Valley,Koibatek,Kisanana,KE0637,,804,Polygon,,2026-03-04 16:05:54.874485,2026-03-04 16:27:37.15648,f,,Kisanana
+638,Kisiara,5,Rift Valley,Bureti,Roret,KE0639,,950,Polygon,,2026-03-04 16:05:54.924685,2026-03-04 16:27:37.197795,f,,Roret
+651,Kiuu,1,Central,Thika,Ruiru,KE0652,,574,Polygon,,2026-03-04 16:05:55.057513,2026-03-04 16:27:37.347007,f,,Ruiru
+640,Kisima,6,Eastern,Meru Central,Timau,KE0641,,282,Polygon,,2026-03-04 16:05:54.961163,2026-03-04 16:09:25.03326,f,Meru,Meru Central
+649,Kitutu Central,1,Nyanza,Kisii Central,Mosocho,KE0650,,1344,Polygon,,2026-03-04 16:05:55.045932,2026-03-04 16:09:25.200054,f,Kisii,Kisii Central
+656,Kobura,8,Nyanza,Nyando,Kadibo,KE0657,,1210,Polygon,,2026-03-04 16:05:55.083689,2026-03-04 16:09:25.299751,f,Kisumu,Nyando
+661,Kojwach,3,Nyanza,Rachuonyo,Kasipul,KE0662,,1229,Polygon,,2026-03-04 16:05:55.10908,2026-03-04 16:09:25.381856,f,Homa Bay,Rachuonyo
+662,Kokwanyo/Kakelo,4,Nyanza,Rachuonyo,Kasipul,KE0663,,1228,Polygon,,2026-03-04 16:05:55.113874,2026-03-04 16:09:25.394234,f,Homa Bay,Rachuonyo
+37,Arror,6,Rift Valley,Elgeyo Marakwet,Tunyo,KE0038,,740,Polygon,,2026-03-04 16:05:50.127863,2026-03-04 16:27:31.95649,f,Elgeyo Marakwet,Tunyo
+712,Lambwe,6,Nyanza,Suba,Lambwe,KE0713,,1256,Polygon,,2026-03-04 16:05:55.443164,2026-03-04 16:27:38.006206,f,,Lambwe
+735,Litein,9,Rift Valley,Bureti,Bureti,KE0736,,954,Polygon,,2026-03-04 16:05:55.571481,2026-03-04 16:27:38.102754,f,,Bureti
+747,Lolgorian,8,Rift Valley,Transmara,Keiyan,KE0748,,886,Polygon,,2026-03-04 16:05:55.692195,2026-03-04 16:27:38.156885,f,,Keiyan
+703,Labisgale,1,North Eastern,Garissa,Dadaab,KE0704,,148,Polygon,,2026-03-04 16:05:55.389612,2026-03-04 16:09:25.869747,f,Garissa,Dadaab
+38,As-habito,4,North Eastern,Mandera,As-habito,KE0039,,201,Polygon,spelling,2026-03-04 16:05:50.141422,2026-03-04 16:27:31.972132,f,Mandera,As-habito
+804,Makuyu,3,Central,Maragwa,Makuyu,KE0805,,534,Polygon,,2026-03-04 16:05:56.077527,2026-03-04 16:27:38.656596,f,,Makuyu
+805,Malaba Central,7,Western,Teso,Amagoro,KE0806,,1121,Polygon,,2026-03-04 16:05:56.082983,2026-03-04 16:27:38.661472,f,,Amagoro
+806,Malaba North,6,Western,Teso,Amagoro,KE0807,,1122,Polygon,,2026-03-04 16:05:56.088229,2026-03-04 16:27:38.666681,f,,Amagoro
+807,Malaba South,8,Western,Teso,Amagoro,KE0808,,1126,Polygon,,2026-03-04 16:05:56.093098,2026-03-04 16:27:38.671852,f,,Amagoro
+774,Macalder/Kanyarwan,6,Nyanza,Migori,Nyatike,KE0775,,1285,Polygon,spelling,2026-03-04 16:05:55.842474,2026-03-04 16:09:26.458171,f,Migori,Nyatike
+783,Magarini,4,Coast,Malindi,Magarini,KE0784,,81,Polygon,,2026-03-04 16:05:55.888028,2026-03-04 16:09:26.500709,f,Kilifi,Malindi
+784,Magenche,3,Nyanza,Gucha (kisii South),Kenyenya,KE0785,,1314,Polygon,,2026-03-04 16:05:55.892798,2026-03-04 16:09:26.506039,f,Kisii,Gucha (kisii South)
+787,Magumoini,14,Eastern,Meru South,Magumoni,KE0788,,303,Polygon,spelling,2026-03-04 16:05:55.908194,2026-03-04 16:09:26.520102,f,Meru,Meru South
+790,Magwagwa,3,Nyanza,Kisii North (Nyamira),Nyamusi,KE0791,,1360,Polygon,,2026-03-04 16:05:55.926258,2026-03-04 16:09:26.5334,f,Kisii,Kisii North (Nyamira)
+797,Majoge Basi,2,Nyanza,Gucha (kisii South),Ogembo,KE0798,,1323,Polygon,,2026-03-04 16:05:56.034736,2026-03-04 16:09:26.564074,f,Kisii,Gucha (kisii South)
+798,Makima,3,Eastern,Mbeere,Mwea,KE0799,,324,Polygon,,2026-03-04 16:05:56.042372,2026-03-04 16:09:26.569034,f,Embu,Mbeere
+812,Malindi,1,Coast,Malindi,Malindi,KE0813,,78,Polygon,,2026-03-04 16:05:56.12169,2026-03-04 16:09:26.631684,f,Kilifi,Malindi
+40,Athi River,2,Eastern,Machakos,Athi River,KE0041,,394,Polygon,,2026-03-04 16:05:50.169101,2026-03-04 16:27:31.98891,f,Machakos,Athi River
+816,Mangu,6,Central,Thika,Kamwangi,KE0817,,558,Polygon,spelling,2026-03-04 16:05:56.143507,2026-03-04 16:27:38.706459,f,,Kamwangi
+843,Masaba,7,Nyanza,Kuria,Masaba,KE0844,,1293,Polygon,,2026-03-04 16:05:56.366765,2026-03-04 16:27:38.914363,f,,Nyaribari Masaba
+844,Masalani,9,North Eastern,Ijara,Masalani,KE0845,,160,Polygon,,2026-03-04 16:05:56.371735,2026-03-04 16:27:38.920129,f,,Masalani
+823,Marafa,3,Coast,Malindi,Marafa,KE0824,,80,Polygon,,2026-03-04 16:05:56.180705,2026-03-04 16:09:26.679731,f,Kilifi,Malindi
+834,Mariani,6,Eastern,Meru South,Chuka,KE0835,,301,Polygon,,2026-03-04 16:05:56.315883,2026-03-04 16:09:26.731076,f,Meru,Meru South
+837,Marimanti,12,Eastern,Tharaka,Tharaka Central,KE0838,,310,Polygon,,2026-03-04 16:05:56.334183,2026-03-04 16:09:26.744871,f,Tharaka Nithi,Tharaka
+842,Marungu,2,Coast,Taita,Voi,KE0843,,128,Polygon,,2026-03-04 16:05:56.361374,2026-03-04 16:09:26.768329,f,Taita Taveta,Taita
+845,Masige East,4,Nyanza,Gucha (kisii South),Nyamache,KE0846,,1316,Polygon,,2026-03-04 16:05:56.37701,2026-03-04 16:09:26.782276,f,Kisii,Gucha (kisii South)
+848,Masimba,8,Nyanza,Kisii Central,Masaba,KE0849,,1328,Polygon,,2026-03-04 16:05:56.391944,2026-03-04 16:09:26.796626,f,Kisii,Kisii Central
+853,Mata,2,Coast,Taita,Taita/taveta,KE0854,,115,Polygon,,2026-03-04 16:05:56.414789,2026-03-04 16:09:26.820531,f,Taita Taveta,Taita
+868,Maua Town,8,Eastern,Meru North,Igembe East,KE0869,,251,Polygon,spelling,2026-03-04 16:05:56.488446,2026-03-04 16:09:26.897632,f,Meru,Meru North
+872,Mavuria,8,Eastern,Mbeere,Gachoka,KE0873,,326,Polygon,,2026-03-04 16:05:56.521642,2026-03-04 16:09:26.915903,f,Embu,Mbeere
+46,Baawa,7,Rift Valley,Samburu,Kirisia,KE0047,,671,Polygon,,2026-03-04 16:05:50.319778,2026-03-04 16:27:31.996615,f,Samburu,Kirisia
+919,Mogogosiek,7,Rift Valley,Bureti,Konoin,KE0920,,988,Polygon,,2026-03-04 16:05:56.906923,2026-03-04 16:27:39.312508,f,,Konoin
+925,Mokerero,3,Nyanza,Kuria,Kehancha,KE0926,,1292,Polygon,,2026-03-04 16:05:56.940078,2026-03-04 16:27:39.419157,f,,Kehancha
+933,Mt. Elgon,20,Western,Mt. Elgon,Kaptama,KE0934,,1081,Polygon,spelling,2026-03-04 16:05:57.023673,2026-03-04 16:27:39.453416,f,,Kaptama
+879,Mbeti,5,Eastern,Mbeere,Gachoka,KE0880,,325,Polygon,spelling,2026-03-04 16:05:56.695589,2026-03-04 16:09:26.955171,f,Embu,Mbeere
+881,Mbeu,6,Eastern,Meru North,Uringu,KE0882,,270,Polygon,,2026-03-04 16:05:56.709852,2026-03-04 16:09:26.966503,f,Meru,Meru North
+884,Mboghoni,3,Coast,Taita,Taita/taveta,KE0885,,114,Polygon,,2026-03-04 16:05:56.728854,2026-03-04 16:09:26.991513,f,Taita Taveta,Taita
+885,Mbololo,3,Coast,Taita,Voi,KE0886,,125,Polygon,,2026-03-04 16:05:56.734855,2026-03-04 16:09:26.999167,f,Taita Taveta,Taita
+888,Mekenene,4,Nyanza,Kisii North (Nyamira),Borabu,KE0889,,1362,Polygon,,2026-03-04 16:05:56.751818,2026-03-04 16:09:27.019454,f,Kisii,Kisii North (Nyamira)
+901,Mikinduri,5,Eastern,Meru North,Tigania Central,KE0902,,272,Polygon,,2026-03-04 16:05:56.81935,2026-03-04 16:09:27.093415,f,Meru,Meru North
+907,Mitheru,3,Eastern,Meru South,Muthambi,KE0908,,296,Polygon,,2026-03-04 16:05:56.846502,2026-03-04 16:09:27.122662,f,Meru,Meru South
+908,Mitunguu,2,Eastern,Meru Central,Nkuene,KE0909,,290,Polygon,,2026-03-04 16:05:56.850929,2026-03-04 16:09:27.127359,f,Meru,Meru Central
+909,Miwani,4,Nyanza,Nyando,Miwani,KE0910,,1211,Polygon,,2026-03-04 16:05:56.855251,2026-03-04 16:09:27.132706,f,Kisumu,Nyando
+929,Moticho,4,Nyanza,Gucha (kisii South),Etago,KE0930,,1309,Polygon,,2026-03-04 16:05:56.965983,2026-03-04 16:09:27.332368,f,Kisii,Gucha (kisii South)
+943,Mugumoini,5,Central,Thika,Gatanga,KE0944,,,,,2026-03-04 16:05:57.108996,2026-03-04 16:27:39.490867,f,,Gatanga
+47,Babadogo,1,Nairobi,Nairobi,Kasarani,KE0048,,1401,Polygon,,2026-03-04 16:05:50.331711,2026-03-04 16:26:00.57201,f,Nairobi,Kasarani
+971,Murera,1,Central,Thika,Ruiru,KE0972,,559,Polygon,,2026-03-04 16:05:57.24648,2026-03-04 16:27:39.599202,f,,Ruiru
+975,Muruka,3,Central,Maragwa,Kandara,KE0976,,540,Polygon,,2026-03-04 16:05:57.267122,2026-03-04 16:27:39.676252,f,,Kandara
+985,Muthithi,5,Central,Maragwa,Maragwa,KE0986,,529,Polygon,,2026-03-04 16:05:57.425791,2026-03-04 16:27:39.727214,f,,Maragwa
+946,Mugwe,7,Eastern,Meru South,Chuka,KE0947,,304,Polygon,,2026-03-04 16:05:57.124901,2026-03-04 16:09:27.418568,f,Meru,Meru South
+947,Muhoroni/Koru,9,Nyanza,Nyando,Muhoroni,KE0948,,1215,Polygon,spelling,2026-03-04 16:05:57.129962,2026-03-04 16:09:27.423648,f,Kisumu,Nyando
+954,Mukothima,6,Eastern,Tharaka,Tharaka North,KE0955,,307,Polygon,,2026-03-04 16:05:57.166921,2026-03-04 16:09:27.458739,f,Tharaka Nithi,Tharaka
+965,Muminji,5,Eastern,Mbeere,Siakago,KE0966,,329,Polygon,,2026-03-04 16:05:57.214096,2026-03-04 16:09:27.616413,f,Embu,Mbeere
+969,Municipality,4,Eastern,Meru Central,Miriga Mieru West,KE0970,,276,Polygon,,2026-03-04 16:05:57.236368,2026-03-04 16:09:27.644146,f,Meru,Meru Central
+982,Muthara,8,Eastern,Meru North,Tigania North,KE0983,,274,Polygon,,2026-03-04 16:05:57.37945,2026-03-04 16:09:27.712432,f,Meru,Meru North
+995,Mwaking'oina,2,Nyanza,Kisii Central,Marani,KE0996,,,,,2026-03-04 16:05:57.485304,2026-03-04 16:09:27.768057,f,Kisii,Kisii Central
+1000,Mwanda/mghange,6,Coast,Taita,Wundanyi,KE1001,,119,Polygon,spelling,2026-03-04 16:05:57.512757,2026-03-04 16:09:27.789254,f,Taita Taveta,Taita
+1001,Mwangathia,6,Eastern,Meru Central,Abothuguchi East,KE1002,,285,Polygon,,2026-03-04 16:05:57.51904,2026-03-04 16:09:27.793095,f,Meru,Meru Central
+1004,Mwatate,3,Coast,Taita,Mwatate,KE1005,,121,Polygon,,2026-03-04 16:05:57.533224,2026-03-04 16:09:27.805974,f,Taita Taveta,Taita
+48,Bahari,4,Coast,Lamu,Mpeketoni,KE0049,,110,Polygon,,2026-03-04 16:05:50.344513,2026-03-04 16:27:32.003141,f,Lamu,Mpeketoni
+1010,Mwihoko,1,Central,Thika,Ruiru,KE1011,,576,Polygon,,2026-03-04 16:05:57.560706,2026-03-04 16:27:39.8328,f,,Ruiru
+1045,Ndarugu,6,Central,Thika,Gatundu South,KE1046,,553,Polygon,spelling,2026-03-04 16:05:57.741427,2026-03-04 16:27:40.024818,f,,Gatundu South
+1054,Ng'araria,3,Central,Maragwa,Kandara,KE1055,,539,Polygon,,2026-03-04 16:05:57.783395,2026-03-04 16:27:40.053907,f,,Kandara
+1064,Nginda,9,Central,Maragwa,Maragwa,KE1065,,313,Polygon,,2026-03-04 16:05:57.827985,2026-03-04 16:27:40.072964,f,,Maragwa
+1067,Ngoliba,3,Central,Thika,Thika Municipality,KE1068,,568,Polygon,,2026-03-04 16:05:57.843925,2026-03-04 16:27:40.082821,f,,Thika Municipality
+1007,Mwea,4,Eastern,Mbeere,Mwea,KE1008,,323,Polygon,,2026-03-04 16:05:57.547014,2026-03-04 16:09:27.819014,f,Embu,Mbeere
+1012,Mwimbi,7,Eastern,Meru South,Mwimbi,KE1013,,298,Polygon,,2026-03-04 16:05:57.569264,2026-03-04 16:09:27.840292,f,Meru,Meru South
+1015,Mwonyorero,3,Nyanza,Kisii Central,Marani,KE1016,,,,,2026-03-04 16:05:57.582468,2026-03-04 16:09:27.853684,f,Kisii,Kisii Central
+1066,Ngolia,3,Coast,Taita,Tausa,KE1067,,130,Polygon,,2026-03-04 16:05:57.838492,2026-03-04 16:09:28.141112,f,Taita Taveta,Taita
+49,Bahati,4,Rift Valley,Nakuru,Bahati,KE0050,,869,Polygon,,2026-03-04 16:05:50.355588,2026-03-04 16:27:32.0098,f,Nakuru,Bahati
+50,Balambala,5,North Eastern,Garissa,Balambala,KE0051,,135,Polygon,,2026-03-04 16:05:50.368005,2026-03-04 16:26:00.658158,f,Garissa,Balambala
+1102,Ntimaru East,3,Nyanza,Kuria,Ntimaru,KE1103,,1298,Polygon,,2026-03-04 16:05:58.102345,2026-03-04 16:27:40.261241,f,,Ntimaru
+1103,Ntimaru West,4,Nyanza,Kuria,Ntimaru,KE1104,,1297,Polygon,,2026-03-04 16:05:58.106877,2026-03-04 16:27:40.266477,f,,Ntimaru
+1107,Nyabasi West,6,Nyanza,Kuria,Kegonga,KE1108,,1300,Polygon,,2026-03-04 16:05:58.124876,2026-03-04 16:27:40.281616,f,,Kegonga
+1117,Nyamusense/Komoso,4,Nyanza,Kuria,Mabera,KE1118,,1295,Polygon,spelling,2026-03-04 16:05:58.167978,2026-03-04 16:27:40.301516,f,,Mabera
+1074,Njia,7,Eastern,Meru North,Igembe North,KE1075,,259,Polygon,,2026-03-04 16:05:57.909169,2026-03-04 16:09:28.175629,f,Meru,Meru North
+1079,Nkomo,6,Eastern,Meru North,Uringu,KE1080,,269,Polygon,,2026-03-04 16:05:57.982229,2026-03-04 16:09:28.196707,f,Meru,Meru North
+1080,Nkondi,6,Eastern,Tharaka,Tharaka North,KE1081,,308,Polygon,,2026-03-04 16:05:57.988972,2026-03-04 16:09:28.200905,f,Tharaka Nithi,Tharaka
+1081,Nkuene,4,Eastern,Meru Central,Nkuene,KE1082,,295,Polygon,,2026-03-04 16:05:57.995601,2026-03-04 16:09:28.20503,f,Meru,Meru Central
+1083,North East Sakwa,4,Nyanza,Migori,Awendo,KE1084,,1265,Polygon,,2026-03-04 16:05:58.007382,2026-03-04 16:09:28.214669,f,Migori,Awendo
+1087,North Kadem,8,Nyanza,Migori,Nyatike,KE1088,,1284,Polygon,,2026-03-04 16:05:58.029562,2026-03-04 16:09:28.233468,f,Migori,Nyatike
+1088,North Kamagambo,4,Nyanza,Migori,Rongo,KE1089,,1261,Polygon,,2026-03-04 16:05:58.035229,2026-03-04 16:09:28.237752,f,Migori,Rongo
+1089,North Kanyamkago,5,Nyanza,Migori,Uriri,KE1090,,1278,Polygon,,2026-03-04 16:05:58.040796,2026-03-04 16:09:28.242492,f,Migori,Uriri
+1090,North Karachuonyo,10,Nyanza,Rachuonyo,West Karachuonyo,KE1091,,1231,Polygon,,2026-03-04 16:05:58.045909,2026-03-04 16:09:28.247538,f,Homa Bay,Karachuonyo
+1093,North Nyakach,11,Nyanza,Nyando,Lower Nyakach,KE1094,,1217,Polygon,,2026-03-04 16:05:58.060487,2026-03-04 16:09:28.272109,f,Kisumu,Nyando
+1094,North Rachuonyo,2,Nyanza,Rachuonyo,Kasipul,KE1095,,,,,2026-03-04 16:05:58.065258,2026-03-04 16:09:28.301466,f,Homa Bay,Rachuonyo
+1097,North Uyoma,5,Nyanza,Bondo,Madiany,KE1098,,1183,Polygon,,2026-03-04 16:05:58.079694,2026-03-04 16:09:28.342627,f,Siaya,Bondo
+1099,Nthawa,4,Eastern,Mbeere,Siakago,KE1100,,328,Polygon,,2026-03-04 16:05:58.089109,2026-03-04 16:09:28.357586,f,Embu,Mbeere
+1100,Ntima East,4,Eastern,Meru Central,Miriga Mieru West,KE1101,,277,Polygon,,2026-03-04 16:05:58.093436,2026-03-04 16:09:28.363782,f,Meru,Meru Central
+1101,Ntima West,8,Eastern,Meru Central,Miriga Mieru West,KE1102,,278,Polygon,,2026-03-04 16:05:58.097837,2026-03-04 16:09:28.370921,f,Meru,Meru Central
+1104,Ntunene,2,Eastern,Meru North,Laare,KE1105,,262,Polygon,,2026-03-04 16:05:58.111184,2026-03-04 16:09:28.388138,f,Meru,Igembe Central
+1108,Nyacheki,5,Nyanza,Gucha (kisii South),Nyacheki,KE1109,,1318,Polygon,,2026-03-04 16:05:58.129256,2026-03-04 16:09:28.408205,f,Kisii,Gucha (kisii South)
+1109,Nyaki East,10,Eastern,Meru Central,Miriga Mieru East,KE1110,,280,Polygon,,2026-03-04 16:05:58.133914,2026-03-04 16:09:28.413336,f,Meru,Meru Central
+1110,Nyaki West,9,Eastern,Meru Central,Miriga Mieru East,KE1111,,279,Polygon,,2026-03-04 16:05:58.13848,2026-03-04 16:09:28.41835,f,Meru,Meru Central
+1112,Nyakoe,4,Nyanza,Kisii Central,Mosocho,KE1113,,1343,Polygon,,2026-03-04 16:05:58.146761,2026-03-04 16:09:28.427215,f,Kisii,Kisii Central
+1115,Nyamaiya,5,Nyanza,Kisii North (Nyamira),Nyamaiya,KE1116,,1352,Polygon,,2026-03-04 16:05:58.159499,2026-03-04 16:09:28.441791,f,Kisii,Kisii North (Nyamira)
+1116,Nyamasibi,5,Nyanza,Kisii Central,Masaba,KE1117,,1327,Polygon,,2026-03-04 16:05:58.163553,2026-03-04 16:09:28.446728,f,Kisii,Kisii Central
+1123,Nyatieko,2,Nyanza,Kisii Central,Mosocho,KE1124,,1345,Polygon,,2026-03-04 16:05:58.194892,2026-03-04 16:09:28.477949,f,Kisii,Kisii Central
+51,Bamba,10,Coast,Kilifi,Bamba,KE0052,,72,Polygon,,2026-03-04 16:05:50.379566,2026-03-04 16:27:32.016098,f,Kilifi,Bamba
+1135,Obbu,5,Eastern,Moyale,Obbu,KE1136,,227,Polygon,,2026-03-04 16:05:58.389678,2026-03-04 16:27:40.366166,f,,Obbu
+1140,Ololmasani,5,Rift Valley,Transmara,Pirrar,KE1141,,888,Polygon,,2026-03-04 16:05:58.430357,2026-03-04 16:27:40.452512,f,,Pirrar
+1169,Rongena/Manaret,7,Rift Valley,Bureti,Sotik,KE1170,,970,Polygon,,2026-03-04 16:05:58.579944,2026-03-04 16:27:40.574374,f,,Sotik
+1176,Ruma-Kaksingri East,4,Nyanza,Suba,Central,KE1177,,1260,Polygon,,2026-03-04 16:05:58.675097,2026-03-04 16:27:40.592152,f,,Imenti Central
+1181,Rusinga Island,6,Nyanza,Suba,Mbita,KE1182,,1253,Polygon,,2026-03-04 16:05:58.718004,2026-03-04 16:27:40.609045,f,,Mbita
+1142,Ombeyi,5,Nyanza,Nyando,Miwani,KE1143,,1212,Polygon,,2026-03-04 16:05:58.443452,2026-03-04 16:09:28.557753,f,Kisumu,Nyando
+1162,Riana,2,Nyanza,Kisii Central,Suneka,KE1163,,1304,Polygon,,2026-03-04 16:05:58.544111,2026-03-04 16:09:28.747614,f,Kisii,Kisii Central
+1164,Rigoma,4,Nyanza,Kisii North (Nyamira),Rigoma,KE1165,,1346,Polygon,,2026-03-04 16:05:58.554964,2026-03-04 16:09:28.759853,f,Kisii,Kisii North (Nyamira)
+1168,Ronge,6,Coast,Taita,Mwambira,KE1169,,120,Polygon,,2026-03-04 16:05:58.574724,2026-03-04 16:09:28.912359,f,Taita Taveta,Taita
+1175,Ruiri/Rwerera,6,Eastern,Meru Central,Buuri,KE1176,,284,Polygon,spelling,2026-03-04 16:05:58.659433,2026-03-04 16:09:29.046726,f,Meru,Meru Central
+1186,Sabaki,1,Coast,Malindi,Malindi,KE1187,,85,Polygon,,2026-03-04 16:05:58.747741,2026-03-04 16:09:29.154025,f,Kilifi,Malindi
+1187,Sabena,2,North Eastern,Garissa,Shant-abak,KE1188,,144,Polygon,,2026-03-04 16:05:58.753443,2026-03-04 16:09:29.159084,f,Garissa,Fafi
+1190,Sagala,4,Coast,Taita,Voi,KE1191,,126,Polygon,,2026-03-04 16:05:58.770923,2026-03-04 16:09:29.172235,f,Taita Taveta,Taita
+52,Bamburi,1,Coast,Mombasa,Kisauni,KE0053,,11,Polygon,,2026-03-04 16:05:50.394666,2026-03-04 16:27:32.022499,f,Mombasa,Kisauni
+1218,Shella,7,Coast,Lamu,Amu,KE1219,,104,Polygon,,2026-03-04 16:05:58.908088,2026-03-04 16:26:09.107345,f,Lamu,Kamukunji
+1197,Sangailu,5,North Eastern,Ijara,Sangailu,KE1198,,158,Polygon,,2026-03-04 16:05:58.80536,2026-03-04 16:27:40.656417,f,,Sangailu
+1215,Shankoe,7,Rift Valley,Transmara,Kilgoris,KE1216,,884,Polygon,,2026-03-04 16:05:58.892798,2026-03-04 16:27:40.725088,f,,Kilgoris
+1254,Sololo,4,Eastern,Moyale,Obbu,KE1255,,222,Polygon,,2026-03-04 16:05:59.158263,2026-03-04 16:27:41.002067,f,,Obbu
+1196,Sameta/Mokwerero,3,Nyanza,Gucha (kisii South),Sameta,KE1197,,1321,Polygon,,2026-03-04 16:05:58.800476,2026-03-04 16:09:29.198542,f,Kisii,Gucha (kisii South)
+1208,Sensi,2,Nyanza,Kisii Central,Marani,KE1209,,1338,Polygon,,2026-03-04 16:05:58.8587,2026-03-04 16:09:29.251143,f,Kisii,Kisii Central
+54,Bangale,4,Coast,Tana River,Bangale,KE0055,,98,Polygon,,2026-03-04 16:05:50.42879,2026-03-04 16:27:32.034856,f,Tana River,Bangale
+1288,Tagare,4,Nyanza,Kuria,Mabera,KE1289,,1294,Polygon,,2026-03-04 16:05:59.455215,2026-03-04 16:27:41.226828,f,,Mabera
+1299,Tebesonik,7,Rift Valley,Bureti,Roret,KE1300,,951,Polygon,,2026-03-04 16:05:59.509093,2026-03-04 16:27:41.286732,f,,Roret
+1309,Theta,1,Central,Thika,Ruiru,KE1310,,560,Polygon,,2026-03-04 16:05:59.554149,2026-03-04 16:27:41.335697,f,,Ruiru
+1262,South East Nyakach,3,Nyanza,Nyando,Upper Nyakach,KE1263,,1220,Polygon,,2026-03-04 16:05:59.193323,2026-03-04 16:09:29.55638,f,Kisumu,Nyando
+1265,South Kanyajuok,5,Nyanza,Migori,Rongo,KE1266,,,,,2026-03-04 16:05:59.20587,2026-03-04 16:09:29.567717,f,Migori,Rongo
+1268,South Sakwa,15,Nyanza,Bondo,Maranda,KE1269,,1266,Polygon,,2026-03-04 16:05:59.218875,2026-03-04 16:09:29.579515,f,Siaya,Bondo
+1269,South Uyoma,3,Nyanza,Bondo,Madiany,KE1270,,1184,Polygon,,2026-03-04 16:05:59.223652,2026-03-04 16:09:29.583741,f,Siaya,Bondo
+1271,South West Nyakach,3,Nyanza,Nyando,Upper Nyakach,KE1272,,1216,Polygon,,2026-03-04 16:05:59.233602,2026-03-04 16:09:29.594299,f,Kisumu,Nyando
+1287,Tabaka,3,Nyanza,Gucha (kisii South),Nyamarambe,KE1288,,1305,Polygon,,2026-03-04 16:05:59.450029,2026-03-04 16:09:29.747866,f,Kisii,Gucha (kisii South)
+1313,Timau,5,Eastern,Meru Central,Timau,KE1314,,281,Polygon,,2026-03-04 16:05:59.571938,2026-03-04 16:09:29.981635,f,Meru,Meru Central
+61,Barut,7,Rift Valley,Nakuru,Bahati,KE0062,,870,Polygon,,2026-03-04 16:05:50.667989,2026-03-04 16:27:32.085044,f,Nakuru,Bahati
+1327,Township(Moyale),3,Eastern,Moyale,Central,KE1328,,225,Polygon,,2026-03-04 16:05:59.637423,2026-03-04 16:27:41.459678,f,,Imenti Central
+1330,Township(Thika),2,Central,Thika,Thika Municipality,KE1331,,,,,2026-03-04 16:05:59.655624,2026-03-04 16:27:41.470722,f,,Thika Municipality
+1350,Uran,7,Eastern,Moyale,Uran,KE1351,,226,Polygon,,2026-03-04 16:05:59.874618,2026-03-04 16:27:41.543165,f,,Uran
+1329,Township(Nyamira),1,Nyanza,Kisii North (Nyamira),Nyamira,KE1330,,,,,2026-03-04 16:05:59.649058,2026-03-04 16:09:30.062702,f,Kisii,Kisii North (Nyamira)
+1360,Wusi/Kishamba,6,Coast,Taita,Mwatate,KE1361,,124,Polygon,,2026-03-04 16:05:59.922272,2026-03-04 16:09:30.305366,f,Taita Taveta,Taita
+1410,Witeithie,2,Central,Thika,Ruiru,KE1411,,562,Polygon,,2026-03-04 16:06:00.26173,2026-03-04 16:27:41.774084,f,,Ruiru
+62,Barwago,3,North Eastern,Wajir,Central,KE0063,,170,Polygon,,2026-03-04 16:05:50.676583,2026-03-04 16:26:00.75956,f,Wajir,Imenti Central
+1,Got Kachola,5,Nyanza,Migori,Nyatike,KE0001,,1287,Polygon,done,2026-03-04 16:05:19.860453,2026-03-04 16:09:19.429378,f,Migori,Nyatike
+4,Abakaile,2,North Eastern,Garissa,Dadaab,KE0005,,151,Polygon,,2026-03-04 16:05:49.631961,2026-03-04 16:09:19.461627,f,Garissa,Dadaab
+20,Akithi,10,Eastern,Meru North,Akithi,KE0021,,267,Polygon,spelling,2026-03-04 16:05:49.852274,2026-03-04 16:09:19.556308,f,Meru,Meru North
+42,Athiru Runjine,3,Eastern,Meru North,Ndoleli,KE0043,,257,Polygon,spelling,2026-03-04 16:05:50.195586,2026-03-04 16:09:19.745191,f,Meru,Meru North
+63,Bassi Bogetaorio,6,Nyanza,Gucha (kisii South),Nyacheki,KE0064,,1319,Polygon,,2026-03-04 16:05:50.702233,2026-03-04 16:09:19.887487,f,Kisii,Gucha (kisii South)
+64,Bassi Central,4,Nyanza,Gucha (kisii South),Nyamache,KE0065,,1317,Polygon,spelling,2026-03-04 16:05:50.722508,2026-03-04 16:09:19.916493,f,Kisii,Gucha (kisii South)
+75,Bobasi/Boitangare,3,Nyanza,Gucha (kisii South),Sameta,KE0076,,1322,Polygon,,2026-03-04 16:05:50.8435,2026-03-04 16:09:20.001729,f,Kisii,Gucha (kisii South)
+82,Boikanga,3,Nyanza,Gucha (kisii South),Nyamarambe,KE0083,,1306,Polygon,,2026-03-04 16:05:50.883524,2026-03-04 16:09:20.0368,f,Kisii,Gucha (kisii South)
+90,Bomwagamo,4,Nyanza,Kisii North (Nyamira),Nyamusi,KE0091,,1358,Polygon,,2026-03-04 16:05:50.931946,2026-03-04 16:09:20.076799,f,Kisii,Kisii North (Nyamira)
+96,Bosamaro,4,Nyanza,Kisii North (Nyamira),Nyamira,KE0097,,1354,Polygon,,2026-03-04 16:05:50.969542,2026-03-04 16:09:20.103429,f,Kisii,Kisii North (Nyamira)
+139,Central Sakwa,5,Nyanza,Bondo,Nyang'oma,KE0140,,1176,Polygon,,2026-03-04 16:05:51.490507,2026-03-04 16:09:20.376401,f,Siaya,Bondo
+1385,Watamu,4,Coast,Malindi,Malindi,KE1386,,56,Polygon,,2026-03-04 16:06:00.141805,2026-03-04 16:09:30.529165,f,Kilifi,Malindi
+1390,Werugha,5,Coast,Taita,Wundanyi,KE1391,,117,Polygon,,2026-03-04 16:06:00.167891,2026-03-04 16:09:30.566801,f,Taita Taveta,Taita
+1391,West  Asembo,5,Nyanza,Bondo,Rarieda,KE1392,,1182,Polygon,,2026-03-04 16:06:00.172921,2026-03-04 16:09:30.572518,f,Siaya,Bondo
+1397,West Kanyamkago,3,Nyanza,Migori,Uriri,KE1398,,1277,Polygon,,2026-03-04 16:06:00.202086,2026-03-04 16:09:30.606161,f,Migori,Uriri
+1398,West Karachuonyo,8,Nyanza,Rachuonyo,West Karachuonyo,KE1399,,1230,Polygon,,2026-03-04 16:06:00.206585,2026-03-04 16:09:30.611263,f,Homa Bay,Karachuonyo
+1399,West Kasipul,9,Nyanza,Rachuonyo,Kasipul,KE1400,,1221,Polygon,,2026-03-04 16:06:00.210942,2026-03-04 16:09:30.616318,f,Homa Bay,Rachuonyo
+1402,West Nyakach,5,Nyanza,Nyando,Upper Nyakach,KE1403,,1219,Polygon,,2026-03-04 16:06:00.223959,2026-03-04 16:09:30.630864,f,Kisumu,Nyando
+1404,West Sakwa,9,Nyanza,Bondo,Maranda,KE1405,,1267,Polygon,,2026-03-04 16:06:00.233094,2026-03-04 16:09:30.64014,f,Siaya,Bondo
+1408,West Uyoma,5,Nyanza,Bondo,Madiany,KE1409,,1185,Polygon,,2026-03-04 16:06:00.252197,2026-03-04 16:09:30.659689,f,Siaya,Bondo
+1415,Wumingu/kishushe,5,Coast,Taita,Wundanyi,KE1416,,118,Polygon,,2026-03-04 16:06:00.284607,2026-03-04 16:09:30.691231,f,Taita Taveta,Taita
+1418,Yimbo East,6,Nyanza,Bondo,Usigu,KE1419,,1178,Polygon,,2026-03-04 16:06:00.299336,2026-03-04 16:09:30.70572,f,Siaya,Bondo
+1419,Yimbo West,4,Nyanza,Bondo,Usigu,KE1420,,1175,Polygon,,2026-03-04 16:06:00.303949,2026-03-04 16:09:30.709968,f,Siaya,Bondo
+159,Chemelil/Chemase,7,Rift Valley,Nandi,Nandi Hills,KE0160,,753,Polygon,,2026-03-04 16:05:51.606886,2026-03-04 16:27:32.998957,f,Nandi,Nandi Hills
+358,Ilkerin,4,Rift Valley,Transmara,Kirindon,KE0359,,887,Polygon,spelling,2026-03-04 16:05:53.141775,2026-03-04 16:27:34.966068,f,,Kirindon
+186,Chiakariga,15,Eastern,Tharaka,Tharaka South,KE0187,,309,Polygon,spelling,2026-03-04 16:05:51.742495,2026-03-04 16:09:20.611141,f,Tharaka Nithi,Tharaka
+194,Dabaso,4,Coast,Malindi,Malindi,KE0195,,54,Polygon,,2026-03-04 16:05:51.789458,2026-03-04 16:09:20.647952,f,Kilifi,Malindi
+222,East Kano/Wawidhi,5,Nyanza,Nyando,Nyando,KE0223,,1206,Polygon,,2026-03-04 16:05:52.081049,2026-03-04 16:09:20.844056,f,Kisumu,Nyando
+292,Gesima,5,Nyanza,Kisii North (Nyamira),Rigoma,KE0293,,1351,Polygon,,2026-03-04 16:05:52.605149,2026-03-04 16:09:21.406025,f,Kisii,Kisii North (Nyamira)
+315,Goreale,1,North Eastern,Garissa,Shant-abak,KE0316,,142,Polygon,,2026-03-04 16:05:52.803388,2026-03-04 16:09:21.542485,f,Garissa,Fafi
+460,Kanyamwa/Kalogi,7,Nyanza,Homa Bay,Ndhiwa,KE0461,,1250,Polygon,,2026-03-04 16:05:53.841835,2026-03-04 16:09:22.634359,f,Homa Bay,Ndhiwa
+544,Kemera,6,Nyanza,Kisii North (Nyamira),Manga,KE0545,,1348,Polygon,spelling,2026-03-04 16:05:54.371745,2026-03-04 16:09:23.604202,f,Kisii,Kisii North (Nyamira)
+554,Kiabonyoru,4,Nyanza,Kisii North (Nyamira),Ekerenyo,KE0555,,1363,Polygon,,2026-03-04 16:05:54.435373,2026-03-04 16:09:23.751763,f,Kisii,Kisii North (Nyamira)
+565,Kibirichia,8,Eastern,Meru Central,Abothuguchi West,KE0566,,289,Polygon,,2026-03-04 16:05:54.490207,2026-03-04 16:09:23.891881,f,Meru,Imenti Central
+673,Konyu,4,Central,Nyeri,Mathira,KE0674,,480,Polygon,,2026-03-04 16:05:55.164023,2026-03-04 16:27:37.579889,f,Nyeri,Mathira
+893,Mfang'ano Island,6,Nyanza,Suba,Mfang'ano,KE0894,,1252,Polygon,spelling,2026-03-04 16:05:56.779851,2026-03-04 16:27:39.194055,f,,Mfang'ano
+920,Mogondo,3,Rift Valley,Transmara,Kirindon,KE0921,,889,Polygon,,2026-03-04 16:05:56.913637,2026-03-04 16:27:39.336848,f,,Kirindon
+639,Kisii Central,3,Nyanza,Kisii Central,Kiogoro,KE0640,,1332,Polygon,,2026-03-04 16:05:54.939618,2026-03-04 16:09:25.01995,f,Kisii,Kisii Central
+657,Kochia,10,Nyanza,Homa Bay,Rangwe,KE0658,,1240,Polygon,,2026-03-04 16:05:55.088779,2026-03-04 16:09:25.313774,f,Homa Bay,Rangwe
+786,Magombo,5,Nyanza,Kisii North (Nyamira),Manga,KE0787,,1349,Polygon,,2026-03-04 16:05:55.903036,2026-03-04 16:09:26.515545,f,Kisii,Kisii North (Nyamira)
+794,Mahoo,2,Coast,Taita,Taita/taveta,KE0795,,112,Polygon,,2026-03-04 16:05:56.003795,2026-03-04 16:09:26.550663,f,Taita Taveta,Taita
+815,Manga,4,Nyanza,Kisii North (Nyamira),Manga,KE0816,,1350,Polygon,,2026-03-04 16:05:56.138628,2026-03-04 16:09:26.645057,f,Kisii,Kisii North (Nyamira)
+831,Marani,4,Nyanza,Kisii Central,Marani,KE0832,,1339,Polygon,,2026-03-04 16:05:56.294519,2026-03-04 16:09:26.717157,f,Kisii,Kisii Central
+846,Masige West,6,Nyanza,Gucha (kisii South),Nyamache,KE0847,,1315,Polygon,,2026-03-04 16:05:56.382421,2026-03-04 16:09:26.787351,f,Kisii,Gucha (kisii South)
+981,Muthambi,6,Eastern,Meru South,Muthambi,KE0982,,297,Polygon,,2026-03-04 16:05:57.356514,2026-03-04 16:09:27.707804,f,Meru,Meru South
+998,Mwamonari,2,Nyanza,Kisii Central,Marani,KE0999,,,,,2026-03-04 16:05:57.500726,2026-03-04 16:09:27.780936,f,Kisii,Kisii Central
+55,Banissa,2,North Eastern,Mandera,Malkamari,KE0056,,196,Polygon,,2026-03-04 16:05:50.479543,2026-03-04 16:27:32.04463,f,Mandera,Malkamari
+1019,Naathu,2,Eastern,Meru North,Mutuati,KE1020,,264,Polygon,,2026-03-04 16:05:57.600227,2026-03-04 16:09:27.87119,f,Meru,Meru North
+56,Banja,4,Western,Vihiga,Tiriki West,KE0057,,1064,Polygon,,2026-03-04 16:05:50.509403,2026-03-04 16:27:32.050053,f,Vihiga,Tiriki West
+57,Baragwi,4,Central,Kirinyaga,Gichugu,KE0058,,505,Polygon,,2026-03-04 16:05:50.526819,2026-03-04 16:27:32.058531,f,Kirinyaga,Gichugu
+1106,Nyabasi East,6,Nyanza,Kuria,Kegonga,KE1107,,1299,Polygon,,2026-03-04 16:05:58.120416,2026-03-04 16:27:40.276059,f,,Kegonga
+1121,Nyansiongo,2,Nyanza,Kisii North (Nyamira),Borabu,KE1122,,1364,Polygon,,2026-03-04 16:05:58.185386,2026-03-04 16:09:28.468587,f,Kisii,Kisii North (Nyamira)
+1266,South Kanyamkago,4,Nyanza,Migori,Uriri,KE1267,,1280,Polygon,,2026-03-04 16:05:59.210045,2026-03-04 16:09:29.571676,f,Migori,Uriri
+1305,Thangatha,5,Eastern,Meru North,Tigania East,KE1306,,271,Polygon,,2026-03-04 16:05:59.536299,2026-03-04 16:09:29.85153,f,Meru,Meru North
+1377,Wang'chieng,9,Nyanza,Rachuonyo,East Karachuonyo,KE1378,,1235,Polygon,,2026-03-04 16:06:00.085411,2026-03-04 16:09:30.391693,f,Homa Bay,Karachuonyo
+1416,Wundanyi,7,Coast,Taita,Wundanyi,KE1417,,116,Polygon,spelling,2026-03-04 16:06:00.289432,2026-03-04 16:09:30.695797,f,Taita Taveta,Taita
+67,Batei,8,Rift Valley,West Pokot,Chepareria,KE0068,,658,Polygon,,2026-03-04 16:05:50.783387,2026-03-04 16:27:32.138562,f,West Pokot,Chepareria
+68,Benane,2,North Eastern,Garissa,Benane,KE0069,,184,Polygon,,2026-03-04 16:05:50.793437,2026-03-04 16:27:32.168392,f,Garissa,Benane
+69,Biashara,6,Rift Valley,Nakuru,Olenguruone,KE0070,,570,Polygon,,2026-03-04 16:05:50.801573,2026-03-04 16:27:32.190517,f,Nakuru,Olenguruone
+76,Bofu,1,Coast,Mombasa,Likoni,KE0077,,23,Polygon,,2026-03-04 16:05:50.849627,2026-03-04 16:27:32.213829,f,Mombasa,Likoni
+87,Bokoli,4,Western,Bungoma,Webuye,KE0088,,1110,Polygon,,2026-03-04 16:05:50.91204,2026-03-04 16:27:32.261138,f,Bungoma,Webuye
+99,Bukembe West,2,Western,Bungoma,Kanduyi,KE0100,,1096,Polygon,,2026-03-04 16:05:51.009545,2026-03-04 16:27:32.305367,f,Bungoma,Kanduyi
+100,Bukhayo Central,3,Western,Busia,Nambale,KE0101,,1136,Polygon,,2026-03-04 16:05:51.04506,2026-03-04 16:27:32.313243,f,Busia,Nambale
+101,Bukhayo East,4,Western,Busia,Nambale,KE0102,,1135,Polygon,,2026-03-04 16:05:51.084421,2026-03-04 16:27:32.319643,f,Busia,Nambale
+102,Bukhayo North/ Walat,4,Western,Busia,Nambale,KE0103,,,,,2026-03-04 16:05:51.099481,2026-03-04 16:27:32.325991,f,Busia,Nambale
+103,Bukhayo West,3,Western,Busia,Matayos,KE0104,,1137,Polygon,,2026-03-04 16:05:51.109707,2026-03-04 16:27:32.332032,f,Busia,Matayos
+107,Bumula,4,Western,Bungoma,Bumula,KE0108,,1090,Polygon,,2026-03-04 16:05:51.140092,2026-03-04 16:27:32.349853,f,Bungoma,Bumula
+70,Bibirioni,1,Central,Kiambu,Limuru,KE0071,,601,Polygon,,2026-03-04 16:05:50.809211,2026-03-04 16:26:00.901089,f,Kiambu,Limuru
+71,Bidii,1,Rift Valley,Trans Nzoia,Central,KE0072,,679,Polygon,,2026-03-04 16:05:50.81647,2026-03-04 16:26:00.909265,f,Trans Nzoia,Imenti Central
+108,Buna,3,North Eastern,Wajir,Buna,KE0109,,,,,2026-03-04 16:05:51.147185,2026-03-04 16:27:32.357461,f,Wajir,Buna
+110,Bunyala East,2,Western,Kakamega,Navakholo,KE0111,,1018,Polygon,,2026-03-04 16:05:51.160207,2026-03-04 16:27:32.368954,f,Kakamega,Navakholo
+111,Bunyala North,5,Western,Busia,Budalangi,KE0112,,1153,Polygon,,2026-03-04 16:05:51.16677,2026-03-04 16:27:32.376364,f,Busia,Budalangi
+112,Bunyala South,9,Western,Busia,Budalangi,KE0113,,1155,Polygon,,2026-03-04 16:05:51.17323,2026-03-04 16:27:32.385096,f,Busia,Budalangi
+113,Bunyala West,8,Western,Kakamega,Navakholo,KE0114,,1017,Polygon,,2026-03-04 16:05:51.179932,2026-03-04 16:27:32.395026,f,Kakamega,Navakholo
+116,Burder,3,North Eastern,Wajir,Diif,KE0117,,185,Polygon,,2026-03-04 16:05:51.197468,2026-03-04 16:27:32.401122,f,Wajir,Diif
+119,Busibwabo,3,Western,Busia,Matayos,KE0120,,1140,Polygon,,2026-03-04 16:05:51.214383,2026-03-04 16:27:32.412868,f,Busia,Matayos
+120,Butali/Chegulo,4,Western,Kakamega,Kabras,KE0121,,1005,Polygon,,2026-03-04 16:05:51.219725,2026-03-04 16:27:32.429499,f,Kakamega,Kabras
+121,Bute,3,North Eastern,Wajir,Bute,KE0122,,162,Polygon,,2026-03-04 16:05:51.225005,2026-03-04 16:27:32.449589,f,Wajir,Bute
+123,Butsotso Central,3,Western,Kakamega,Lurambi,KE0124,,1011,Polygon,,2026-03-04 16:05:51.235547,2026-03-04 16:27:32.52253,f,Kakamega,Lurambi
+126,Bwake/Luuya,3,Western,Bungoma,Nalondo,KE0127,,1087,Polygon,,2026-03-04 16:05:51.255353,2026-03-04 16:27:32.587,f,Bungoma,Nalondo
+127,Bwiri,4,Western,Busia,Funyula,KE0128,,1151,Polygon,,2026-03-04 16:05:51.263817,2026-03-04 16:27:32.600001,f,Busia,Funyula
+129,Central,25,Central,Nyandarua,Ndaragwa,KE0130,,340,Polygon,,2026-03-04 16:05:51.277416,2026-03-04 16:27:32.61158,f,Nyandarua,Ndaragwa
+131,Central Bunyore,6,Western,Vihiga,Emuhaya,KE0132,,1074,Polygon,,2026-03-04 16:05:51.3238,2026-03-04 16:27:32.632751,f,Vihiga,Emuhaya
+115,Burat,3,Eastern,Isiolo,Central,KE0116,,246,Polygon,,2026-03-04 16:05:51.191706,2026-03-04 16:26:01.117907,f,Isiolo,Imenti Central
+132,Central Gem,5,Nyanza,Siaya,Yala,KE0133,,1171,Polygon,,2026-03-04 16:05:51.338802,2026-03-04 16:27:32.679781,f,Siaya,Yala
+117,Burumba,1,Western,Busia,Township,KE0118,,1141,Polygon,,2026-03-04 16:05:51.203053,2026-03-04 16:26:01.130858,f,Busia,Garissa Township
+136,Central Kisumu,3,Nyanza,Kisumu,Winam,KE0137,,1192,Polygon,,2026-03-04 16:05:51.462427,2026-03-04 16:27:32.708502,f,Kisumu,Winam
+137,Central Maragoli,4,Western,Vihiga,Vihiga,KE0138,,1053,Polygon,,2026-03-04 16:05:51.472063,2026-03-04 16:27:32.722354,f,Vihiga,
+141,Chaani,1,Coast,Mombasa,Changamwe,KE0142,,5,Polygon,,2026-03-04 16:05:51.504957,2026-03-04 16:27:32.737,f,Mombasa,Changamwe
+142,Chaik,2,Rift Valley,Kericho,Belgut,KE0143,,960,Polygon,,2026-03-04 16:05:51.512003,2026-03-04 16:27:32.743113,f,Kericho,Belgut
+146,Changamwe,1,Coast,Mombasa,Changamwe,KE0147,,4,Polygon,,2026-03-04 16:05:51.536992,2026-03-04 16:27:32.784355,f,Mombasa,Changamwe
+147,Charagita,5,Central,Nyandarua,Ol Joro Orok,KE0148,,461,Polygon,,2026-03-04 16:05:51.543908,2026-03-04 16:27:32.803463,f,Nyandarua,Ol Joro Orok
+148,Chari,4,Eastern,Isiolo,Merti,KE0149,,243,Polygon,,2026-03-04 16:05:51.549263,2026-03-04 16:27:32.853344,f,Isiolo,Merti
+128,Califonia,1,Nairobi,Nairobi,Pumwani,KE0129,,1438,Polygon,,2026-03-04 16:05:51.270385,2026-03-04 16:26:01.245479,f,Nairobi,Pumwani
+149,Chasimba,5,Coast,Kilifi,Chonyi,KE0150,,61,Polygon,,2026-03-04 16:05:51.555053,2026-03-04 16:27:32.907349,f,Kilifi,Chonyi
+153,Chebukwabi,2,Western,Bungoma,Kimilili,KE0154,,,,,2026-03-04 16:05:51.576927,2026-03-04 16:27:32.953565,f,Bungoma,Kimilili
+154,Chebunyo,9,Rift Valley,Bomet,Siongiroi,KE0155,,974,Polygon,,2026-03-04 16:05:51.582183,2026-03-04 16:27:32.964206,f,Bomet,Siongiroi
+155,Chekalaini,2,Western,Kakamega,Lugari,KE0156,,994,Polygon,spelling,2026-03-04 16:05:51.587735,2026-03-04 16:27:32.972195,f,Kakamega,Lugari
+157,Chemaner,6,Rift Valley,Bomet,Longisa,KE0158,,980,Polygon,,2026-03-04 16:05:51.597522,2026-03-04 16:27:32.99006,f,Bomet,Longisa
+161,Chemuche,4,Western,Kakamega,Kabras,KE0162,,1003,Polygon,,2026-03-04 16:05:51.615972,2026-03-04 16:27:33.011761,f,Kakamega,Kabras
+163,Chengoni/Samburu,5,Coast,Kwale,Samburu,KE0164,,48,Polygon,,2026-03-04 16:05:51.625179,2026-03-04 16:27:33.025639,f,Kwale,
+164,Chepareria,14,Rift Valley,West Pokot,Chepareria,KE0165,,657,Polygon,,2026-03-04 16:05:51.629522,2026-03-04 16:27:33.099376,f,West Pokot,Chepareria
+165,Chepchabas,3,Rift Valley,Kericho,Belgut,KE0166,,986,Polygon,,2026-03-04 16:05:51.633882,2026-03-04 16:27:33.14344,f,Kericho,Belgut
+166,Chepchoina,3,Rift Valley,Trans Nzoia,Endebes,KE0167,,680,Polygon,,2026-03-04 16:05:51.63859,2026-03-04 16:27:33.193628,f,Trans Nzoia,Endebes
+168,Chepkumia,2,Rift Valley,Nandi,Kapsabet,KE0169,,770,Polygon,,2026-03-04 16:05:51.64927,2026-03-04 16:27:33.215216,f,Nandi,Kapsabet
+169,Chepkunyuk,24,Rift Valley,Nandi,O'llessos,KE0170,,762,Polygon,,2026-03-04 16:05:51.654041,2026-03-04 16:27:33.223004,f,Nandi,O'llessos
+171,Chepseon,7,Rift Valley,Kericho,Kipkelion,KE0172,,938,Polygon,,2026-03-04 16:05:51.66276,2026-03-04 16:27:33.240965,f,Kericho,Kipkelion
+172,Chepsiro/Kiptoror,4,Rift Valley,Trans Nzoia,Cherangany,KE0173,,699,Polygon,,2026-03-04 16:05:51.667158,2026-03-04 16:27:33.248602,f,Trans Nzoia,Cherangany
+174,Chepterwai,9,Rift Valley,Nandi,Kipkaren,KE0175,,774,Polygon,,2026-03-04 16:05:51.675949,2026-03-04 16:27:33.259739,f,Nandi,Kipkaren
+175,Cheptiret/Kipchamo,6,Rift Valley,Uasin Gishu,Kesses,KE0176,,728,Polygon,,2026-03-04 16:05:51.680649,2026-03-04 16:27:33.265539,f,Uasin Gishu,Kesses
+178,Cherab,9,Eastern,Isiolo,Merti,KE0179,,244,Polygon,,2026-03-04 16:05:51.695591,2026-03-04 16:27:33.282484,f,Isiolo,Merti
+180,Cherangany/Suwerwa,6,Rift Valley,Trans Nzoia,Cherangany,KE0181,,698,Polygon,spelling,2026-03-04 16:05:51.705787,2026-03-04 16:27:33.293134,f,Trans Nzoia,Cherangany
+182,Chesoen,5,Rift Valley,Bomet,Bomet Central,KE0183,,984,Polygon,,2026-03-04 16:05:51.716396,2026-03-04 16:27:33.306114,f,Bomet,Bomet Central
+183,Chevaywa,3,Western,Kakamega,Matete,KE0184,,995,Polygon,,2026-03-04 16:05:51.723245,2026-03-04 16:27:33.315171,f,Kakamega,Matete
+184,Chewani,12,Coast,Tana River,Galole,KE0185,,94,Polygon,,2026-03-04 16:05:51.729601,2026-03-04 16:27:33.3351,f,Tana River,Galole
+185,Chewele,4,Coast,Tana River,Bura,KE0186,,96,Polygon,,2026-03-04 16:05:51.735713,2026-03-04 16:27:33.371508,f,Tana River,Bura
+188,Chinga,12,Central,Nyeri,Kieni West,KE0189,,485,Polygon,,2026-03-04 16:05:51.755214,2026-03-04 16:27:33.436431,f,Nyeri,Kieni West
+190,Chuluni,4,Eastern,Kitui,Chuluni,KE0191,,361,Polygon,,2026-03-04 16:05:51.766576,2026-03-04 16:27:33.4465,f,Kitui,Chuluni
+196,Dadaja Bula,4,North Eastern,Wajir,Diif,KE0197,,186,Polygon,spelling,2026-03-04 16:05:51.801626,2026-03-04 16:27:33.459106,f,Wajir,Diif
+199,Danaba,3,North Eastern,Wajir,Gurar,KE0200,,166,Polygon,,2026-03-04 16:05:51.821004,2026-03-04 16:27:33.466087,f,Wajir,Gurar
+204,Dandu,4,North Eastern,Mandera,Dandu,KE0205,,194,Polygon,,2026-03-04 16:05:51.848631,2026-03-04 16:27:33.472998,f,Mandera,Dandu
+205,Danyere,6,North Eastern,Garissa,Danyere,KE0206,,136,Polygon,,2026-03-04 16:05:51.856,2026-03-04 16:27:33.479302,f,Garissa,Danyere
+206,Dedan Kimathi,10,Central,Nyeri,Tetu,KE0207,,466,Polygon,,2026-03-04 16:05:51.862168,2026-03-04 16:27:33.486336,f,Nyeri,Tetu
+208,Dela,1,North Eastern,Wajir,El-das,KE0209,,181,Polygon,spelling,2026-03-04 16:05:51.891136,2026-03-04 16:27:33.498058,f,Wajir,El-das
+209,Derkale,1,North Eastern,Mandera,Banissa,KE0210,,197,Polygon,spelling,2026-03-04 16:05:51.935563,2026-03-04 16:27:33.505316,f,Mandera,Banissa
+211,Dukana,4,Eastern,Marsabit,North Horr,KE0212,,228,Polygon,,2026-03-04 16:05:52.006463,2026-03-04 16:27:33.511152,f,Marsabit,North Horr
+213,Dungicha,9,Coast,Kilifi,Bamba,KE0214,,,,,2026-03-04 16:05:52.026586,2026-03-04 16:27:33.52393,f,Kilifi,Bamba
+214,Dzombo,2,Coast,Kwale,Lungalunga,KE0215,,36,Polygon,,2026-03-04 16:05:52.033389,2026-03-04 16:27:33.528891,f,Kwale,Lungalunga
+215,East Alego,4,Nyanza,Siaya,Karemo,KE0216,,,,,2026-03-04 16:05:52.040572,2026-03-04 16:27:33.53709,f,Siaya,Karemo
+217,East Bunyore,6,Western,Vihiga,Emuhaya,KE0218,,,,,2026-03-04 16:05:52.052964,2026-03-04 16:27:33.543337,f,Vihiga,Emuhaya
+218,East Gem,4,Nyanza,Siaya,Yala,KE0219,,1173,Polygon,,2026-03-04 16:05:52.058862,2026-03-04 16:27:33.563095,f,Siaya,Yala
+219,East Kabras,2,Western,Kakamega,Kabras,KE0220,,1004,Polygon,,2026-03-04 16:05:52.064529,2026-03-04 16:27:33.626696,f,Kakamega,Kabras
+192,Cianda,4,Central,Kiambu,Kiambaa,KE0193,,586,Polygon,,2026-03-04 16:05:51.778263,2026-03-04 16:26:01.670152,f,Kiambu,Kiambaa
+193,Clay City,1,Nairobi,Nairobi,Kasarani,KE0194,,1396,Polygon,,2026-03-04 16:05:51.783519,2026-03-04 16:26:01.67527,f,Nairobi,Kasarani
+224,East Sang'alo,2,Western,Bungoma,Kanduyi,KE0225,,1101,Polygon,,2026-03-04 16:05:52.092391,2026-03-04 16:27:33.642349,f,Bungoma,Kanduyi
+197,Dalalekutuk,11,Rift Valley,Kajiado,Central,KE0198,,918,Polygon,,2026-03-04 16:05:51.808305,2026-03-04 16:26:01.686891,f,Kajiado,Imenti Central
+225,East Seme,5,Nyanza,Kisumu,Maseno,KE0226,,1204,Polygon,,2026-03-04 16:05:52.097635,2026-03-04 16:27:33.648565,f,Kisumu,Maseno
+200,Dandora Area Four,1,Nairobi,Nairobi,Embakasi,KE0201,,1415,Polygon,,2026-03-04 16:05:51.826605,2026-03-04 16:26:01.696665,f,Nairobi,Embakasi South
+201,Dandora Area Three,1,Nairobi,Nairobi,Embakasi,KE0202,,1414,Polygon,,2026-03-04 16:05:51.832016,2026-03-04 16:26:01.701487,f,Nairobi,Embakasi South
+226,East Ugenya,6,Nyanza,Siaya,Ukwala,KE0227,,1159,Polygon,,2026-03-04 16:05:52.10329,2026-03-04 16:27:33.656324,f,Siaya,Ukwala
+232,El Wak North,3,North Eastern,Mandera,Elwak,KE0233,,209,Polygon,,2026-03-04 16:05:52.135272,2026-03-04 16:27:33.701084,f,Mandera,Elwak
+233,El Wak South,3,North Eastern,Mandera,Elwak,KE0234,,208,Polygon,spelling,2026-03-04 16:05:52.14152,2026-03-04 16:27:33.707241,f,Mandera,Elwak
+234,El-Nur/Tula-tula,4,North Eastern,Wajir,Griftu,KE0235,,183,Polygon,,2026-03-04 16:05:52.146415,2026-03-04 16:27:33.714874,f,Wajir,Griftu
+235,El-barta,7,Rift Valley,Samburu,Baragoi,KE0236,,666,Polygon,spelling,2026-03-04 16:05:52.151965,2026-03-04 16:27:33.720789,f,Samburu,Baragoi
+237,Elburgon,4,Rift Valley,Nakuru,Rongai,KE0238,,827,Polygon,,2026-03-04 16:05:52.162815,2026-03-04 16:27:33.727602,f,Nakuru,Rongai
+239,Elementaita,2,Rift Valley,Nakuru,Lare,KE0240,,845,Polygon,,2026-03-04 16:05:52.173752,2026-03-04 16:27:33.73952,f,Nakuru,Lare
+240,Elugulu,5,Western,Busia,Butula,KE0241,,1147,Polygon,,2026-03-04 16:05:52.179695,2026-03-04 16:27:33.7451,f,Busia,Butula
+241,Emabungo,4,Western,Vihiga,Emuhaya,KE0242,,1072,Polygon,,2026-03-04 16:05:52.186672,2026-03-04 16:27:33.752097,f,Vihiga,Emuhaya
+242,Emali/Mulala,16,Eastern,Makueni,Mbitini,KE0243,,436,Polygon,,2026-03-04 16:05:52.192576,2026-03-04 16:27:33.758802,f,Makueni,Mbitini
+248,Embobut/Embulot,2,Rift Valley,Trans Nzoia,Endebes,KE0249,,734,Polygon,,2026-03-04 16:05:52.224181,2026-03-04 16:27:33.900266,f,Trans Nzoia,Endebes
+249,Endo,12,Rift Valley,Elgeyo Marakwet,Tot,KE0250,,733,Polygon,,2026-03-04 16:05:52.229162,2026-03-04 16:27:33.908418,f,Elgeyo Marakwet,
+251,Engineer,1,Central,Nyandarua,North Kinangop,KE0252,,441,Polygon,,2026-03-04 16:05:52.240817,2026-03-04 16:27:33.92672,f,Nyandarua,North Kinangop
+252,Entonet/Lenkism,5,Rift Valley,Kajiado,Loitokitok,KE0253,,931,Polygon,,2026-03-04 16:05:52.24666,2026-03-04 16:27:33.937374,f,Kajiado,Loitokitok
+254,Etenje,3,Western,Kakamega,South Wanga,KE0255,,1022,Polygon,,2026-03-04 16:05:52.2682,2026-03-04 16:27:33.944103,f,Kakamega,South Wanga
+257,Ewuaso O o Nkidong'i/M,9,Rift Valley,Kajiado,Ngong,KE0258,,929,Polygon,spelling,2026-03-04 16:05:52.3455,2026-03-04 16:27:33.959638,f,Kajiado,Ngong
+228,Eastleigh North,1,Nairobi,Nairobi,Pumwani,KE0229,,1435,Polygon,,2026-03-04 16:05:52.114049,2026-03-04 16:26:01.889749,f,Nairobi,Pumwani
+229,Eastleigh South,1,Nairobi,Nairobi,Pumwani,KE0230,,1436,Polygon,,2026-03-04 16:05:52.1194,2026-03-04 16:26:01.897316,f,Nairobi,Pumwani
+258,Fafi,3,North Eastern,Garissa,Jara Jila,KE0259,,155,Polygon,,2026-03-04 16:05:52.373467,2026-03-04 16:27:33.968443,f,Garissa,Jara Jila
+259,Faza,9,Coast,Lamu,Kizingitini,KE0260,,101,Polygon,,2026-03-04 16:05:52.406501,2026-03-04 16:27:33.975092,f,Lamu,Kizingitini
+260,Fino,1,North Eastern,Mandera,Fino,KE0261,,217,Polygon,,2026-03-04 16:05:52.420232,2026-03-04 16:27:33.983318,f,Mandera,Fino
+261,Frere Town,1,Coast,Mombasa,Kisauni,KE0262,,16,Polygon,,2026-03-04 16:05:52.430251,2026-03-04 16:27:33.996423,f,Mombasa,Kisauni
+236,Elben,4,North Eastern,Wajir,Tarbaji,KE0237,,172,Polygon,,2026-03-04 16:05:52.157507,2026-03-04 16:26:01.935254,f,Wajir,Tarbaj
+262,Gaaki/Aguthi,10,Central,Nyeri,Tetu,KE0263,,468,Polygon,,2026-03-04 16:05:52.43831,2026-03-04 16:27:34.057551,f,Nyeri,Tetu
+243,Embakasi,1,Nairobi,Nairobi,Embakasi,KE0244,,1423,Polygon,,2026-03-04 16:05:52.197829,2026-03-04 16:26:01.973703,f,Nairobi,Embakasi South
+266,Galbet,1,North Eastern,Garissa,Central,KE0267,,132,Polygon,,2026-03-04 16:05:52.466853,2026-03-04 16:26:02.180423,f,Garissa,Imenti Central
+272,Garsen Central,5,Coast,Tana River,Garsen,KE0273,,89,Polygon,,2026-03-04 16:05:52.502919,2026-03-04 16:27:34.134659,f,Tana River,Garsen
+275,Garsen West,5,Coast,Tana River,Garsen,KE0276,,90,Polygon,,2026-03-04 16:05:52.518609,2026-03-04 16:27:34.168794,f,Tana River,Garsen
+277,Gatarakwa,5,Central,Nyeri,Kieni West,KE0278,,473,Polygon,,2026-03-04 16:05:52.528452,2026-03-04 16:27:34.183505,f,Nyeri,Kieni West
+280,Gathara,3,Central,Nyandarua,North Kinangop,KE0281,,442,Polygon,,2026-03-04 16:05:52.543117,2026-03-04 16:27:34.201727,f,Nyandarua,North Kinangop
+281,Gatimu,3,Central,Nyandarua,Ol Joro Orok,KE0282,,459,Polygon,,2026-03-04 16:05:52.547991,2026-03-04 16:27:34.208134,f,Nyandarua,Ol Joro Orok
+286,Gaturi,6,Central,Murang'a,Kiharu,KE0287,,527,Polygon,,2026-03-04 16:05:52.575663,2026-03-04 16:27:34.228416,f,Murang'a,Kiharu
+287,Gaturi North,4,Eastern,Embu,Manyatta,KE0288,,317,Polygon,,2026-03-04 16:05:52.581714,2026-03-04 16:27:34.23591,f,Embu,Manyatta
+288,Gaturi South,3,Eastern,Embu,Nembure,KE0289,,316,Polygon,,2026-03-04 16:05:52.586674,2026-03-04 16:27:34.244643,f,Embu,Nembure
+294,Geta,4,Central,Nyandarua,Kipipiri,KE0295,,451,Polygon,,2026-03-04 16:05:52.615214,2026-03-04 16:27:34.256451,f,Nyandarua,Kipipiri
+296,Gikondi,7,Central,Nyeri,Mukurweini,KE0297,,487,Polygon,,2026-03-04 16:05:52.625037,2026-03-04 16:27:34.266468,f,Nyeri,Mukurweini
+297,Gilgil,1,Rift Valley,Nakuru,Kuresoi,KE0298,,844,Polygon,,2026-03-04 16:05:52.629838,2026-03-04 16:27:34.273685,f,Nakuru,Kuresoi
+298,Gisambai,4,Western,Vihiga,Tiriki West,KE0299,,1062,Polygon,,2026-03-04 16:05:52.634995,2026-03-04 16:27:34.32321,f,Vihiga,Tiriki West
+300,Githabai,4,Central,Nyandarua,South Kinangop,KE0301,,447,Polygon,,2026-03-04 16:05:52.644865,2026-03-04 16:27:34.37547,f,Nyandarua,South Kinangop
+301,Gither,2,North Eastern,Mandera,Dandu,KE0302,,195,Polygon,,2026-03-04 16:05:52.650661,2026-03-04 16:27:34.437125,f,Mandera,Dandu
+308,Gitugi,10,Central,Murang'a,Mathioya,KE0309,,519,Polygon,,2026-03-04 16:05:52.746858,2026-03-04 16:27:34.477302,f,Murang'a,Mathioya
+310,Godoma,2,North Eastern,Wajir,Bute,KE0311,,167,Polygon,,2026-03-04 16:05:52.767254,2026-03-04 16:27:34.483411,f,Wajir,Bute
+316,Gurar,2,North Eastern,Wajir,Gurar,KE0317,,161,Polygon,,2026-03-04 16:05:52.809536,2026-03-04 16:27:34.539414,f,Wajir,Gurar
+324,Hellsgate,1,Rift Valley,Nakuru,Naivasha,KE0325,,837,Polygon,,2026-03-04 16:05:52.855728,2026-03-04 16:27:34.604906,f,Nakuru,Naivasha
+325,Hindi,4,Coast,Lamu,Hindi,KE0326,,106,Polygon,,2026-03-04 16:05:52.860783,2026-03-04 16:27:34.657019,f,Lamu,Hindi
+327,Homa Bay Arujo,3,Nyanza,Homa Bay,Asego,KE0328,,1242,Polygon,,2026-03-04 16:05:52.872743,2026-03-04 16:27:34.71278,f,Homa Bay,Asego
+328,Homa Bay Central,3,Nyanza,Homa Bay,Asego,KE0329,,1241,Polygon,,2026-03-04 16:05:52.877624,2026-03-04 16:27:34.723169,f,Homa Bay,Asego
+329,Homa Bay East,6,Nyanza,Homa Bay,Asego,KE0330,,1244,Polygon,,2026-03-04 16:05:52.882663,2026-03-04 16:27:34.731026,f,Homa Bay,Asego
+282,Gatina,1,Nairobi,Nairobi,Dagoretti,KE0283,,1373,Polygon,,2026-03-04 16:05:52.553007,2026-03-04 16:26:02.296381,f,Nairobi,Dagoretti North
+330,Homa Bay West,3,Nyanza,Homa Bay,Asego,KE0331,,1243,Polygon,,2026-03-04 16:05:52.887664,2026-03-04 16:27:34.748215,f,Homa Bay,Asego
+331,Hongwe,2,Coast,Lamu,Mpeketoni,KE0332,,108,Polygon,,2026-03-04 16:05:52.892601,2026-03-04 16:27:34.759042,f,Lamu,Mpeketoni
+336,Ibrahim Ure,4,North Eastern,Wajir,Diif,KE0337,,189,Polygon,,2026-03-04 16:05:52.918204,2026-03-04 16:27:34.78135,f,Wajir,Diif
+339,Idakho Central,6,Western,Kakamega,Ikolomani,KE0340,,1050,Polygon,,2026-03-04 16:05:52.932987,2026-03-04 16:27:34.82101,f,Kakamega,Ikolomani
+340,Idakho East,6,Western,Kakamega,Ikolomani,KE0341,,1048,Polygon,,2026-03-04 16:05:52.937821,2026-03-04 16:27:34.863703,f,Kakamega,Ikolomani
+341,Idakho North,4,Western,Kakamega,Ikolomani,KE0342,,1049,Polygon,,2026-03-04 16:05:52.942541,2026-03-04 16:27:34.874171,f,Kakamega,Ikolomani
+348,Igwamiti,9,Rift Valley,Laikipia,Rumuruti,KE0349,,815,Polygon,,2026-03-04 16:05:52.985418,2026-03-04 16:27:34.901067,f,Laikipia,Rumuruti
+299,Gitaru,3,Central,Kiambu,Kikuyu,KE0300,,591,Polygon,,2026-03-04 16:05:52.639938,2026-03-04 16:26:02.465674,f,Kiambu,Kikuyu
+350,Ikanga/Kyatune,11,Eastern,Kitui,Mutomo,KE0351,,365,Polygon,,2026-03-04 16:05:52.996864,2026-03-04 16:27:34.919611,f,Kitui,Mutomo
+352,Ikombe,6,Eastern,Machakos,Katangi,KE0353,,379,Polygon,,2026-03-04 16:05:53.021549,2026-03-04 16:27:34.933739,f,Machakos,Katangi
+304,Githunguri,3,Central,Kiambu,Githunguri,KE0305,,577,Polygon,,2026-03-04 16:05:52.668656,2026-03-04 16:26:02.506553,f,Kiambu,Githunguri
+305,Githurai,1,Nairobi,Nairobi,Kasarani,KE0306,,1391,Polygon,,2026-03-04 16:05:52.676332,2026-03-04 16:26:02.515996,f,Nairobi,Kasarani
+353,Ikutha,9,Eastern,Kitui,Ikutha,KE0354,,368,Polygon,,2026-03-04 16:05:53.077649,2026-03-04 16:27:34.941511,f,Kitui,Ikutha
+309,God Jope/Kwa,4,Nyanza,Migori,Suba East,KE0310,,1269,Polygon,,2026-03-04 16:05:52.758249,2026-03-04 16:26:02.536445,f,Migori,Suba East
+354,Ilchamus,8,Rift Valley,Baringo,Marigat,KE0355,,799,Polygon,spelling,2026-03-04 16:05:53.100586,2026-03-04 16:27:34.947957,f,Baringo,Marigat
+356,Ildamat (Narok East),1,Rift Valley,Narok,,KE0357,,,,,2026-03-04 16:05:53.125926,2026-03-04 16:27:34.953944,f,Narok,
+359,Illeret,1,Eastern,Marsabit,North Horr,KE0360,,232,Polygon,,2026-03-04 16:05:53.149032,2026-03-04 16:27:34.972098,f,Marsabit,North Horr
+322,Harambee,2,Nairobi,Nairobi,Makadara,KE0323,,1432,Polygon,,2026-03-04 16:05:52.842954,2026-03-04 16:26:02.57872,f,Nairobi,Makadara
+360,Ilmaroro,6,Rift Valley,Kajiado,Mashuuru,KE0361,,925,Polygon,spelling,2026-03-04 16:05:53.155973,2026-03-04 16:27:34.978253,f,Kajiado,Mashuuru
+361,Ilmotiook,1,Rift Valley,Narok,,KE0362,,907,Polygon,,2026-03-04 16:05:53.161814,2026-03-04 16:27:34.983929,f,Narok,
+362,Iloodokilani,7,Rift Valley,Kajiado,Magadi,KE0363,,927,Polygon,,2026-03-04 16:05:53.168062,2026-03-04 16:27:34.989203,f,Kajiado,Magadi
+365,Ingotse/Matiha,2,Western,Kakamega,Lurambi,KE0366,,1015,Polygon,,2026-03-04 16:05:53.18729,2026-03-04 16:27:35.002721,f,Kakamega,Lurambi
+368,Iriaini,7,Central,Nyeri,Mathira,KE0369,,479,Polygon,,2026-03-04 16:05:53.204597,2026-03-04 16:27:35.01474,f,Nyeri,Mathira
+370,Isukha West,3,Western,Kakamega,Shinyalu,KE0371,,1046,Polygon,,2026-03-04 16:05:53.215791,2026-03-04 16:27:35.026671,f,Kakamega,Shinyalu
+374,Ivingoni/Nzambani,4,Eastern,Makueni,Mtito Andei,KE0375,,440,Polygon,,2026-03-04 16:05:53.235648,2026-03-04 16:27:35.046684,f,Makueni,Mtito Andei
+332,Hospital,5,Rift Valley,Trans Nzoia,Central,KE0333,,1445,Polygon,,2026-03-04 16:05:52.898008,2026-03-04 16:26:02.695417,f,Trans Nzoia,Imenti Central
+343,Iftin,3,North Eastern,Garissa,Central,KE0344,,134,Polygon,,2026-03-04 16:05:52.953434,2026-03-04 16:26:02.758351,f,Garissa,Imenti Central
+355,Ildamat,5,Rift Valley,Kajiado,Central,KE0356,,917,Polygon,,2026-03-04 16:05:53.115062,2026-03-04 16:26:02.812117,f,Kajiado,Imenti Central
+363,Imara Daima,1,Nairobi,Nairobi,Embakasi,KE0364,,1406,Polygon,,2026-03-04 16:05:53.173828,2026-03-04 16:26:02.93609,f,Nairobi,Embakasi South
+366,Inoi,4,Central,Kirinyaga,Central,KE0367,,515,Polygon,,2026-03-04 16:05:53.192962,2026-03-04 16:26:02.962146,f,Kirinyaga,Imenti Central
+377,Jaribuni,9,Coast,Kilifi,Ganze,KE0378,,73,Polygon,,2026-03-04 16:05:53.250919,2026-03-04 16:26:03.003961,f,Kilifi,Ganze
+383,Junda,1,Coast,Mombasa,Kisauni,KE0384,,10,Polygon,,2026-03-04 16:05:53.280529,2026-03-04 16:27:35.122246,f,Mombasa,Kisauni
+384,Junju,3,Coast,Kilifi,Kikambala,KE0385,,58,Polygon,,2026-03-04 16:05:53.285321,2026-03-04 16:27:35.152562,f,Kilifi,Kikambala
+385,KEEKONYOKIE (Narok East),1,Rift Valley,Narok,,KE0386,,,,,2026-03-04 16:05:53.290242,2026-03-04 16:27:35.178603,f,Narok,
+387,Kabare,8,Central,Kirinyaga,Gichugu,KE0388,,504,Polygon,,2026-03-04 16:05:53.29997,2026-03-04 16:27:35.223899,f,Kirinyaga,Gichugu
+389,Kabartonjo,11,Rift Valley,Baringo,Barwessa,KE0390,,789,Polygon,,2026-03-04 16:05:53.309307,2026-03-04 16:27:35.245561,f,Baringo,Barwessa
+390,Kabaru,4,Central,Nyeri,Kieni East,KE0391,,475,Polygon,,2026-03-04 16:05:53.314512,2026-03-04 16:27:35.253951,f,Nyeri,Kieni East
+391,Kabatini,3,Rift Valley,Nakuru,Bahati,KE0392,,866,Polygon,,2026-03-04 16:05:53.320372,2026-03-04 16:27:35.2607,f,Nakuru,Bahati
+392,Kabazi,6,Rift Valley,Nakuru,Bahati,KE0393,,859,Polygon,,2026-03-04 16:05:53.326203,2026-03-04 16:27:35.267351,f,Nakuru,Bahati
+394,Kabianga,8,Rift Valley,Kericho,Sigowet,KE0395,,958,Polygon,,2026-03-04 16:05:53.33716,2026-03-04 16:27:35.274865,f,Kericho,Sigowet
+398,Kabisaga,5,Rift Valley,Nandi,Kabiyet,KE0399,,779,Polygon,,2026-03-04 16:05:53.357963,2026-03-04 16:27:35.287556,f,Nandi,Kabiyet
+399,Kabiyet,7,Rift Valley,Nandi,Kabiyet,KE0400,,777,Polygon,,2026-03-04 16:05:53.363702,2026-03-04 16:27:35.293554,f,Nandi,Kabiyet
+404,Kabula,2,Western,Bungoma,Bumula,KE0405,,1092,Polygon,,2026-03-04 16:05:53.393251,2026-03-04 16:27:35.3045,f,Bungoma,Bumula
+405,Kabwareng,6,Rift Valley,Nandi,Aldai,KE0406,,755,Polygon,,2026-03-04 16:05:53.401087,2026-03-04 16:27:35.310002,f,Nandi,Aldai
+406,Kadzandani,1,Coast,Mombasa,Kisauni,KE0407,,20,Polygon,,2026-03-04 16:05:53.408725,2026-03-04 16:27:35.315329,f,Mombasa,Kisauni
+379,Jibana,7,Coast,Kilifi,Kaloleni,KE0380,,,,,2026-03-04 16:05:53.260437,2026-03-04 16:26:03.016608,f,Kilifi,Kaloleni
+407,Kaeris,5,Rift Valley,Turkana,Kaaleng,KE0408,,611,Polygon,,2026-03-04 16:05:53.4185,2026-03-04 16:27:35.320307,f,Turkana,Kaaleng
+408,Kagaari North,4,Eastern,Embu,Runyenjes,KE0409,,320,Polygon,spelling,2026-03-04 16:05:53.434441,2026-03-04 16:27:35.325914,f,Embu,Runyenjes
+409,Kagaari South,4,Eastern,Embu,Runyenjes,KE0410,,318,Polygon,spelling,2026-03-04 16:05:53.449397,2026-03-04 16:27:35.330966,f,Embu,Runyenjes
+417,Kaimbaga,2,Central,Nyandarua,Ol Kalou,KE0418,,456,Polygon,,2026-03-04 16:05:53.512364,2026-03-04 16:27:35.356959,f,Nyandarua,Ol Kalou
+418,Kajulu,5,Nyanza,Kisumu,Winam,KE0419,,1186,Polygon,,2026-03-04 16:05:53.518119,2026-03-04 16:27:35.362239,f,Kisumu,Winam
+421,Kakuma,3,Rift Valley,Turkana,Kakuma,KE0422,,617,Polygon,,2026-03-04 16:05:53.534549,2026-03-04 16:27:35.37288,f,Turkana,Kakuma
+426,Kalapata,3,Rift Valley,Turkana,Lokichar,KE0427,,636,Polygon,,2026-03-04 16:05:53.560118,2026-03-04 16:27:35.415168,f,Turkana,Lokichar
+427,Kalawa,28,Eastern,Makueni,Kalawa,KE0428,,416,Polygon,,2026-03-04 16:05:53.564945,2026-03-04 16:27:35.442564,f,Makueni,Kalawa
+430,Kalobeyei,5,Rift Valley,Turkana,Oropoi,KE0431,,621,Polygon,,2026-03-04 16:05:53.57973,2026-03-04 16:27:35.479085,f,Turkana,Oropoi
+393,Kabete,2,Central,Kiambu,Kikuyu,KE0394,,594,Polygon,,2026-03-04 16:05:53.331995,2026-03-04 16:26:03.180977,f,Kiambu,Kikuyu
+431,Kalokol,3,Rift Valley,Turkana,Kalokol,KE0432,,626,Polygon,,2026-03-04 16:05:53.584896,2026-03-04 16:27:35.489386,f,Turkana,Kalokol
+397,Kabiro,1,Nairobi,Nairobi,Dagoretti,KE0398,,1375,Polygon,,2026-03-04 16:05:53.352753,2026-03-04 16:26:03.227999,f,Nairobi,Dagoretti North
+436,Kamakwa/Mukaro,6,Central,Nyeri,Nyeri Municipality,KE0437,,495,Polygon,,2026-03-04 16:05:53.612729,2026-03-04 16:27:35.538421,f,Nyeri,Nyeri Municipality
+437,Kamara,6,Rift Valley,Nakuru,Kamara,KE0438,,856,Polygon,,2026-03-04 16:05:53.617645,2026-03-04 16:27:35.551936,f,Nakuru,Kamara
+438,Kamariny,8,Rift Valley,Elgeyo Marakwet,Kamariny,KE0439,,741,Polygon,,2026-03-04 16:05:53.622625,2026-03-04 16:27:35.563746,f,Elgeyo Marakwet,Kamariny
+447,Kang'atotha,5,Rift Valley,Turkana,Kalokol,KE0448,,625,Polygon,,2026-03-04 16:05:53.669266,2026-03-04 16:27:35.603548,f,Turkana,Kalokol
+448,Kangai,3,Central,Kirinyaga,Mwea,KE0449,,497,Polygon,,2026-03-04 16:05:53.674693,2026-03-04 16:27:35.609049,f,Kirinyaga,Mwea
+453,Kangundo East,6,Eastern,Machakos,Kangundo,KE0454,,383,Polygon,,2026-03-04 16:05:53.707904,2026-03-04 16:27:35.626921,f,Machakos,Kangundo
+454,Kangundo North,5,Eastern,Machakos,Kangundo,KE0455,,381,Polygon,,2026-03-04 16:05:53.764614,2026-03-04 16:27:35.631998,f,Machakos,Kangundo
+455,Kangundo West,6,Eastern,Machakos,Kangundo,KE0456,,384,Polygon,,2026-03-04 16:05:53.787775,2026-03-04 16:27:35.637398,f,Machakos,Kangundo
+414,Kahawa West,2,Nairobi,Nairobi,Kasarani,KE0415,,1392,Polygon,,2026-03-04 16:05:53.490974,2026-03-04 16:26:03.319552,f,Nairobi,Kasarani
+456,Kanjuiri Ridge,3,Central,Nyandarua,Ol Kalou,KE0457,,454,Polygon,,2026-03-04 16:05:53.805853,2026-03-04 16:27:35.642261,f,Nyandarua,Ol Kalou
+458,Kanyadoto,4,Nyanza,Homa Bay,Nyarongi,KE0459,,1246,Polygon,,2026-03-04 16:05:53.826172,2026-03-04 16:27:35.647475,f,Homa Bay,Nyarongi
+419,Kakrao,4,Nyanza,Migori,Suba East,KE0420,,1271,Polygon,,2026-03-04 16:05:53.523697,2026-03-04 16:26:03.381419,f,Migori,Suba East
+462,Kanyangi,7,Eastern,Kitui,Yatta,KE0463,,353,Polygon,,2026-03-04 16:05:53.855578,2026-03-04 16:27:35.652505,f,Kitui,Yatta
+425,Kalama,9,Eastern,Machakos,Central,KE0426,,398,Polygon,,2026-03-04 16:05:53.555228,2026-03-04 16:26:03.423142,f,Machakos,Imenti Central
+465,Kanyikela,2,Nyanza,Homa Bay,Nyarongi,KE0466,,1247,Polygon,,2026-03-04 16:05:53.874368,2026-03-04 16:27:35.657714,f,Homa Bay,Nyarongi
+466,Kanziko,10,Eastern,Kitui,Mutha,KE0467,,369,Polygon,,2026-03-04 16:05:53.883603,2026-03-04 16:27:35.662594,f,Kitui,Mutha
+468,Kapchoki,2,Rift Valley,West Pokot,Kacheliba,KE0469,,654,Polygon,spelling,2026-03-04 16:05:53.895247,2026-03-04 16:27:35.686584,f,West Pokot,Kacheliba
+470,Kapedo/Napeitom,9,Rift Valley,Turkana,Lomelo,KE0471,,638,Polygon,,2026-03-04 16:05:53.905267,2026-03-04 16:27:35.700921,f,Turkana,Lomelo
+471,Kapenguria,10,Rift Valley,West Pokot,Kapenguria,KE0472,,642,Polygon,,2026-03-04 16:05:53.910447,2026-03-04 16:27:35.707676,f,West Pokot,Kapenguria
+472,Kapkangani,3,Rift Valley,Nandi,Kapsabet,KE0473,,771,Polygon,,2026-03-04 16:05:53.915259,2026-03-04 16:27:35.714005,f,Nandi,Kapsabet
+475,Kapkugerwet,1,Rift Valley,Kericho,Ainamoi,KE0476,,946,Polygon,,2026-03-04 16:05:53.929498,2026-03-04 16:27:35.737017,f,Kericho,Ainamoi
+476,Kapkures,1,Rift Valley,Uasin Gishu,Soy,KE0477,,702,Polygon,,2026-03-04 16:05:53.934479,2026-03-04 16:27:35.745491,f,Uasin Gishu,
+441,Kamburu,4,Central,Kiambu,Lari,KE0442,,609,Polygon,,2026-03-04 16:05:53.638364,2026-03-04 16:26:03.524339,f,Kiambu,Lari
+446,Kanamkemer,2,Rift Valley,Turkana,Central,KE0447,,628,Polygon,,2026-03-04 16:05:53.663971,2026-03-04 16:26:03.53576,f,Turkana,Imenti Central
+478,Kaplelartet,6,Rift Valley,Kericho,Sigowet,KE0479,,963,Polygon,,2026-03-04 16:05:53.944448,2026-03-04 16:27:35.762228,f,Kericho,Sigowet
+463,Kanyeki-ine,6,Central,Kirinyaga,Central,KE0464,,513,Polygon,,2026-03-04 16:05:53.862119,2026-03-04 16:26:03.604854,f,Kirinyaga,Imenti Central
+464,Kanyenyaini,7,Central,Murang'a,Kangema,KE0465,,516,Polygon,spelling,2026-03-04 16:05:53.868103,2026-03-04 16:26:03.627647,f,Murang'a,Gem
+481,Kapropita,8,Rift Valley,Baringo,Kabarnet,KE0482,,797,Polygon,,2026-03-04 16:05:53.958793,2026-03-04 16:27:35.808353,f,Baringo,Kabarnet
+482,Kapsabet,4,Rift Valley,Nandi,Kapsabet,KE0483,,772,Polygon,,2026-03-04 16:05:53.963727,2026-03-04 16:27:35.817303,f,Nandi,Kapsabet
+485,Kapsimotwo,10,Rift Valley,Nandi,Nandi Hills,KE0486,,754,Polygon,spelling,2026-03-04 16:05:53.980121,2026-03-04 16:27:35.837465,f,Nandi,Nandi Hills
+486,Kapsoit,6,Rift Valley,Kericho,Ainamoi,KE0487,,944,Polygon,,2026-03-04 16:05:53.985308,2026-03-04 16:27:35.843211,f,Kericho,Ainamoi
+489,Kapsoya,1,Rift Valley,Uasin Gishu,Ainabkoi,KE0490,,719,Polygon,,2026-03-04 16:05:54.000765,2026-03-04 16:27:35.861401,f,Uasin Gishu,Ainabkoi
+490,Kapsuser,4,Rift Valley,Kericho,Belgut,KE0491,,961,Polygon,,2026-03-04 16:05:54.005869,2026-03-04 16:27:35.866918,f,Kericho,Belgut
+491,Kaptagat,10,Rift Valley,Uasin Gishu,Ainabkoi,KE0492,,720,Polygon,,2026-03-04 16:05:54.01085,2026-03-04 16:27:35.873211,f,Uasin Gishu,Ainabkoi
+494,Kaptel/Kamoiywo,8,Rift Valley,Nandi,Kapsabet,KE0495,,768,Polygon,,2026-03-04 16:05:54.026897,2026-03-04 16:27:35.889819,f,Nandi,Kapsabet
+495,Kaptembwa East,1,Rift Valley,Nakuru,Municipality,KE0496,,,,,2026-03-04 16:05:54.032258,2026-03-04 16:27:35.894936,f,Nakuru,Municipality
+496,Kaptembwa West,1,Rift Valley,Nakuru,Municipality,KE0497,,,,,2026-03-04 16:05:54.037165,2026-03-04 16:27:35.900084,f,Nakuru,Municipality
+497,Kaptumo/Kaboi,7,Rift Valley,Nandi,Kaptumo,KE0498,,759,Polygon,,2026-03-04 16:05:54.042796,2026-03-04 16:27:35.907795,f,Nandi,Kaptumo
+498,Kaputei North,4,Rift Valley,Kajiado,Isinya,KE0499,,921,Polygon,spelling,2026-03-04 16:05:54.049322,2026-03-04 16:27:35.91869,f,Kajiado,Isinya
+499,Kaputir,3,Rift Valley,Turkana,Kainuk,KE0500,,633,Polygon,,2026-03-04 16:05:54.054847,2026-03-04 16:27:35.963071,f,Turkana,Kainuk
+500,Kapyego,6,Rift Valley,Elgeyo Marakwet,Kapyego,KE0501,,731,Polygon,,2026-03-04 16:05:54.061365,2026-03-04 16:27:35.983854,f,Elgeyo Marakwet,Kapyego
+506,Karau,2,Central,Nyandarua,Ol Kalou,KE0507,,453,Polygon,,2026-03-04 16:05:54.097564,2026-03-04 16:27:36.005437,f,Nyandarua,Ol Kalou
+507,Karen,4,Nairobi,Nairobi,Kibera,KE0508,,1381,Polygon,,2026-03-04 16:05:54.10291,2026-03-04 16:27:36.014896,f,Nairobi,Kibera
+510,Karima,5,Central,Nyeri,Othaya,KE0511,,486,Polygon,,2026-03-04 16:05:54.119716,2026-03-04 16:27:36.039135,f,Nyeri,Othaya
+515,Karumandi,4,Central,Kirinyaga,Gichugu,KE0516,,508,Polygon,,2026-03-04 16:05:54.145886,2026-03-04 16:27:36.051408,f,Kirinyaga,Gichugu
+520,Kasei,9,Rift Valley,West Pokot,Kasei,KE0521,,653,Polygon,,2026-03-04 16:05:54.174366,2026-03-04 16:27:36.062823,f,West Pokot,Kasei
+521,Kasemani,7,Coast,Kwale,Samburu,KE0522,,,,,2026-03-04 16:05:54.18115,2026-03-04 16:27:36.068386,f,Kwale,
+525,Kasikeu/Kiou,16,Eastern,Makueni,Kasikeu,KE0526,,417,Polygon,,2026-03-04 16:05:54.204508,2026-03-04 16:27:36.085206,f,Makueni,Kasikeu
+526,Katangi,4,Eastern,Machakos,Katangi,KE0527,,380,Polygon,,2026-03-04 16:05:54.209965,2026-03-04 16:27:36.09092,f,Machakos,Katangi
+527,Kathiani Central,5,Eastern,Machakos,Kathiani,KE0528,,391,Polygon,,2026-03-04 16:05:54.215156,2026-03-04 16:27:36.096377,f,Machakos,Kathiani
+528,Kathonzweni,12,Eastern,Makueni,Kathonzweni,KE0529,,428,Polygon,,2026-03-04 16:05:54.219942,2026-03-04 16:27:36.102591,f,Makueni,Kathonzweni
+529,Katilia,3,Rift Valley,Turkana,Lokori,KE0530,,639,Polygon,,2026-03-04 16:05:54.225397,2026-03-04 16:27:36.110746,f,Turkana,Lokori
+531,Kauwi,12,Eastern,Kitui,Mutonguni,KE0532,,347,Polygon,,2026-03-04 16:05:54.235266,2026-03-04 16:27:36.172419,f,Kitui,Mutonguni
+538,Kee,16,Eastern,Makueni,Kaiti,KE0539,,421,Polygon,,2026-03-04 16:05:54.281134,2026-03-04 16:27:36.193676,f,Makueni,Kaiti
+539,Keekonyokie,8,Rift Valley,Kajiado,Ngong,KE0540,,926,Polygon,,2026-03-04 16:05:54.28876,2026-03-04 16:27:36.200816,f,Kajiado,Ngong
+541,Keiyo,3,Rift Valley,Trans Nzoia,Kwanza,KE0542,,678,Polygon,,2026-03-04 16:05:54.325811,2026-03-04 16:27:36.213458,f,Trans Nzoia,Kwanza
+542,Kembu,4,Rift Valley,Bomet,Longisa,KE0543,,977,Polygon,,2026-03-04 16:05:54.346843,2026-03-04 16:27:36.22007,f,Bomet,Longisa
+543,Kemeloi/Maraba,10,Rift Valley,Nandi,Aldai,KE0544,,757,Polygon,spelling,2026-03-04 16:05:54.363451,2026-03-04 16:27:36.225861,f,Nandi,Aldai
+502,Karai,3,Central,Kiambu,Kikuyu,KE0503,,596,Polygon,,2026-03-04 16:05:54.074449,2026-03-04 16:26:04.07535,f,Kiambu,Kikuyu
+504,Karare,5,Eastern,Marsabit,Central,KE0505,,234,Polygon,,2026-03-04 16:05:54.086081,2026-03-04 16:26:04.094847,f,Marsabit,Imenti Central
+545,Kenyawa-Poka,8,Rift Valley,Kajiado,Mashuuru,KE0546,,924,Polygon,,2026-03-04 16:05:54.37974,2026-03-04 16:27:36.231824,f,Kajiado,Mashuuru
+546,Keringet,8,Rift Valley,Nakuru,Keringet,KE0547,,850,Polygon,,2026-03-04 16:05:54.386351,2026-03-04 16:27:36.237446,f,Nakuru,Keringet
+547,Kerio Delta,8,Rift Valley,Turkana,Kerio,KE0548,,624,Polygon,,2026-03-04 16:05:54.392889,2026-03-04 16:27:36.24256,f,Turkana,Kerio
+512,Kariobangi North,1,Nairobi,Nairobi,Kasarani,KE0513,,1411,Polygon,,2026-03-04 16:05:54.130306,2026-03-04 16:26:04.143795,f,Nairobi,Kasarani
+513,Kariobangi South,2,Nairobi,Nairobi,Embakasi,KE0514,,1429,Polygon,,2026-03-04 16:05:54.135311,2026-03-04 16:26:04.149753,f,Nairobi,Embakasi South
+550,Khalaba,3,Western,Kakamega,Matungu,KE0551,,1099,Polygon,,2026-03-04 16:05:54.413146,2026-03-04 16:27:36.249204,f,Kakamega,Matungu
+551,Khasoko,3,Western,Bungoma,Bumula,KE0552,,1091,Polygon,,2026-03-04 16:05:54.418711,2026-03-04 16:27:36.255114,f,Bungoma,Bumula
+517,Karura,2,Nairobi,Nairobi,Westlands,KE0518,,1368,Polygon,,2026-03-04 16:05:54.157112,2026-03-04 16:26:04.173478,f,Nairobi,Westlands
+518,Karuri,3,Central,Kiambu,Kiambaa,KE0519,,587,Polygon,,2026-03-04 16:05:54.162297,2026-03-04 16:26:04.17871,f,Kiambu,Kiambaa
+519,Kasarani,1,Nairobi,Nairobi,Kasarani,KE0520,,1398,Polygon,,2026-03-04 16:05:54.167583,2026-03-04 16:26:04.184125,f,Nairobi,Kasarani
+552,Kholera,2,Western,Kakamega,Matungu,KE0553,,1028,Polygon,,2026-03-04 16:05:54.424556,2026-03-04 16:27:36.260131,f,Kakamega,Matungu
+553,Khorof Harar,4,North Eastern,Wajir,Wajir Bor,KE0554,,171,Polygon,,2026-03-04 16:05:54.430132,2026-03-04 16:27:36.266782,f,Wajir,Wajir Bor
+557,Kiamaina,3,Rift Valley,Nakuru,Bahati,KE0558,,867,Polygon,,2026-03-04 16:05:54.451231,2026-03-04 16:27:36.272577,f,Nakuru,Bahati
+562,Kiarukungu,1,Central,Kirinyaga,Mwea,KE0563,,,,,2026-03-04 16:05:54.476036,2026-03-04 16:27:36.284828,f,Kirinyaga,Mwea
+563,Kibarani,3,Coast,Kilifi,Bahari,KE0564,,53,Polygon,,2026-03-04 16:05:54.480824,2026-03-04 16:27:36.290157,f,Kilifi,Bahari
+566,Kibish,7,Rift Valley,Turkana,Kibish,KE0567,,615,Polygon,,2026-03-04 16:05:54.495191,2026-03-04 16:27:36.30281,f,Turkana,Kibish
+532,Kawangare,1,Nairobi,Nairobi,Dagoretti,KE0533,,1372,Polygon,,2026-03-04 16:05:54.240707,2026-03-04 16:26:04.265435,f,Nairobi,Dagoretti North
+533,Kayafungo,6,Coast,Kilifi,Kaloleni,KE0534,,64,Polygon,,2026-03-04 16:05:54.246375,2026-03-04 16:26:04.271276,f,Kilifi,Kaloleni
+535,Kayole North,1,Nairobi,Nairobi,Embakasi,KE0536,,1416,Polygon,,2026-03-04 16:05:54.260521,2026-03-04 16:26:04.2835,f,Nairobi,Embakasi South
+536,Kayole South,1,Nairobi,Nairobi,Embakasi,KE0537,,1418,Polygon,,2026-03-04 16:05:54.267439,2026-03-04 16:26:04.304702,f,Nairobi,Embakasi South
+548,Kerugoya,4,Central,Kirinyaga,Central,KE0549,,514,Polygon,,2026-03-04 16:05:54.400987,2026-03-04 16:26:04.470185,f,Kirinyaga,Imenti Central
+556,Kiamaiko,1,Nairobi,Nairobi,Central,KE0557,,1450,Polygon,,2026-03-04 16:05:54.446425,2026-03-04 16:26:04.499359,f,Nairobi,Imenti Central
+570,Kiganjo/Mathari,6,Central,Nyeri,Nyeri Municipality,KE0571,,491,Polygon,,2026-03-04 16:05:54.516948,2026-03-04 16:27:36.320155,f,Nyeri,Nyeri Municipality
+574,Kihingo,5,Rift Valley,Nakuru,Keringet,KE0575,,832,Polygon,,2026-03-04 16:05:54.536159,2026-03-04 16:27:36.373645,f,Nakuru,Keringet
+577,Kiine,7,Central,Kirinyaga,Ndia,KE0578,,510,Polygon,,2026-03-04 16:05:54.550671,2026-03-04 16:27:36.420469,f,Kirinyaga,Ndia
+580,Kikumbulyu North,6,Eastern,Makueni,Kibwezi,KE0581,,433,Polygon,,2026-03-04 16:05:54.565747,2026-03-04 16:27:36.43268,f,Makueni,Kibwezi
+581,Kikumbulyu South,10,Eastern,Makueni,Kibwezi,KE0582,,434,Polygon,,2026-03-04 16:05:54.570879,2026-03-04 16:27:36.444716,f,Makueni,Kibwezi
+582,Kikumini/Mavau,12,Eastern,Makueni,Wote,KE0583,,425,Polygon,,2026-03-04 16:05:54.576381,2026-03-04 16:27:36.458351,f,Makueni,Wote
+588,Kiliwehiri,2,North Eastern,Mandera,Banissa,KE0589,,200,Polygon,spelling,2026-03-04 16:05:54.614182,2026-03-04 16:27:36.49572,f,Mandera,Banissa
+589,Kilungu,12,Eastern,Makueni,Kilungu,KE0590,,422,Polygon,,2026-03-04 16:05:54.62045,2026-03-04 16:27:36.50877,f,Makueni,Kilungu
+590,Kimaeti,4,Western,Bungoma,Bumula,KE0591,,1093,Polygon,,2026-03-04 16:05:54.627158,2026-03-04 16:27:36.52231,f,Bungoma,Bumula
+591,Kimana,2,Rift Valley,Kajiado,Loitokitok,KE0592,,935,Polygon,,2026-03-04 16:05:54.633729,2026-03-04 16:27:36.545153,f,Kajiado,Loitokitok
+592,Kimilili,2,Western,Bungoma,Kimilili,KE0593,,1112,Polygon,,2026-03-04 16:05:54.640194,2026-03-04 16:27:36.563043,f,Bungoma,Kimilili
+597,Kimumu,2,Rift Valley,Uasin Gishu,Moiben,KE0598,,718,Polygon,,2026-03-04 16:05:54.667399,2026-03-04 16:27:36.648555,f,Uasin Gishu,Moiben
+579,Kijabe,6,Central,Kiambu,Lari,KE0580,,607,Polygon,,2026-03-04 16:05:54.560838,2026-03-04 16:26:04.616011,f,Kiambu,Lari
+598,Kinakomba,10,Coast,Tana River,Wenje,KE0599,,92,Polygon,,2026-03-04 16:05:54.6726,2026-03-04 16:27:36.660015,f,Tana River,Wenje
+600,Kinamba,2,Rift Valley,Laikipia,Ng'arua,KE0601,,,,,2026-03-04 16:05:54.683052,2026-03-04 16:27:36.672231,f,Laikipia,Ng'arua
+601,Kinango,4,Coast,Kwale,Kinango,KE0602,,46,Polygon,,2026-03-04 16:05:54.688553,2026-03-04 16:27:36.684955,f,Kwale,Kinango
+583,Kikuyu,2,Central,Kiambu,Kikuyu,KE0584,,599,Polygon,,2026-03-04 16:05:54.582094,2026-03-04 16:26:04.667418,f,Kiambu,Kikuyu
+603,Kingandole,3,Western,Busia,Butula,KE0604,,1143,Polygon,,2026-03-04 16:05:54.698783,2026-03-04 16:27:36.711356,f,Busia,Butula
+604,Kinna,6,Eastern,Isiolo,Kinna,KE0605,,249,Polygon,,2026-03-04 16:05:54.704339,2026-03-04 16:27:36.722973,f,Isiolo,Kinna
+605,Kinondo,2,Coast,Kwale,Msambweni,KE0606,,33,Polygon,,2026-03-04 16:05:54.709876,2026-03-04 16:27:36.735418,f,Kwale,Msambweni
+608,Kinyoro,3,Rift Valley,Trans Nzoia,Saboti,KE0609,,683,Polygon,,2026-03-04 16:05:54.724477,2026-03-04 16:27:36.76223,f,Trans Nzoia,Saboti
+610,Kipchebor,4,Rift Valley,Kericho,Ainamoi,KE0611,,947,Polygon,,2026-03-04 16:05:54.733592,2026-03-04 16:27:36.775739,f,Kericho,Ainamoi
+612,Kipevu,1,Coast,Mombasa,Changamwe,KE0613,,2,Polygon,,2026-03-04 16:05:54.744427,2026-03-04 16:27:36.81433,f,Mombasa,Changamwe
+613,Kipini East,6,Coast,Tana River,Kipini,KE0614,,86,Polygon,,2026-03-04 16:05:54.749317,2026-03-04 16:27:36.832244,f,Tana River,Kipini
+614,Kipini West,6,Coast,Tana River,Kipini,KE0615,,88,Polygon,,2026-03-04 16:05:54.75415,2026-03-04 16:27:36.844765,f,Tana River,Kipini
+599,Kinale,4,Central,Kiambu,Lari,KE0600,,606,Polygon,,2026-03-04 16:05:54.677928,2026-03-04 16:26:04.758219,f,Kiambu,Lari
+616,Kipkaren,6,Rift Valley,Nandi,Kipkaren,KE0617,,775,Polygon,,2026-03-04 16:05:54.76353,2026-03-04 16:27:36.874792,f,Nandi,Kipkaren
+617,Kipkelion,9,Rift Valley,Kericho,Londiani,KE0618,,942,Polygon,,2026-03-04 16:05:54.76805,2026-03-04 16:27:36.887253,f,Kericho,Londiani
+619,Kiplombe,2,Rift Valley,Uasin Gishu,Soy,KE0620,,711,Polygon,,2026-03-04 16:05:54.777736,2026-03-04 16:27:36.91272,f,Uasin Gishu,
+620,Kipreres,5,Rift Valley,Bomet,Longisa,KE0621,,979,Polygon,,2026-03-04 16:05:54.782169,2026-03-04 16:27:36.932557,f,Bomet,Longisa
+622,Kipsomba,1,Rift Valley,Uasin Gishu,Soy,KE0623,,705,Polygon,,2026-03-04 16:05:54.791572,2026-03-04 16:27:36.981569,f,Uasin Gishu,
+606,Kinoo,1,Central,Kiambu,Kikuyu,KE0607,,600,Polygon,,2026-03-04 16:05:54.714665,2026-03-04 16:26:04.792773,f,Kiambu,Kikuyu
+623,Kipsonoi,10,Rift Valley,Bomet,Mutarakwa,KE0624,,968,Polygon,,2026-03-04 16:05:54.796118,2026-03-04 16:27:37.002923,f,Bomet,Mutarakwa
+624,Kiptagich,9,Rift Valley,Nakuru,Olenguruone,KE0625,,851,Polygon,,2026-03-04 16:05:54.800704,2026-03-04 16:27:37.023994,f,Nakuru,Olenguruone
+625,Kiptororo,7,Rift Valley,Nakuru,Elburgon,KE0626,,853,Polygon,,2026-03-04 16:05:54.805619,2026-03-04 16:27:37.034304,f,Nakuru,Elburgon
+626,Kiptuiya,3,Rift Valley,Nandi,Kapsabet,KE0627,,769,Polygon,,2026-03-04 16:05:54.810364,2026-03-04 16:27:37.045594,f,Nandi,Kapsabet
+630,Kirimukuyu,8,Central,Nyeri,Mathira,KE0631,,481,Polygon,,2026-03-04 16:05:54.831359,2026-03-04 16:27:37.081508,f,Nyeri,Mathira
+631,Kiru,9,Central,Murang'a,Mathioya,KE0632,,520,Polygon,,2026-03-04 16:05:54.837392,2026-03-04 16:27:37.094478,f,Murang'a,Mathioya
+632,Kisa Central,0,Western,Kakamega,Khwisero,KE0633,,1040,Polygon,,2026-03-04 16:05:54.843193,2026-03-04 16:27:37.105589,f,Kakamega,Khwisero
+633,Kisa East,5,Western,Kakamega,Khwisero,KE0634,,1038,Polygon,,2026-03-04 16:05:54.848881,2026-03-04 16:27:37.118975,f,Kakamega,Khwisero
+634,Kisa North,3,Western,Kakamega,Khwisero,KE0635,,1037,Polygon,,2026-03-04 16:05:54.854648,2026-03-04 16:27:37.130307,f,Kakamega,Khwisero
+635,Kisa West,5,Western,Kakamega,Khwisero,KE0636,,1039,Polygon,,2026-03-04 16:05:54.860872,2026-03-04 16:27:37.142819,f,Kakamega,Khwisero
+637,Kisasi,8,Eastern,Kitui,Chuluni,KE0638,,350,Polygon,,2026-03-04 16:05:54.904953,2026-03-04 16:27:37.174959,f,Kitui,Chuluni
+641,Kisumu North,5,Nyanza,Kisumu,Winam,KE0642,,1193,Polygon,,2026-03-04 16:05:54.977742,2026-03-04 16:27:37.220383,f,Kisumu,Winam
+643,Kiteta/Kisau,16,Eastern,Makueni,Kisau,KE0644,,414,Polygon,,2026-03-04 16:05:55.004334,2026-03-04 16:27:37.24343,f,Makueni,Kisau
+644,Kithimani,4,Eastern,Machakos,Yatta,KE0645,,378,Polygon,,2026-03-04 16:05:55.012604,2026-03-04 16:27:37.254685,f,Machakos,Yatta
+645,Kithimu,3,Eastern,Embu,Nembure,KE0646,,312,Polygon,,2026-03-04 16:05:55.019914,2026-03-04 16:27:37.268139,f,Embu,Nembure
+646,Kithungo/kitundu,14,Eastern,Makueni,Mbooni,KE0647,,413,Polygon,,2026-03-04 16:05:55.027857,2026-03-04 16:27:37.285726,f,Makueni,Mbooni
+650,Kiunga,4,Coast,Lamu,Kiunga,KE0651,,102,Polygon,,2026-03-04 16:05:55.05163,2026-03-04 16:27:37.3344,f,Lamu,Kiunga
+652,Kivaa,8,Eastern,Machakos,Masinga,KE0653,,371,Polygon,,2026-03-04 16:05:55.062706,2026-03-04 16:27:37.360427,f,Machakos,Masinga
+654,Kivumbini,1,Rift Valley,Nakuru,Elburgon,KE0655,,877,Polygon,spelling,2026-03-04 16:05:55.073641,2026-03-04 16:27:37.375436,f,Nakuru,Elburgon
+655,Kiwawa,9,Rift Valley,West Pokot,Kasei,KE0656,,655,Polygon,,2026-03-04 16:05:55.078687,2026-03-04 16:27:37.385903,f,West Pokot,Kasei
+658,Kodich,6,Rift Valley,West Pokot,Kacheliba,KE0659,,652,Polygon,,2026-03-04 16:05:55.09385,2026-03-04 16:27:37.398322,f,West Pokot,Kacheliba
+648,Kitisuru,3,Nairobi,Nairobi,Westlands,KE0649,,1366,Polygon,,2026-03-04 16:05:55.040565,2026-03-04 16:26:04.95305,f,Nairobi,Westlands
+653,Kivou,5,Eastern,Kitui,Central,KE0654,,341,Polygon,,2026-03-04 16:05:55.068162,2026-03-04 16:26:05.008538,f,Kitui,Imenti Central
+660,Koisagat/Kapsang,3,Rift Valley,Uasin Gishu,Soy,KE0661,,,,,2026-03-04 16:05:55.104136,2026-03-04 16:27:37.425369,f,Uasin Gishu,
+663,Kola,3,Eastern,Machakos,Kalama,KE0664,,404,Polygon,,2026-03-04 16:05:55.118917,2026-03-04 16:27:37.437343,f,Machakos,Kalama
+665,Kolwa Central,2,Nyanza,Kisumu,Winam,KE0666,,1190,Polygon,,2026-03-04 16:05:55.128373,2026-03-04 16:27:37.47642,f,Kisumu,Winam
+666,Kolwa East,3,Nyanza,Kisumu,Winam,KE0667,,1187,Polygon,,2026-03-04 16:05:55.133046,2026-03-04 16:27:37.515615,f,Kisumu,Winam
+669,Kondele,1,Nyanza,Kisumu,Winam,KE0670,,1200,Polygon,,2026-03-04 16:05:55.146534,2026-03-04 16:27:37.528777,f,Kisumu,Winam
+670,Kong'asis,9,Rift Valley,Bomet,Siongiroi,KE0671,,971,Polygon,,2026-03-04 16:05:55.151225,2026-03-04 16:27:37.542537,f,Bomet,Siongiroi
+671,Kongoni,1,Western,Kakamega,Likuyani,KE0672,,999,Polygon,,2026-03-04 16:05:55.155749,2026-03-04 16:27:37.555379,f,Kakamega,Likuyani
+672,Kongowea,1,Coast,Mombasa,Kisauni,KE0673,,19,Polygon,,2026-03-04 16:05:55.159921,2026-03-04 16:27:37.568335,f,Mombasa,Kisauni
+675,Korondile,3,North Eastern,Wajir,Buna,KE0676,,163,Polygon,,2026-03-04 16:05:55.172934,2026-03-04 16:27:37.592152,f,Wajir,Buna
+676,Korr/Ngurunit,5,Eastern,Marsabit,Laisamis,KE0677,,238,Polygon,,2026-03-04 16:05:55.177188,2026-03-04 16:27:37.60378,f,Marsabit,Laisamis
+677,Kosirai,11,Rift Valley,Nandi,Kosirai,KE0678,,766,Polygon,,2026-03-04 16:05:55.181484,2026-03-04 16:27:37.617188,f,Nandi,Kosirai
+678,Kotaruk/Lobei,5,Rift Valley,Turkana,Turkwel,KE0679,,629,Polygon,,2026-03-04 16:05:55.185964,2026-03-04 16:27:37.629044,f,Turkana,Turkwel
+679,Koyo/Ndurio,12,Rift Valley,Nandi,Kaptumo,KE0680,,760,Polygon,,2026-03-04 16:05:55.190944,2026-03-04 16:27:37.641652,f,Nandi,Kaptumo
+680,Koyonzo,3,Western,Kakamega,Matungu,KE0681,,1027,Polygon,,2026-03-04 16:05:55.195768,2026-03-04 16:27:37.653843,f,Kakamega,Matungu
+681,Kubo South,11,Coast,Kwale,Kubo,KE0682,,42,Polygon,,2026-03-04 16:05:55.200656,2026-03-04 16:27:37.667462,f,Kwale,Kubo
+684,Kunyak,4,Rift Valley,Kericho,Chilchila,KE0685,,940,Polygon,,2026-03-04 16:05:55.214167,2026-03-04 16:27:37.838338,f,Kericho,Chilchila
+685,Kurgung/Surungai,9,Rift Valley,Nandi,Kipkaren,KE0686,,776,Polygon,,2026-03-04 16:05:55.218856,2026-03-04 16:27:37.853521,f,Nandi,Kipkaren
+686,Kutulo,8,North Eastern,Mandera,Kutulo,KE0687,,207,Polygon,,2026-03-04 16:05:55.223404,2026-03-04 16:27:37.86304,f,Mandera,Kutulo
+667,Komarock,1,Nairobi,Nairobi,Embakasi,KE0668,,1419,Polygon,,2026-03-04 16:05:55.137768,2026-03-04 16:26:05.131922,f,Nairobi,Embakasi South
+668,Komothai,5,Central,Kiambu,Githunguri,KE0669,,581,Polygon,,2026-03-04 16:05:55.142247,2026-03-04 16:26:05.152611,f,Kiambu,Githunguri
+688,Kwa Mutonga/Kithumula,9,Eastern,Kitui,Matinyani,KE0689,,349,Polygon,spelling,2026-03-04 16:05:55.233197,2026-03-04 16:27:37.871802,f,Kitui,Matinyani
+692,Kwabwai,8,Nyanza,Homa Bay,Kobama,KE0693,,1245,Polygon,,2026-03-04 16:05:55.257669,2026-03-04 16:27:37.884874,f,Homa Bay,Kobama
+693,Kwanza,4,Rift Valley,Trans Nzoia,Kwanza,KE0694,,677,Polygon,,2026-03-04 16:05:55.266321,2026-03-04 16:27:37.890597,f,Trans Nzoia,Kwanza
+698,Kyeni North,4,Eastern,Embu,Kyeni,KE0699,,321,Polygon,,2026-03-04 16:05:55.35136,2026-03-04 16:27:37.901604,f,Embu,Kyeni
+699,Kyeni South,6,Eastern,Embu,Kyeni,KE0700,,322,Polygon,,2026-03-04 16:05:55.359894,2026-03-04 16:27:37.90698,f,Embu,Kyeni
+701,Kyuso,12,Eastern,Kitui,Kyuso,KE0702,,332,Polygon,,2026-03-04 16:05:55.374567,2026-03-04 16:27:37.912511,f,Kitui,Kyuso
+702,Loita,1,Rift Valley,Narok,,KE0703,,904,Polygon,spelling,2026-03-04 16:05:55.382073,2026-03-04 16:27:37.917697,f,Narok,
+704,Lafey,4,North Eastern,Mandera,Lafey,KE0705,,218,Polygon,,2026-03-04 16:05:55.39595,2026-03-04 16:27:37.923096,f,Mandera,Lafey
+705,Lag Sure,1,North Eastern,Mandera,Takaba,KE0706,,193,Polygon,spacing,2026-03-04 16:05:55.402897,2026-03-04 16:27:37.937495,f,Mandera,Takaba
+707,Laini Saba,1,Nairobi,Nairobi,Kibera,KE0708,,1386,Polygon,,2026-03-04 16:05:55.415433,2026-03-04 16:27:37.96247,f,Nairobi,Kibera
+708,Lake Nakuru National Park,3,Rift Valley,Nakuru,Elburgon,KE0709,,,,,2026-03-04 16:05:55.422022,2026-03-04 16:27:37.978954,f,Nakuru,Elburgon
+709,Lake Zone,9,Rift Valley,Turkana,Lapur,KE0710,,612,Polygon,spelling,2026-03-04 16:05:55.427616,2026-03-04 16:27:37.986205,f,Turkana,Lapur
+710,Lakeview,1,Rift Valley,Nakuru,Naivasha,KE0711,,838,Polygon,,2026-03-04 16:05:55.432767,2026-03-04 16:27:37.994009,f,Nakuru,Naivasha
+711,Lakole South,2,North Eastern,Wajir,El-das,KE0712,,182,Polygon,spelling,2026-03-04 16:05:55.437963,2026-03-04 16:27:37.999981,f,Wajir,El-das
+714,Lanet/Umoja,2,Rift Valley,Nakuru,Bahati,KE0715,,868,Polygon,,2026-03-04 16:05:55.453057,2026-03-04 16:27:38.01191,f,Nakuru,Bahati
+687,Kwa,4,Nyanza,Migori,Suba East,KE0688,,1272,Polygon,,2026-03-04 16:05:55.228116,2026-03-04 16:26:05.291537,f,Migori,Suba East
+715,Langalanga,1,Rift Valley,Nakuru,Elburgon,KE0716,,,,,2026-03-04 16:05:55.457798,2026-03-04 16:27:38.017509,f,Nakuru,Elburgon
+689,Kwa Njenga,1,Nairobi,Nairobi,Embakasi,KE0690,,1407,Polygon,,2026-03-04 16:05:55.23899,2026-03-04 16:26:05.301138,f,Nairobi,Embakasi South
+718,Lare,5,Rift Valley,Nakuru,Njoro,KE0719,,834,Polygon,,2026-03-04 16:05:55.472015,2026-03-04 16:27:38.033909,f,Nakuru,Njoro
+719,Barwessa,8,Rift Valley,Baringo,Barwessa,KE0720,,788,Polygon,done,2026-03-04 16:05:55.487939,2026-03-04 16:27:38.039127,f,Baringo,Barwessa
+694,Kware,1,Nairobi,Nairobi,Embakasi,KE0695,,1410,Polygon,,2026-03-04 16:05:55.286744,2026-03-04 16:26:05.32406,f,Nairobi,Embakasi South
+695,Kyangwithya East,4,Eastern,Kitui,Central,KE0696,,358,Polygon,,2026-03-04 16:05:55.307066,2026-03-04 16:26:05.328578,f,Kitui,Imenti Central
+720,Lelan,22,Rift Valley,West Pokot,Lelan,KE0721,,659,Polygon,,2026-03-04 16:05:55.49532,2026-03-04 16:27:38.044503,f,West Pokot,Lelan
+721,Lelmokwo/Ngechek,12,Rift Valley,Nandi,Kosirai,KE0722,,767,Polygon,spelling,2026-03-04 16:05:55.501655,2026-03-04 16:27:38.04961,f,Nandi,Kosirai
+700,Kyethani/kiomo,6,Eastern,Kitui,Central,KE0701,,339,Polygon,spelling,2026-03-04 16:05:55.367074,2026-03-04 16:26:05.351509,f,Kitui,Imenti Central
+724,Lembus/Perkerra,9,Rift Valley,Baringo,Eldama Ravine,KE0725,,809,Polygon,,2026-03-04 16:05:55.517891,2026-03-04 16:27:38.060163,f,Baringo,Eldama Ravine
+725,Lereshwa,2,Central,Nyandarua,Kipipiri,KE0726,,,,,2026-03-04 16:05:55.523453,2026-03-04 16:27:38.064978,f,Nyandarua,Kipipiri
+726,Leshau/Pondo,4,Central,Nyandarua,Ndaragwa,KE0727,,462,Polygon,,2026-03-04 16:05:55.528352,2026-03-04 16:27:38.069999,f,Nyandarua,Ndaragwa
+727,Letea,7,Rift Valley,Turkana,Oropoi,KE0728,,619,Polygon,,2026-03-04 16:05:55.53305,2026-03-04 16:27:38.07507,f,Turkana,Oropoi
+728,Libehia,4,North Eastern,Mandera,Hareri Lihehia,KE0729,,216,Polygon,,2026-03-04 16:05:55.537884,2026-03-04 16:27:38.080206,f,Mandera,Hareri Lihehia
+729,Liboi,3,North Eastern,Garissa,Liboi,KE0730,,150,Polygon,,2026-03-04 16:05:55.542317,2026-03-04 16:27:38.084639,f,Garissa,Liboi
+730,Likoni,1,Coast,Mombasa,Likoni,KE0731,,24,Polygon,,2026-03-04 16:05:55.54664,2026-03-04 16:27:38.089217,f,Mombasa,Likoni
+713,Landimawe,1,Nairobi,Nairobi,Makadara,KE0714,,1443,Polygon,,2026-03-04 16:05:55.448087,2026-03-04 16:26:05.431178,f,Nairobi,Makadara
+722,Lembus,5,Rift Valley,Baringo,Torongo,KE0723,,805,Polygon,,2026-03-04 16:05:55.506758,2026-03-04 16:26:05.55113,f,Baringo,Rongo
+732,Limuru Central,4,Central,Kiambu,Limuru,KE0733,,602,Polygon,,2026-03-04 16:05:55.556267,2026-03-04 16:26:05.604449,f,Kiambu,Limuru
+736,Lobokat,3,Rift Valley,Turkana,Kainuk,KE0737,,635,Polygon,,2026-03-04 16:05:55.576622,2026-03-04 16:27:38.107964,f,Turkana,Kainuk
+737,Lodokejek,8,Rift Valley,Samburu,Lorroki,KE0738,,661,Polygon,,2026-03-04 16:05:55.58191,2026-03-04 16:27:38.113107,f,Samburu,Lorroki
+739,Logologo,9,Eastern,Marsabit,Laisamis,KE0740,,239,Polygon,spelling,2026-03-04 16:05:55.593638,2026-03-04 16:27:38.117454,f,Marsabit,Laisamis
+740,Loima,4,Rift Valley,Turkana,Loima,KE0741,,631,Polygon,,2026-03-04 16:05:55.600635,2026-03-04 16:27:38.12219,f,Turkana,Loima
+741,Loiyamorok,4,Rift Valley,Baringo,Nginyang,KE0742,,785,Polygon,,2026-03-04 16:05:55.609733,2026-03-04 16:27:38.127182,f,Baringo,Nginyang
+743,Lokichar,4,Rift Valley,Turkana,Lokichar,KE0744,,637,Polygon,,2026-03-04 16:05:55.64102,2026-03-04 16:27:38.137611,f,Turkana,Lokichar
+744,Lokichoggio,4,Rift Valley,Turkana,Lokichoggio,KE0745,,622,Polygon,,2026-03-04 16:05:55.659661,2026-03-04 16:27:38.142304,f,Turkana,Lokichoggio
+746,Lokori/Kochodin,8,Rift Valley,Turkana,Lokori,KE0747,,640,Polygon,,2026-03-04 16:05:55.684255,2026-03-04 16:27:38.151787,f,Turkana,Lokori
+749,Londiani,5,Rift Valley,Kericho,Londiani,KE0750,,936,Polygon,,2026-03-04 16:05:55.706417,2026-03-04 16:27:38.16718,f,Kericho,Londiani
+751,Longisa,6,Rift Valley,Bomet,Longisa,KE0752,,978,Polygon,,2026-03-04 16:05:55.719847,2026-03-04 16:27:38.177188,f,Bomet,Longisa
+738,Lodwar Township,3,Rift Valley,Turkana,Central,KE0739,,627,Polygon,,2026-03-04 16:05:55.587743,2026-03-04 16:26:05.688432,f,Turkana,Imenti Central
+752,Loosuk,4,Rift Valley,Samburu,Kirisia,KE0753,,664,Polygon,,2026-03-04 16:05:55.725623,2026-03-04 16:27:38.182568,f,Samburu,Kirisia
+754,Lower Kaewa/Iveti,5,Eastern,Machakos,Kathiani,KE0755,,393,Polygon,spelling,2026-03-04 16:05:55.7378,2026-03-04 16:27:38.192702,f,Machakos,Kathiani
+756,Luanda,4,Western,Vihiga,Luanda,KE0757,,1068,Polygon,spelling,2026-03-04 16:05:55.749269,2026-03-04 16:27:38.197755,f,Vihiga,Luanda
+757,Luanda South,5,Western,Vihiga,Luanda,KE0758,,1071,Polygon,,2026-03-04 16:05:55.755321,2026-03-04 16:27:38.202894,f,Vihiga,Luanda
+759,Lugaga/Wamuluma,6,Western,Vihiga,Vihiga,KE0760,,1051,Polygon,spelling,2026-03-04 16:05:55.765275,2026-03-04 16:27:38.208377,f,Vihiga,
+760,Lugari,2,Western,Kakamega,Lugari,KE0761,,992,Polygon,,2026-03-04 16:05:55.770338,2026-03-04 16:27:38.212979,f,Kakamega,Lugari
+762,Lumakanda,2,Western,Kakamega,Lugari,KE0763,,993,Polygon,,2026-03-04 16:05:55.780481,2026-03-04 16:27:38.222714,f,Kakamega,Lugari
+763,Lusheya/Lubinu,3,Western,Kakamega,East Wanga,KE0764,,1024,Polygon,,2026-03-04 16:05:55.785247,2026-03-04 16:27:38.227743,f,Kakamega,East Wanga
+764,Lwandanyi,7,Western,Bungoma,Malakisi,KE0765,,1084,Polygon,spelling,2026-03-04 16:05:55.790104,2026-03-04 16:27:38.232604,f,Bungoma,Malakisi
+765,Lwandeti,4,Western,Kakamega,Matete,KE0766,,996,Polygon,,2026-03-04 16:05:55.795206,2026-03-04 16:27:38.537083,f,Kakamega,Matete
+766,Lyaduywa/Izava,6,Western,Vihiga,Sabatia,KE0767,,1055,Polygon,,2026-03-04 16:05:55.800613,2026-03-04 16:27:38.542547,f,Vihiga,Sabatia
+755,Lower Savanna,1,Nairobi,Nairobi,Embakasi,KE0756,,1422,Polygon,,2026-03-04 16:05:55.743383,2026-03-04 16:26:05.849257,f,Nairobi,Embakasi South
+767,Maji Moto/Naroosura,1,Rift Valley,Narok,,KE0768,,901,Polygon,spelling,2026-03-04 16:05:55.80584,2026-03-04 16:27:38.54653,f,Narok,
+768,Melelo,1,Rift Valley,Narok,,KE0769,,903,Polygon,spelling,2026-03-04 16:05:55.811247,2026-03-04 16:27:38.550609,f,Narok,
+758,Lucky Summer,1,Nairobi,Nairobi,Kasarani,KE0759,,1404,Polygon,,2026-03-04 16:05:55.760451,2026-03-04 16:26:05.863718,f,Nairobi,Kasarani
+770,MOSIRO(Narok East),1,Rift Valley,Narok,,KE0771,,,,,2026-03-04 16:05:55.823192,2026-03-04 16:27:38.558748,f,Narok,
+771,Maai Mahiu,3,Rift Valley,Nakuru,Naivasha,KE0772,,839,Polygon,,2026-03-04 16:05:55.828515,2026-03-04 16:27:38.562513,f,Nakuru,Naivasha
+772,Maalamin,3,North Eastern,Garissa,Madogashe,KE0773,,143,Polygon,,2026-03-04 16:05:55.833166,2026-03-04 16:27:38.566235,f,Garissa,Madogashe
+776,Machewa,1,Rift Valley,Trans Nzoia,Saboti,KE0777,,687,Polygon,,2026-03-04 16:05:55.853047,2026-03-04 16:27:38.570766,f,Trans Nzoia,Saboti
+777,Mackinnon Road,5,Coast,Kwale,Samburu,KE0778,,47,Polygon,,2026-03-04 16:05:55.857913,2026-03-04 16:27:38.57507,f,Kwale,
+779,Madogo,6,Coast,Tana River,Bangale,KE0780,,100,Polygon,,2026-03-04 16:05:55.868028,2026-03-04 16:27:38.582524,f,Tana River,Bangale
+780,Maella,5,Rift Valley,Nakuru,Naivasha,KE0781,,840,Polygon,,2026-03-04 16:05:55.872955,2026-03-04 16:27:38.586445,f,Nakuru,Naivasha
+782,Magadi,12,Rift Valley,Kajiado,Magadi,KE0783,,928,Polygon,,2026-03-04 16:05:55.883105,2026-03-04 16:27:38.59475,f,Kajiado,Magadi
+788,Magumu,3,Central,Nyandarua,South Kinangop,KE0789,,448,Polygon,,2026-03-04 16:05:55.913781,2026-03-04 16:27:38.603991,f,Nyandarua,South Kinangop
+789,Magutu,5,Central,Nyeri,Mathira,KE0790,,478,Polygon,,2026-03-04 16:05:55.919834,2026-03-04 16:27:38.609246,f,Nyeri,Mathira
+791,Mahiakalo,1,Western,Kakamega,Municipality,KE0792,,1013,Polygon,,2026-03-04 16:05:55.933077,2026-03-04 16:27:38.613776,f,Kakamega,Municipality
+792,Mahiga,9,Central,Nyeri,Othaya,KE0793,,483,Polygon,,2026-03-04 16:05:55.940944,2026-03-04 16:27:38.618731,f,Nyeri,Othaya
+773,Mabatini,1,Nairobi,Nairobi,Central,KE0774,,1446,Polygon,,2026-03-04 16:05:55.83794,2026-03-04 16:26:05.984009,f,Nairobi,Imenti Central
+775,Machakos Central,4,Eastern,Machakos,Central,KE0776,,401,Polygon,,2026-03-04 16:05:55.848211,2026-03-04 16:26:06.000519,f,Machakos,Imenti Central
+793,Mahiga-ini,3,Central,Kirinyaga,Mwea,KE0794,,,,,2026-03-04 16:05:55.981503,2026-03-04 16:27:38.623741,f,Kirinyaga,Mwea
+795,Maikona,6,Eastern,Marsabit,Maikona,KE0796,,229,Polygon,,2026-03-04 16:05:56.014994,2026-03-04 16:27:38.628397,f,Marsabit,Maikona
+796,Majengo,2,Coast,Mombasa,Island,KE0797,,30,Polygon,,2026-03-04 16:05:56.02639,2026-03-04 16:27:38.633121,f,Mombasa,Island
+799,Makina,1,Nairobi,Nairobi,Kibera,KE0800,,1388,Polygon,,2026-03-04 16:05:56.049182,2026-03-04 16:27:38.638112,f,Nairobi,Kibera
+800,Makindu,22,Eastern,Makueni,Makindu,KE0801,,431,Polygon,,2026-03-04 16:05:56.055685,2026-03-04 16:27:38.642621,f,Makueni,Makindu
+802,Makutano,3,Rift Valley,Trans Nzoia,Kaplamai,KE0803,,695,Polygon,,2026-03-04 16:05:56.067357,2026-03-04 16:27:38.64708,f,Trans Nzoia,Kaplamai
+803,Makutano/Mwala,23,Eastern,Machakos,Mwala,KE0804,,406,Polygon,,2026-03-04 16:05:56.0725,2026-03-04 16:27:38.651678,f,Machakos,Mwala
+808,Malaha/Isongo/Makunga,3,Western,Kakamega,East Wanga,KE0809,,1025,Polygon,,2026-03-04 16:05:56.098192,2026-03-04 16:27:38.676845,f,Kakamega,East Wanga
+809,Malakisi/SouthKulisiru,4,Western,Bungoma,Sirisia,KE0810,,1083,Polygon,,2026-03-04 16:05:56.103704,2026-03-04 16:27:38.681637,f,Bungoma,Sirisia
+811,Malewa West,3,Rift Valley,Nakuru,Olenguruone,KE0812,,847,Polygon,,2026-03-04 16:05:56.115262,2026-03-04 16:27:38.691223,f,Nakuru,Olenguruone
+813,Malkamari,4,North Eastern,Mandera,Malkamari,KE0814,,199,Polygon,,2026-03-04 16:05:56.127462,2026-03-04 16:27:38.696247,f,Mandera,Malkamari
+817,Manyatta 'B',1,Nyanza,Kisumu,Winam,KE0818,,1188,Polygon,spelling,2026-03-04 16:05:56.14835,2026-03-04 16:27:38.711964,f,Kisumu,Winam
+818,Mara,1,Rift Valley,Narok,,KE0819,,908,Polygon,,2026-03-04 16:05:56.153375,2026-03-04 16:27:38.718477,f,Narok,
+819,Marachi Central,2,Western,Busia,Butula,KE0820,,1144,Polygon,,2026-03-04 16:05:56.158237,2026-03-04 16:27:38.733559,f,Busia,Butula
+821,Marachi North,4,Western,Busia,Butula,KE0822,,1146,Polygon,,2026-03-04 16:05:56.16908,2026-03-04 16:27:38.784747,f,Busia,Butula
+822,Marachi West,5,Western,Busia,Butula,KE0823,,1142,Polygon,,2026-03-04 16:05:56.174222,2026-03-04 16:27:38.810481,f,Busia,Butula
+825,Marakaru,1,Western,Bungoma,Kanduyi,KE0826,,,,,2026-03-04 16:05:56.193768,2026-03-04 16:27:38.844977,f,Bungoma,Kanduyi
+826,Maralal,7,Rift Valley,Samburu,Kirisia,KE0827,,663,Polygon,,2026-03-04 16:05:56.226008,2026-03-04 16:27:38.8527,f,Samburu,Kirisia
+827,Marama Central,6,Western,Kakamega,Butere,KE0828,,1033,Polygon,,2026-03-04 16:05:56.246533,2026-03-04 16:27:38.860483,f,Kakamega,Butere
+828,Marama North,4,Western,Kakamega,Butere,KE0829,,1035,Polygon,,2026-03-04 16:05:56.258029,2026-03-04 16:27:38.867119,f,Kakamega,Butere
+829,Marama South,5,Western,Kakamega,Butere,KE0830,,1036,Polygon,,2026-03-04 16:05:56.273733,2026-03-04 16:27:38.873893,f,Kakamega,Butere
+830,Marama West,4,Western,Kakamega,Butere,KE0831,,1032,Polygon,,2026-03-04 16:05:56.285641,2026-03-04 16:27:38.880052,f,Kakamega,Butere
+832,Marenyo/Shianda,6,Western,Kakamega,Butere,KE0833,,1034,Polygon,,2026-03-04 16:05:56.302153,2026-03-04 16:27:38.885811,f,Kakamega,Butere
+835,Mariashoni,3,Rift Valley,Nakuru,Njoro,KE0836,,826,Polygon,,2026-03-04 16:05:56.321842,2026-03-04 16:27:38.891754,f,Nakuru,Njoro
+836,Marigat,19,Rift Valley,Baringo,Marigat,KE0837,,798,Polygon,,2026-03-04 16:05:56.327939,2026-03-04 16:27:38.897318,f,Baringo,Marigat
+847,Masii,9,Eastern,Machakos,Mwala,KE0848,,407,Polygon,,2026-03-04 16:05:56.387196,2026-03-04 16:27:38.924948,f,Machakos,Mwala
+849,Masinga Central,8,Eastern,Machakos,Masinga,KE0850,,372,Polygon,,2026-03-04 16:05:56.39673,2026-03-04 16:27:38.929857,f,Machakos,Masinga
+850,Masol,6,Rift Valley,West Pokot,Sigor,KE0851,,648,Polygon,spelling,2026-03-04 16:05:56.401148,2026-03-04 16:27:38.934845,f,West Pokot,Sigor
+851,Masongaleni,10,Eastern,Makueni,Kibwezi,KE0852,,437,Polygon,,2026-03-04 16:05:56.405418,2026-03-04 16:27:38.940261,f,Makueni,Kibwezi
+852,Masumba/Nguu,30,Eastern,Makueni,Nguu,KE0853,,435,Polygon,spelling,2026-03-04 16:05:56.40981,2026-03-04 16:27:38.944806,f,Makueni,Nguu
+854,Matapato North,8,Rift Valley,Kajiado,Namanga,KE0855,,919,Polygon,,2026-03-04 16:05:56.419204,2026-03-04 16:27:38.949564,f,Kajiado,Namanga
+856,Matayos South,9,Western,Busia,Matayos,KE0857,,1139,Polygon,,2026-03-04 16:05:56.428068,2026-03-04 16:27:38.959246,f,Busia,Matayos
+858,Matinyani,10,Eastern,Kitui,Matinyani,KE0859,,348,Polygon,,2026-03-04 16:05:56.437084,2026-03-04 16:27:38.963874,f,Kitui,Matinyani
+860,Matsangoni,4,Coast,Kilifi,Bahari,KE0861,,55,Polygon,,2026-03-04 16:05:56.446099,2026-03-04 16:27:38.968789,f,Kilifi,Bahari
+861,Matulo,3,Western,Bungoma,Webuye,KE0862,,1109,Polygon,,2026-03-04 16:05:56.450865,2026-03-04 16:27:38.974105,f,Bungoma,Webuye
+862,Matumbei,2,Rift Valley,Trans Nzoia,Endebes,KE0863,,682,Polygon,,2026-03-04 16:05:56.456419,2026-03-04 16:27:38.986845,f,Trans Nzoia,Endebes
+833,Mariakani,2,Coast,Kilifi,Kaloleni,KE0834,,63,Polygon,,2026-03-04 16:05:56.308741,2026-03-04 16:26:06.333788,f,Kilifi,Kaloleni
+864,Matungulu North,5,Eastern,Machakos,Matungulu,KE0865,,386,Polygon,,2026-03-04 16:05:56.46719,2026-03-04 16:27:39.035119,f,Machakos,Matungulu
+865,Matungulu West,9,Eastern,Machakos,Matungulu,KE0866,,388,Polygon,,2026-03-04 16:05:56.472153,2026-03-04 16:27:39.053495,f,Machakos,Matungulu
+866,Matuu,4,Eastern,Machakos,Yatta,KE0867,,377,Polygon,,2026-03-04 16:05:56.477224,2026-03-04 16:27:39.074568,f,Machakos,Yatta
+841,Marsabet central,6,Eastern,Marsabit,Central,KE0842,,235,Polygon,,2026-03-04 16:05:56.356401,2026-03-04 16:26:06.366174,f,Marsabit,Imenti Central
+867,Mau Narok,2,Rift Valley,Nakuru,Mauche,KE0868,,830,Polygon,,2026-03-04 16:05:56.483243,2026-03-04 16:27:39.086965,f,Nakuru,Mauche
+869,Mauche,9,Rift Valley,Nakuru,Lare,KE0870,,831,Polygon,,2026-03-04 16:05:56.493794,2026-03-04 16:27:39.096837,f,Nakuru,Lare
+870,Mautuma,2,Western,Kakamega,Lugari,KE0871,,991,Polygon,,2026-03-04 16:05:56.49922,2026-03-04 16:27:39.105814,f,Kakamega,Lugari
+873,Ziwa La Ng'ombe,1,Coast,Mombasa,Kisauni,KE0874,,17,Polygon,,2026-03-04 16:05:56.550608,2026-03-04 16:27:39.12055,f,Mombasa,Kisauni
+877,Mbakalo,2,Western,Bungoma,Tongaren,KE0878,,1115,Polygon,,2026-03-04 16:05:56.67553,2026-03-04 16:27:39.132029,f,Bungoma,Tongaren
+882,Mbiri,7,Central,Murang'a,Kiharu,KE0883,,524,Polygon,,2026-03-04 16:05:56.716512,2026-03-04 16:27:39.15394,f,Murang'a,Kiharu
+883,Mbitini,35,Eastern,Kitui,Chuluni,KE0884,,430,Polygon,,2026-03-04 16:05:56.722995,2026-03-04 16:27:39.159295,f,Kitui,Chuluni
+857,Mathare North,1,Nairobi,Nairobi,Kasarani,KE0858,,1403,Polygon,,2026-03-04 16:05:56.432651,2026-03-04 16:26:06.494643,f,Nairobi,Kasarani
+889,Menengai,3,Rift Valley,Nakuru,Kamara,KE0890,,879,Polygon,,2026-03-04 16:05:56.757192,2026-03-04 16:27:39.17498,f,Nakuru,Kamara
+859,Matisi,3,Rift Valley,Trans Nzoia,Central,KE0860,,684,Polygon,,2026-03-04 16:05:56.441234,2026-03-04 16:26:06.524958,f,Trans Nzoia,Imenti Central
+890,Menengai west,5,Rift Valley,Nakuru,Rongai,KE0891,,860,Polygon,,2026-03-04 16:05:56.764201,2026-03-04 16:27:39.179527,f,Nakuru,Rongai
+891,Merigi,6,Rift Valley,Bomet,Bomet Central,KE0892,,976,Polygon,,2026-03-04 16:05:56.769221,2026-03-04 16:27:39.184621,f,Bomet,Bomet Central
+892,Metkei,9,Rift Valley,Elgeyo Marakwet,Metkei,KE0893,,750,Polygon,,2026-03-04 16:05:56.774382,2026-03-04 16:27:39.189549,f,Elgeyo Marakwet,Metkei
+895,Migosi,1,Nyanza,Kisumu,Winam,KE0896,,1197,Polygon,,2026-03-04 16:05:56.789956,2026-03-04 16:27:39.198581,f,Kisumu,Winam
+898,Mihuu,4,Western,Bungoma,Ndivisi,KE0899,,1104,Polygon,,2026-03-04 16:05:56.805226,2026-03-04 16:27:39.203499,f,Bungoma,Ndivisi
+899,Mikindani,2,Coast,Mombasa,Changamwe,KE0900,,8,Polygon,,2026-03-04 16:05:56.810265,2026-03-04 16:27:39.208751,f,Mombasa,Changamwe
+900,Mikinduni,5,Coast,Tana River,Galole,KE0901,,93,Polygon,,2026-03-04 16:05:56.814913,2026-03-04 16:27:39.21399,f,Tana River,Galole
+903,Milima,1,Western,Bungoma,Tongaren,KE0904,,1117,Polygon,,2026-03-04 16:05:56.828551,2026-03-04 16:27:39.225411,f,Bungoma,Tongaren
+904,Milimani/Milimani,2,Nyanza,Kisumu,Winam,KE0905,,,,,2026-03-04 16:05:56.833144,2026-03-04 16:27:39.230916,f,Kisumu,Winam
+905,Miritini,1,Coast,Mombasa,Changamwe,KE0906,,7,Polygon,,2026-03-04 16:05:56.837521,2026-03-04 16:27:39.236238,f,Mombasa,Changamwe
+874,Mayenje,1,Western,Busia,Township,KE0875,,1138,Polygon,,2026-03-04 16:05:56.57377,2026-03-04 16:26:06.60116,f,Busia,Garissa Township
+876,Mazeras/mugumo Wa Patsa,2,Coast,Kilifi,Kaloleni,KE0877,,,,,2026-03-04 16:05:56.656764,2026-03-04 16:26:06.612429,f,Kilifi,Kaloleni
+906,Mitaboni,6,Eastern,Machakos,Kathiani,KE0907,,390,Polygon,spelling,2026-03-04 16:05:56.8419,2026-03-04 16:27:39.241591,f,Machakos,Kathiani
+880,Mbeti North,4,Eastern,Embu,Central,KE0881,,314,Polygon,,2026-03-04 16:05:56.702932,2026-03-04 16:26:06.662095,f,Embu,Imenti Central
+910,Mjambere,1,Coast,Mombasa,Kisauni,KE0911,,9,Polygon,,2026-03-04 16:05:56.860093,2026-03-04 16:27:39.246935,f,Mombasa,Kisauni
+912,Mkomani,1,Coast,Mombasa,Kisauni,KE0913,,105,Polygon,,2026-03-04 16:05:56.870574,2026-03-04 16:27:39.257826,f,Mombasa,Kisauni
+894,Miambani,5,Eastern,Kitui,Central,KE0895,,354,Polygon,,2026-03-04 16:05:56.785156,2026-03-04 16:26:06.801658,f,Kitui,Imenti Central
+896,Migwani,10,Eastern,Kitui,Central,KE0897,,338,Polygon,,2026-03-04 16:05:56.795217,2026-03-04 16:26:06.812913,f,Kitui,Imenti Central
+914,Mkunumbi,4,Coast,Lamu,Mpeketoni,KE0915,,107,Polygon,,2026-03-04 16:05:56.880223,2026-03-04 16:27:39.270356,f,Lamu,Mpeketoni
+917,Mnarani,5,Coast,Kilifi,Kikambala,KE0918,,57,Polygon,,2026-03-04 16:05:56.896196,2026-03-04 16:27:39.283887,f,Kilifi,Kikambala
+918,Mochongoi,13,Rift Valley,Baringo,Mochongoi,KE0919,,800,Polygon,,2026-03-04 16:05:56.901785,2026-03-04 16:27:39.293611,f,Baringo,Mochongoi
+921,Mogotio,14,Rift Valley,Baringo,Sirwa,KE0922,,802,Polygon,,2026-03-04 16:05:56.918574,2026-03-04 16:27:39.354417,f,Baringo,Sirwa
+922,Moi's Bridge,1,Rift Valley,Uasin Gishu,Soy,KE0923,,701,Polygon,,2026-03-04 16:05:56.923271,2026-03-04 16:27:39.371389,f,Uasin Gishu,
+923,Moiben,5,Rift Valley,Uasin Gishu,Moiben,KE0924,,717,Polygon,,2026-03-04 16:05:56.928907,2026-03-04 16:27:39.390117,f,Uasin Gishu,Moiben
+926,Molo,4,Rift Valley,Nakuru,Molo,KE0927,,829,Polygon,,2026-03-04 16:05:56.948016,2026-03-04 16:27:39.42647,f,Nakuru,Molo
+928,Mosop,8,Rift Valley,Nakuru,Rongai,KE0929,,863,Polygon,,2026-03-04 16:05:56.959267,2026-03-04 16:27:39.440533,f,Nakuru,Rongai
+930,Motosiet,2,Rift Valley,Trans Nzoia,Kaplamai,KE0931,,697,Polygon,,2026-03-04 16:05:56.971851,2026-03-04 16:27:39.446867,f,Trans Nzoia,Kaplamai
+934,Mtepeni,3,Coast,Kilifi,Kikambala,KE0935,,62,Polygon,,2026-03-04 16:05:57.04042,2026-03-04 16:27:39.458953,f,Kilifi,Kikambala
+936,Mtongwe,1,Coast,Mombasa,Likoni,KE0937,,21,Polygon,,2026-03-04 16:05:57.062062,2026-03-04 16:27:39.470743,f,Mombasa,Likoni
+937,Mtopanga,1,Coast,Mombasa,Kisauni,KE0938,,13,Polygon,,2026-03-04 16:05:57.071358,2026-03-04 16:27:39.476039,f,Mombasa,Kisauni
+940,Mugoiri,4,Central,Murang'a,Kahuro,KE0941,,523,Polygon,,2026-03-04 16:05:57.090401,2026-03-04 16:27:39.480979,f,Murang'a,Kahuro
+942,Mugumo-ini,2,Nairobi,Nairobi,Kibera,KE0943,,1383,Polygon,,2026-03-04 16:05:57.102684,2026-03-04 16:27:39.486102,f,Nairobi,Kibera
+944,Mugunda,6,Central,Nyeri,Kieni West,KE0945,,472,Polygon,,2026-03-04 16:05:57.114433,2026-03-04 16:27:39.496187,f,Nyeri,Kieni West
+915,Mlango Kubwa,1,Nairobi,Nairobi,Central,KE0916,,1449,Polygon,,2026-03-04 16:05:56.885256,2026-03-04 16:26:06.883888,f,Nairobi,Imenti Central
+948,Muhudu,3,Western,Vihiga,Tiriki East,KE0949,,1065,Polygon,,2026-03-04 16:05:57.13527,2026-03-04 16:27:39.5009,f,Vihiga,Tiriki East
+950,Mui,6,Eastern,Kitui,Mui,KE0951,,344,Polygon,,2026-03-04 16:05:57.147648,2026-03-04 16:27:39.505872,f,Kitui,
+952,Mukogodo East,9,Rift Valley,Laikipia,Mukogodo,KE0953,,825,Polygon,,2026-03-04 16:05:57.157465,2026-03-04 16:27:39.515128,f,Laikipia,Mukogodo
+955,Mukure,4,Central,Kirinyaga,Ndia,KE0956,,509,Polygon,,2026-03-04 16:05:57.171037,2026-03-04 16:27:39.526425,f,Kirinyaga,Ndia
+956,Mukurweni Central,8,Central,Nyeri,Mukurweini,KE0957,,490,Polygon,,2026-03-04 16:05:57.175542,2026-03-04 16:27:39.531359,f,Nyeri,Mukurweini
+957,Mukurweni West,7,Central,Nyeri,Mukurweini,KE0958,,489,Polygon,,2026-03-04 16:05:57.17966,2026-03-04 16:27:39.536512,f,Nyeri,Mukurweini
+958,Mukutani,6,Rift Valley,Baringo,Mukutani,KE0959,,801,Polygon,,2026-03-04 16:05:57.183719,2026-03-04 16:27:39.541569,f,Baringo,Mukutani
+959,Mukuyuni,5,Western,Bungoma,Chwele,KE0960,,1088,Polygon,,2026-03-04 16:05:57.187801,2026-03-04 16:27:39.547492,f,Bungoma,Chwele
+961,Mumberes/Maji Mazuri,4,Rift Valley,Baringo,Eldama Ravine,KE0962,,808,Polygon,,2026-03-04 16:05:57.196579,2026-03-04 16:27:39.552411,f,Baringo,Eldama Ravine
+931,Mountain View,2,Nairobi,Nairobi,Westlands,KE0932,,1370,Polygon,,2026-03-04 16:05:56.981574,2026-03-04 16:26:06.943684,f,Nairobi,Westlands
+932,Mowlem,1,Nairobi,Nairobi,Embakasi,KE0933,,1428,Polygon,,2026-03-04 16:05:57.003673,2026-03-04 16:26:06.95217,f,Nairobi,Embakasi South
+963,Mumias Central,3,Western,Kakamega,Mumias,KE0964,,1020,Polygon,,2026-03-04 16:05:57.204845,2026-03-04 16:27:39.557057,f,Kakamega,Mumias
+964,Mumias North,1,Western,Kakamega,Mumias,KE0965,,1021,Polygon,,2026-03-04 16:05:57.209399,2026-03-04 16:27:39.562005,f,Kakamega,Mumias
+966,Mumoni,14,Eastern,Kitui,Mumoni,KE0967,,333,Polygon,,2026-03-04 16:05:57.219327,2026-03-04 16:27:39.567786,f,Kitui,Mumoni
+938,Mua,7,Eastern,Machakos,Central,KE0939,,399,Polygon,,2026-03-04 16:05:57.078135,2026-03-04 16:26:07.041684,f,Machakos,Imenti Central
+939,Muchatha,3,Central,Kiambu,Kiambaa,KE0940,,589,Polygon,,2026-03-04 16:05:57.084724,2026-03-04 16:26:07.054471,f,Kiambu,Kiambaa
+967,Munanda,5,Rift Valley,Nakuru,Mbogoini,KE0968,,,,,2026-03-04 16:05:57.225208,2026-03-04 16:27:39.574574,f,Nakuru,Mbogoini
+970,Murarandia,5,Central,Murang'a,Kahuro,KE0971,,526,Polygon,,2026-03-04 16:05:57.241499,2026-03-04 16:27:39.588492,f,Murang'a,Kahuro
+973,Murindat,3,Rift Valley,Nakuru,Gilgil,KE0974,,848,Polygon,,2026-03-04 16:05:57.255781,2026-03-04 16:27:39.644812,f,Nakuru,Gilgil
+974,Murinduko,4,Central,Kirinyaga,Mwea,KE0975,,501,Polygon,,2026-03-04 16:05:57.261223,2026-03-04 16:27:39.663641,f,Kirinyaga,Mwea
+949,Muhuru,8,Nyanza,Migori,Muhuru,KE0950,,1288,Polygon,,2026-03-04 16:05:57.143092,2026-03-04 16:26:07.104304,f,Migori,Suna West
+976,Murungaru,3,Central,Nyandarua,North Kinangop,KE0977,,444,Polygon,,2026-03-04 16:05:57.272726,2026-03-04 16:27:39.68483,f,Nyandarua,North Kinangop
+977,Musanda,4,Western,Kakamega,South Wanga,KE0978,,1023,Polygon,,2026-03-04 16:05:57.279121,2026-03-04 16:27:39.69178,f,Kakamega,South Wanga
+978,Musikoma,2,Western,Bungoma,Kanduyi,KE0979,,1100,Polygon,,2026-03-04 16:05:57.288213,2026-03-04 16:27:39.698466,f,Bungoma,Kanduyi
+979,Mutarakwa,5,Rift Valley,Bomet,Mutarakwa,KE0980,,985,Polygon,,2026-03-04 16:05:57.305475,2026-03-04 16:27:39.704632,f,Bomet,Mutarakwa
+980,Mutha,10,Eastern,Kitui,Mutha,KE0981,,367,Polygon,,2026-03-04 16:05:57.333751,2026-03-04 16:27:39.710322,f,Kitui,Mutha
+983,Muthesya,4,Eastern,Machakos,Ndithini,KE0984,,374,Polygon,,2026-03-04 16:05:57.401403,2026-03-04 16:27:39.715782,f,Machakos,Ndithini
+984,Muthetheni,10,Eastern,Machakos,Yathui,KE0985,,408,Polygon,,2026-03-04 16:05:57.415932,2026-03-04 16:27:39.721679,f,Machakos,Yathui
+960,Mulango,7,Eastern,Kitui,Central,KE0961,,357,Polygon,,2026-03-04 16:05:57.192198,2026-03-04 16:26:07.215708,f,Kitui,Imenti Central
+986,Muthwani,3,Eastern,Machakos,Athi River,KE0987,,396,Polygon,,2026-03-04 16:05:57.434068,2026-03-04 16:27:39.732497,f,Machakos,Athi River
+988,Mutithi,4,Central,Kirinyaga,Mwea,KE0989,,496,Polygon,,2026-03-04 16:05:57.446903,2026-03-04 16:27:39.737887,f,Kirinyaga,Mwea
+989,Mutito/Kaliku,8,Eastern,Kitui,Mutito,KE0990,,364,Polygon,,2026-03-04 16:05:57.45261,2026-03-04 16:27:39.74317,f,Kitui,Mutito
+991,Mutomo,6,Eastern,Kitui,Mutomo,KE0992,,366,Polygon,,2026-03-04 16:05:57.464264,2026-03-04 16:27:39.74926,f,Kitui,Mutomo
+996,Mwakirunge,2,Coast,Mombasa,Kisauni,KE0997,,12,Polygon,,2026-03-04 16:05:57.490503,2026-03-04 16:27:39.760376,f,Mombasa,Kisauni
+997,Mwalano,12,Eastern,Kitui,Migwani,KE0998,,,,,2026-03-04 16:05:57.495692,2026-03-04 16:27:39.765814,f,Kitui,Migwani
+1002,Mwarakaya,4,Coast,Kilifi,Chonyi,KE1003,,59,Polygon,,2026-03-04 16:05:57.523895,2026-03-04 16:27:39.774259,f,Kilifi,Chonyi
+993,Mutu-Ini,2,Nairobi,Nairobi,Dagoretti,KE0994,,1376,Polygon,,2026-03-04 16:05:57.475426,2026-03-04 16:26:07.446593,f,Nairobi,Dagoretti North
+994,Muvuti/Kiima-kimwe,7,Eastern,Machakos,Central,KE0995,,403,Polygon,,2026-03-04 16:05:57.48055,2026-03-04 16:26:07.45189,f,Machakos,Imenti Central
+999,Mwanamwinga,3,Coast,Kilifi,Kaloleni,KE1000,,66,Polygon,,2026-03-04 16:05:57.507558,2026-03-04 16:26:07.46826,f,Kilifi,Kaloleni
+1008,Mwereni,3,Coast,Kwale,Lungalunga,KE1009,,37,Polygon,,2026-03-04 16:05:57.551757,2026-03-04 16:27:39.800266,f,Kwale,Lungalunga
+1009,Mwibona,3,Western,Vihiga,Luanda,KE1010,,1070,Polygon,,2026-03-04 16:05:57.556172,2026-03-04 16:27:39.816449,f,Vihiga,Luanda
+1013,Mwitika/Zombe,9,Eastern,Kitui,Mutito,KE1014,,359,Polygon,,2026-03-04 16:05:57.573883,2026-03-04 16:27:39.846511,f,Kitui,Mutito
+1014,Mwiyogo/Endarasha,5,Central,Nyeri,Kieni West,KE1015,,471,Polygon,,2026-03-04 16:05:57.578217,2026-03-04 16:27:39.86749,f,Nyeri,Kieni West
+1016,Naikarra,1,Rift Valley,Narok,,KE1017,,910,Polygon,,2026-03-04 16:05:57.5867,2026-03-04 16:27:39.883988,f,Narok,
+1017,Narok Town,1,Rift Valley,Narok,,KE1018,,893,Polygon,spelling,2026-03-04 16:05:57.591415,2026-03-04 16:27:39.900854,f,Narok,
+1018,Nkareta,1,Rift Valley,Narok,,KE1019,,894,Polygon,spelling,2026-03-04 16:05:57.595799,2026-03-04 16:27:39.91,f,Narok,
+1021,Nachola,7,Rift Valley,Samburu,Nyiro,KE1022,,667,Polygon,,2026-03-04 16:05:57.610773,2026-03-04 16:27:39.925982,f,Samburu,Nyiro
+1025,Nairobi West,1,Nairobi,Nairobi,Kibera,KE1026,,1382,Polygon,,2026-03-04 16:05:57.635136,2026-03-04 16:27:39.932476,f,Nairobi,Kibera
+1027,Naivasha East,2,Rift Valley,Nakuru,Naivasha,KE1028,,842,Polygon,,2026-03-04 16:05:57.646993,2026-03-04 16:27:39.94354,f,Nakuru,Naivasha
+1028,Nakalale,4,Rift Valley,Turkana,Kakuma,KE1029,,616,Polygon,,2026-03-04 16:05:57.652582,2026-03-04 16:27:39.949322,f,Turkana,Kakuma
+1029,Nakuru East,4,Rift Valley,Nakuru,Elburgon,KE1030,,880,Polygon,,2026-03-04 16:05:57.658449,2026-03-04 16:27:39.95486,f,Nakuru,Elburgon
+1030,Namamali,4,Western,Kakamega,Matungu,KE1031,,1031,Polygon,,2026-03-04 16:05:57.664088,2026-03-04 16:27:39.959863,f,Kakamega,Matungu
+1031,Nambale,3,Western,Busia,Nambale,KE1032,,1133,Polygon,,2026-03-04 16:05:57.669762,2026-03-04 16:27:39.964999,f,Busia,Nambale
+1032,Namboboto-Nambuku,10,Western,Busia,Funyula,KE1033,,1148,Polygon,,2026-03-04 16:05:57.675411,2026-03-04 16:27:39.970492,f,Busia,Funyula
+1034,Nanaam,5,Rift Valley,Turkana,Lokichoggio,KE1035,,623,Polygon,,2026-03-04 16:05:57.686157,2026-03-04 16:27:39.980942,f,Turkana,Lokichoggio
+1036,Nangina,8,Western,Busia,Funyula,KE1037,,1149,Polygon,,2026-03-04 16:05:57.697358,2026-03-04 16:27:39.990114,f,Busia,Funyula
+1006,Mwawesa,5,Coast,Kilifi,Kaloleni,KE1007,,67,Polygon,,2026-03-04 16:05:57.542695,2026-03-04 16:26:07.506146,f,Kilifi,Kaloleni
+1037,Nanighi,2,North Eastern,Garissa,Bura,KE1038,,156,Polygon,,2026-03-04 16:05:57.702321,2026-03-04 16:27:39.994499,f,Garissa,Bura
+1039,Naromoru/Kiamathag,7,Central,Nyeri,Kieni East,KE1040,,470,Polygon,,2026-03-04 16:05:57.712464,2026-03-04 16:27:39.999378,f,Nyeri,Kieni East
+1040,Ndalani,5,Eastern,Machakos,Yatta,KE1041,,376,Polygon,,2026-03-04 16:05:57.717634,2026-03-04 16:27:40.003855,f,Machakos,Yatta
+1041,Ndalat,7,Rift Valley,Nandi,Kipkaren,KE1042,,778,Polygon,,2026-03-04 16:05:57.722402,2026-03-04 16:27:40.007998,f,Nandi,Kipkaren
+1042,Ndalu,2,Western,Bungoma,Tongaren,KE1043,,1118,Polygon,,2026-03-04 16:05:57.727015,2026-03-04 16:27:40.01231,f,Bungoma,Tongaren
+1043,Ndanai/Abosi,9,Rift Valley,Bomet,Ndanai,KE1044,,966,Polygon,,2026-03-04 16:05:57.731887,2026-03-04 16:27:40.016659,f,Bomet,Ndanai
+1046,Ndavaya,4,Coast,Kwale,Kinango,KE1047,,44,Polygon,,2026-03-04 16:05:57.746166,2026-03-04 16:27:40.028957,f,Kwale,Kinango
+1047,Ndeiya,4,Central,Kiambu,Ndeiya,KE1048,,603,Polygon,,2026-03-04 16:05:57.750812,2026-03-04 16:27:40.033079,f,Kiambu,Ndeiya
+1022,Nachu,4,Central,Kiambu,Kikuyu,KE1023,,597,Polygon,,2026-03-04 16:05:57.616603,2026-03-04 16:26:07.570489,f,Kiambu,Kikuyu
+1023,Nairobi Central,6,Nairobi,Nairobi,Central,KE1024,,1439,Polygon,,2026-03-04 16:05:57.622917,2026-03-04 16:26:07.576175,f,Nairobi,Imenti Central
+1024,Nairobi South,2,Nairobi,Nairobi,Makadara,KE1025,,1444,Polygon,,2026-03-04 16:05:57.628813,2026-03-04 16:26:07.582504,f,Nairobi,Makadara
+1050,Ndivisi,6,Western,Bungoma,Ndivisi,KE1051,,1105,Polygon,,2026-03-04 16:05:57.76512,2026-03-04 16:27:40.041144,f,Bungoma,Ndivisi
+1051,Ndoto,8,Rift Valley,Samburu,Baragoi,KE1052,,668,Polygon,,2026-03-04 16:05:57.769621,2026-03-04 16:27:40.045304,f,Samburu,Baragoi
+1053,Nessuit,3,Rift Valley,Nakuru,Keringet,KE1054,,833,Polygon,,2026-03-04 16:05:57.779167,2026-03-04 16:27:40.049693,f,Nakuru,Keringet
+1058,Ngariama,4,Central,Kirinyaga,Gichugu,KE1059,,507,Polygon,,2026-03-04 16:05:57.800381,2026-03-04 16:27:40.05794,f,Kirinyaga,Gichugu
+1061,Ngenyilel,2,Rift Valley,Uasin Gishu,Turbo,KE1062,,708,Polygon,,2026-03-04 16:05:57.814063,2026-03-04 16:27:40.062622,f,Uasin Gishu,Turbo
+1065,Ngobit,4,Rift Valley,Laikipia,Lamuria,KE1066,,817,Polygon,,2026-03-04 16:05:57.833187,2026-03-04 16:27:40.077921,f,Laikipia,Lamuria
+1068,Ngomeni,8,Eastern,Kitui,Ngomeni,KE1069,,331,Polygon,,2026-03-04 16:05:57.848801,2026-03-04 16:27:40.087652,f,Kitui,Ngomeni
+1070,Nguni,8,Eastern,Kitui,Nguni,KE1071,,342,Polygon,,2026-03-04 16:05:57.859151,2026-03-04 16:27:40.097688,f,Kitui,Nguni
+1072,Nguutani,8,Eastern,Kitui,Migwani,KE1073,,337,Polygon,,2026-03-04 16:05:57.870642,2026-03-04 16:27:40.120939,f,Kitui,Migwani
+1076,Njoro,3,Rift Valley,Nakuru,Molo,KE1077,,835,Polygon,,2026-03-04 16:05:57.954138,2026-03-04 16:27:40.160645,f,Nakuru,Molo
+1078,Nkaimurunya,2,Rift Valley,Kajiado,Ngong,KE1079,,913,Polygon,,2026-03-04 16:05:57.974637,2026-03-04 16:27:40.194243,f,Kajiado,Ngong
+1038,Nanyuki,3,Rift Valley,Laikipia,Central,KE1039,,820,Polygon,,2026-03-04 16:05:57.707355,2026-03-04 16:26:07.741561,f,Laikipia,Imenti Central
+1082,North East Gem,1,Nyanza,Siaya,Yala,KE1083,,,,,2026-03-04 16:05:58.001232,2026-03-04 16:27:40.203904,f,Siaya,Yala
+1084,North Gem,8,Nyanza,Siaya,Yala,KE1085,,1169,Polygon,,2026-03-04 16:05:58.012925,2026-03-04 16:27:40.211776,f,Siaya,Yala
+1086,North Kabuoch,7,Nyanza,Homa Bay,Riana,KE1087,,,,,2026-03-04 16:05:58.02432,2026-03-04 16:27:40.226365,f,Homa Bay,Riana
+1091,North Kinangop,2,Central,Nyandarua,North Kinangop,KE1092,,443,Polygon,,2026-03-04 16:05:58.050533,2026-03-04 16:27:40.232342,f,Nyandarua,North Kinangop
+1092,North Maragoli,5,Western,Vihiga,Sabatia,KE1093,,1058,Polygon,,2026-03-04 16:05:58.055749,2026-03-04 16:27:40.238375,f,Vihiga,Sabatia
+1096,North Ugenya,5,Nyanza,Siaya,Ukwala,KE1097,,1158,Polygon,,2026-03-04 16:05:58.074954,2026-03-04 16:27:40.250001,f,Siaya,Ukwala
+1098,North West Kisumu,4,Nyanza,Kisumu,Maseno,KE1099,,1195,Polygon,,2026-03-04 16:05:58.084431,2026-03-04 16:27:40.255893,f,Kisumu,Maseno
+1048,Ndenderu,5,Central,Kiambu,Kiambaa,KE1049,,588,Polygon,,2026-03-04 16:05:57.755584,2026-03-04 16:26:07.804253,f,Kiambu,Kiambaa
+1052,Ndumberi,2,Central,Kiambu,Kiambu Municipality,KE1053,,583,Polygon,,2026-03-04 16:05:57.774538,2026-03-04 16:26:07.826988,f,Kiambu,Kiambu
+1056,Ngara,2,Nairobi,Nairobi,Central,KE1057,,1440,Polygon,,2026-03-04 16:05:57.792107,2026-03-04 16:26:07.908813,f,Nairobi,Imenti Central
+1057,Ngare Mara,2,Eastern,Isiolo,Central,KE1058,,245,Polygon,,2026-03-04 16:05:57.796399,2026-03-04 16:26:07.922048,f,Isiolo,Imenti Central
+1059,Ngecha/Tigoni,4,Central,Kiambu,Limuru,KE1060,,605,Polygon,spelling,2026-03-04 16:05:57.804904,2026-03-04 16:26:07.966366,f,Kiambu,Limuru
+1060,Ngei,1,Nairobi,Nairobi,Central,KE1061,,1448,Polygon,,2026-03-04 16:05:57.809472,2026-03-04 16:26:07.983,f,Nairobi,Imenti Central
+1063,Ngewa,4,Central,Kiambu,Githunguri,KE1064,,580,Polygon,,2026-03-04 16:05:57.823268,2026-03-04 16:26:08.028212,f,Kiambu,Githunguri
+1075,Njiru,2,Nairobi,Nairobi,Embakasi,KE1076,,1399,Polygon,,2026-03-04 16:05:57.935347,2026-03-04 16:26:08.088806,f,Nairobi,Embakasi South
+1114,Nyalenda 'B',1,Nyanza,Kisumu,Winam,KE1115,,1201,Polygon,spelling,2026-03-04 16:05:58.155424,2026-03-04 16:27:40.296354,f,Kisumu,Winam
+1119,Nyangati,5,Central,Kirinyaga,Mwea,KE1120,,500,Polygon,spelling,2026-03-04 16:05:58.176311,2026-03-04 16:27:40.3059,f,Kirinyaga,Mwea
+1120,Nyangores,8,Rift Valley,Bomet,Bomet Central,KE1121,,972,Polygon,,2026-03-04 16:05:58.180598,2026-03-04 16:27:40.310224,f,Bomet,Bomet Central
+1124,Nyayo Highrise,1,Nairobi,Nairobi,Kibera,KE1125,,1385,Polygon,,2026-03-04 16:05:58.19988,2026-03-04 16:27:40.314841,f,Nairobi,Kibera
+1125,Nyiro,11,Rift Valley,Samburu,Nyiro,KE1126,,669,Polygon,,2026-03-04 16:05:58.206056,2026-03-04 16:27:40.319556,f,Samburu,Nyiro
+1126,Nyota,8,Rift Valley,Nakuru,Kuresoi,KE1127,,854,Polygon,,2026-03-04 16:05:58.21164,2026-03-04 16:27:40.324132,f,Nakuru,Kuresoi
+1127,Nzambani,2,Eastern,Kitui,Chuluni,KE1128,,360,Polygon,,2026-03-04 16:05:58.216927,2026-03-04 16:27:40.328843,f,Kitui,Chuluni
+1129,Nzoia,4,Western,Kakamega,Likuyani,KE1130,,1000,Polygon,,2026-03-04 16:05:58.230135,2026-03-04 16:27:40.338771,f,Kakamega,Likuyani
+1132,Ololulung'a,1,Rift Valley,Narok,,KE1133,,902,Polygon,spelling,2026-03-04 16:05:58.318385,2026-03-04 16:27:40.352298,f,Narok,
+1133,Olorropil,1,Rift Valley,Narok,,KE1134,,895,Polygon,spelling,2026-03-04 16:05:58.343409,2026-03-04 16:27:40.356472,f,Narok,
+1134,Olposimoru,1,Rift Valley,Narok,,KE1135,,891,Polygon,spelling,2026-03-04 16:05:58.369176,2026-03-04 16:27:40.361105,f,Narok,
+1137,Oldo-nyiro,4,Eastern,Isiolo,Oldo-nyiro,KE1138,,247,Polygon,spelling,2026-03-04 16:05:58.408653,2026-03-04 16:27:40.383662,f,Isiolo,Oldo-nyiro
+1138,Olkaria,1,Rift Valley,Nakuru,Naivasha,KE1139,,841,Polygon,,2026-03-04 16:05:58.416025,2026-03-04 16:27:40.414604,f,Nakuru,Naivasha
+1139,Olkeri,3,Rift Valley,Kajiado,Ngong,KE1140,,911,Polygon,,2026-03-04 16:05:58.424165,2026-03-04 16:27:40.429861,f,Kajiado,Ngong
+1141,Oloolua,3,Rift Valley,Kajiado,Ngong,KE1142,,914,Polygon,,2026-03-04 16:05:58.43744,2026-03-04 16:27:40.471938,f,Kajiado,Ngong
+1143,Ong'ata Rongai,1,Rift Valley,Kajiado,Ngong,KE1144,,912,Polygon,,2026-03-04 16:05:58.449394,2026-03-04 16:27:40.486894,f,Kajiado,Ngong
+1147,Pongwe / Kikoneni,4,Coast,Kwale,Msambweni,KE1148,,,,,2026-03-04 16:05:58.470472,2026-03-04 16:27:40.495636,f,Kwale,Msambweni
+1148,Pongwe/Kikoneni,1,Coast,Kwale,Msambweni,KE1149,,35,Polygon,,2026-03-04 16:05:58.475534,2026-03-04 16:27:40.502175,f,Kwale,Msambweni
+1118,Nyanduma,3,Central,Kiambu,Lari,KE1119,,608,Polygon,,2026-03-04 16:05:58.172138,2026-03-04 16:26:08.266415,f,Kiambu,Lari
+1150,Port Reitz,1,Coast,Mombasa,Changamwe,KE1151,,1,Polygon,,2026-03-04 16:05:58.485304,2026-03-04 16:27:40.514602,f,Mombasa,Changamwe
+1151,Puma,3,Coast,Kwale,Kinango,KE1152,,45,Polygon,,2026-03-04 16:05:58.490509,2026-03-04 16:27:40.52032,f,Kwale,Kinango
+1122,Nyathuna,4,Central,Kiambu,Kikuyu,KE1123,,593,Polygon,spelling,2026-03-04 16:05:58.190345,2026-03-04 16:26:08.292592,f,Kiambu,Kikuyu
+1156,Railways,3,Nyanza,Kisumu,Winam,KE1157,,1196,Polygon,,2026-03-04 16:05:58.514574,2026-03-04 16:27:40.53152,f,Kisumu,Winam
+1157,Ramisi,5,Coast,Kwale,Msambweni,KE1158,,34,Polygon,,2026-03-04 16:05:58.519452,2026-03-04 16:27:40.537541,f,Kwale,Msambweni
+1158,Ravine,3,Rift Valley,Baringo,Eldama Ravine,KE1159,,807,Polygon,,2026-03-04 16:05:58.524229,2026-03-04 16:27:40.543581,f,Baringo,Eldama Ravine
+1159,Rhamu,4,North Eastern,Mandera,Rhamu,KE1160,,204,Polygon,,2026-03-04 16:05:58.529231,2026-03-04 16:27:40.549682,f,Mandera,Rhamu
+1160,Rhamu Dimtu,5,North Eastern,Mandera,Rhamu Dimtu,KE1161,,205,Polygon,,2026-03-04 16:05:58.534433,2026-03-04 16:27:40.555424,f,Mandera,Rhamu Dimtu
+1166,Riwo,16,Rift Valley,West Pokot,Kongelai,KE1167,,641,Polygon,,2026-03-04 16:05:58.564386,2026-03-04 16:27:40.565428,f,West Pokot,Kongelai
+1167,Rombo,3,Rift Valley,Kajiado,Loitokitok,KE1168,,934,Polygon,,2026-03-04 16:05:58.569578,2026-03-04 16:27:40.56988,f,Kajiado,Loitokitok
+1172,Rugi,6,Central,Nyeri,Mukurweini,KE1173,,488,Polygon,,2026-03-04 16:05:58.596665,2026-03-04 16:27:40.579115,f,Nyeri,Mukurweini
+1173,Ruguru,8,Central,Nyeri,Mathira,KE1174,,477,Polygon,,2026-03-04 16:05:58.602744,2026-03-04 16:27:40.583741,f,Nyeri,Mathira
+1177,Rumuruti Township,3,Rift Valley,Laikipia,Rumuruti,KE1178,,812,Polygon,,2026-03-04 16:05:58.686201,2026-03-04 16:27:40.596482,f,Laikipia,Rumuruti
+1178,Rurii,3,Central,Nyandarua,Ol Kalou,KE1179,,457,Polygon,,2026-03-04 16:05:58.697078,2026-03-04 16:27:40.600784,f,Nyandarua,Ol Kalou
+1179,Ruring'u,3,Central,Nyeri,Nyeri Municipality,KE1180,,494,Polygon,,2026-03-04 16:05:58.705006,2026-03-04 16:27:40.604931,f,Nyeri,Nyeri Municipality
+1184,Sagamian,1,Rift Valley,Narok,,KE1185,,906,Polygon,spelling,2026-03-04 16:05:58.736317,2026-03-04 16:27:40.61778,f,Narok,
+1185,Sogoo,1,Rift Valley,Narok,,KE1186,,905,Polygon,spelling,2026-03-04 16:05:58.742088,2026-03-04 16:27:40.621874,f,Narok,
+1144,Pangani,1,Nairobi,Nairobi,Central,KE1145,,1441,Polygon,,2026-03-04 16:05:58.455069,2026-03-04 16:26:08.395682,f,Nairobi,Imenti Central
+1146,Pipeline,1,Nairobi,Nairobi,Embakasi,KE1147,,1409,Polygon,,2026-03-04 16:05:58.46521,2026-03-04 16:26:08.405412,f,Nairobi,Embakasi South
+1188,Saboti,2,Rift Valley,Trans Nzoia,Saboti,KE1189,,686,Polygon,,2026-03-04 16:05:58.758713,2026-03-04 16:27:40.626304,f,Trans Nzoia,Saboti
+1189,Sacho,9,Rift Valley,Baringo,Sacho,KE1190,,794,Polygon,,2026-03-04 16:05:58.765693,2026-03-04 16:27:40.630853,f,Baringo,Sacho
+1193,Sala,7,Coast,Tana River,Madogo,KE1194,,99,Polygon,,2026-03-04 16:05:58.785907,2026-03-04 16:27:40.640143,f,Tana River,Madogo
+1198,Sangalo/Kebulonik,5,Rift Valley,Nandi,Kabiyet,KE1199,,780,Polygon,,2026-03-04 16:05:58.809967,2026-03-04 16:27:40.661766,f,Nandi,Kabiyet
+1152,Pumwani,2,Nairobi,Nairobi,Pumwani,KE1153,,1434,Polygon,,2026-03-04 16:05:58.495531,2026-03-04 16:26:08.464664,f,Nairobi,Pumwani
+1153,Purko,5,Rift Valley,Kajiado,Central,KE1154,,916,Polygon,,2026-03-04 16:05:58.500395,2026-03-04 16:26:08.525633,f,Kajiado,Imenti Central
+1155,Ragana/Oruba,2,Nyanza,Migori,Suba West,KE1156,,1275,Polygon,,2026-03-04 16:05:58.509929,2026-03-04 16:26:08.550493,f,Migori,Suba West
+1199,Sanghor/Soba,19,Rift Valley,Nandi,Tinderet,KE1200,,751,Polygon,spelling,2026-03-04 16:05:58.814953,2026-03-04 16:27:40.66667,f,Nandi,Tinderet
+1200,Sango,2,Western,Kakamega,Likuyani,KE1201,,998,Polygon,,2026-03-04 16:05:58.819963,2026-03-04 16:27:40.671221,f,Kakamega,Likuyani
+1201,Sankuri,7,North Eastern,Garissa,Sankuri,KE1202,,139,Polygon,,2026-03-04 16:05:58.824757,2026-03-04 16:27:40.677875,f,Garissa,Sankuri
+1202,Sarang'ombe,1,Nairobi,Nairobi,Kibera,KE1203,,1390,Polygon,,2026-03-04 16:05:58.829267,2026-03-04 16:27:40.68302,f,Nairobi,Kibera
+1161,Riabai,2,Central,Kiambu,Kiambu Municipality,KE1162,,584,Polygon,,2026-03-04 16:05:58.539344,2026-03-04 16:26:08.585882,f,Kiambu,Kiambu
+1165,Riruta,2,Nairobi,Nairobi,Dagoretti,KE1166,,1378,Polygon,,2026-03-04 16:05:58.559524,2026-03-04 16:26:08.598032,f,Nairobi,Dagoretti North
+1170,Roysambu,2,Nairobi,Nairobi,Kasarani,KE1171,,1394,Polygon,,2026-03-04 16:05:58.585203,2026-03-04 16:26:08.621169,f,Nairobi,Kasarani
+1180,Ruruma,3,Coast,Kilifi,Kaloleni,KE1181,,68,Polygon,,2026-03-04 16:05:58.711413,2026-03-04 16:26:08.781232,f,Kilifi,Kaloleni
+1192,Saka,3,North Eastern,Garissa,Balambala,KE1193,,138,Polygon,,2026-03-04 16:05:58.780872,2026-03-04 16:26:08.848091,f,Garissa,Balambala
+1203,Sarman,3,North Eastern,Wajir,Tarbaji,KE1204,,173,Polygon,,2026-03-04 16:05:58.834256,2026-03-04 16:26:08.901948,f,Wajir,Tarbaj
+1206,Sekerr,7,Rift Valley,West Pokot,Sigor,KE1207,,647,Polygon,,2026-03-04 16:05:58.84914,2026-03-04 16:27:40.692467,f,West Pokot,Sigor
+1210,Sericho,9,Eastern,Isiolo,Sericho,KE1211,,250,Polygon,,2026-03-04 16:05:58.868563,2026-03-04 16:27:40.70664,f,Isiolo,Sericho
+1213,Shamakhokho,5,Western,Vihiga,Tiriki East,KE1214,,1063,Polygon,,2026-03-04 16:05:58.883256,2026-03-04 16:27:40.715749,f,Vihiga,Tiriki East
+1214,Shamata,5,Central,Nyandarua,Ndaragwa,KE1215,,465,Polygon,,2026-03-04 16:05:58.888094,2026-03-04 16:27:40.720207,f,Nyandarua,Ndaragwa
+1216,Shanzu,2,Coast,Mombasa,Kisauni,KE1217,,15,Polygon,,2026-03-04 16:05:58.897585,2026-03-04 16:27:40.729657,f,Mombasa,Kisauni
+1217,Shauri moyo/Kaloleni,1,Nyanza,Kisumu,Winam,KE1218,,1198,Polygon,spelling,2026-03-04 16:05:58.902942,2026-03-04 16:27:40.734141,f,Kisumu,Winam
+1219,Sheywe,2,Western,Kakamega,Municipality,KE1220,,1012,Polygon,,2026-03-04 16:05:58.913056,2026-03-04 16:27:40.738542,f,Kakamega,Municipality
+1221,Shimanzi/Ganjoni,3,Coast,Mombasa,Island,KE1222,,29,Polygon,,2026-03-04 16:05:58.926427,2026-03-04 16:27:40.748532,f,Mombasa,Island
+1222,Shimbir Fatuma,4,North Eastern,Mandera,Shimbir Fatuma,KE1223,,210,Polygon,,2026-03-04 16:05:58.935824,2026-03-04 16:27:40.753484,f,Mandera,Shimbir Fatuma
+1223,Shimo La Tewa,2,Coast,Kilifi,Kikambala,KE1224,,60,Polygon,,2026-03-04 16:05:58.961454,2026-03-04 16:27:40.759456,f,Kilifi,Kikambala
+1224,Shinoyi/Shikomari,3,Western,Kakamega,Lurambi,KE1225,,1016,Polygon,spelling,2026-03-04 16:05:58.981399,2026-03-04 16:27:40.775178,f,Kakamega,Lurambi
+1225,Shirere,1,Western,Kakamega,Municipality,KE1226,,1014,Polygon,,2026-03-04 16:05:58.9953,2026-03-04 16:27:40.793976,f,Kakamega,Municipality
+1212,Shaf Shafey,3,North Eastern,Mandera,Central,KE1213,,,,,2026-03-04 16:05:58.877931,2026-03-04 16:26:09.075666,f,Mandera,Imenti Central
+1226,Shiru,4,Western,Vihiga,Tiriki East,KE1227,,1061,Polygon,,2026-03-04 16:05:59.004987,2026-03-04 16:27:40.812922,f,Vihiga,Tiriki East
+1228,Siana,1,Rift Valley,Narok,,KE1229,,909,Polygon,,2026-03-04 16:05:59.022827,2026-03-04 16:27:40.848993,f,Narok,
+1229,Siaya Town,5,Nyanza,Siaya,Boro,KE1230,,1166,Polygon,,2026-03-04 16:05:59.029826,2026-03-04 16:27:40.860923,f,Siaya,Boro
+1230,Siboti,4,Western,Bungoma,Bumula,KE1231,,1095,Polygon,,2026-03-04 16:05:59.036782,2026-03-04 16:27:40.869401,f,Bungoma,Bumula
+1233,Sigor,9,Rift Valley,Bomet,Sigor,KE1234,,973,Polygon,,2026-03-04 16:05:59.056895,2026-03-04 16:27:40.878801,f,Bomet,Sigor
+1234,Sigowet,4,Rift Valley,Kericho,Sigowet,KE1235,,962,Polygon,,2026-03-04 16:05:59.062383,2026-03-04 16:27:40.888237,f,Kericho,Sigowet
+1236,Silale,3,Rift Valley,Baringo,Nginyang,KE1237,,784,Polygon,,2026-03-04 16:05:59.073156,2026-03-04 16:27:40.900752,f,Baringo,Nginyang
+1238,Simat/Kapseret,3,Rift Valley,Uasin Gishu,Kapsaret,KE1239,,722,Polygon,,2026-03-04 16:05:59.083455,2026-03-04 16:27:40.91269,f,Uasin Gishu,Kapsaret
+1240,Singorwet,4,Rift Valley,Bomet,Bomet Central,KE1241,,983,Polygon,,2026-03-04 16:05:59.093437,2026-03-04 16:27:40.918056,f,Bomet,Bomet Central
+1241,Sinoko,4,Western,Kakamega,Likuyani,KE1242,,1001,Polygon,,2026-03-04 16:05:59.098566,2026-03-04 16:27:40.923325,f,Kakamega,Likuyani
+1242,Sinyerere,1,Rift Valley,Trans Nzoia,Kaplamai,KE1243,,694,Polygon,,2026-03-04 16:05:59.103843,2026-03-04 16:27:40.928772,f,Trans Nzoia,Kaplamai
+1243,Siongiroi,8,Rift Valley,Bomet,Siongiroi,KE1244,,975,Polygon,,2026-03-04 16:05:59.10845,2026-03-04 16:27:40.9338,f,Bomet,Siongiroi
+1245,Sirikwa,2,Rift Valley,Nakuru,Bahati,KE1246,,855,Polygon,,2026-03-04 16:05:59.118044,2026-03-04 16:27:40.939137,f,Nakuru,Bahati
+1247,Sitikho,4,Western,Bungoma,Webuye,KE1248,,1108,Polygon,,2026-03-04 16:05:59.126988,2026-03-04 16:27:40.949204,f,Bungoma,Webuye
+1231,Sigomere,8,Nyanza,Siaya,Ugunja,KE1232,,1161,Polygon,,2026-03-04 16:05:59.044686,2026-03-04 16:26:09.17123,f,Siaya,Ugunja
+1232,Sigona,2,Central,Kiambu,Kikuyu,KE1233,,598,Polygon,,2026-03-04 16:05:59.050773,2026-03-04 16:26:09.176472,f,Kiambu,Kikuyu
+1248,Siyoi,9,Rift Valley,West Pokot,Kapenguria,KE1249,,644,Polygon,,2026-03-04 16:05:59.131639,2026-03-04 16:27:40.95443,f,West Pokot,Kapenguria
+1249,Soin,16,Rift Valley,Nakuru,Rongai,KE1250,,965,Polygon,,2026-03-04 16:05:59.136045,2026-03-04 16:27:40.960028,f,Nakuru,Rongai
+1250,Sokoke,13,Coast,Kilifi,Vitengeni,KE1251,,74,Polygon,,2026-03-04 16:05:59.140369,2026-03-04 16:27:40.964868,f,Kilifi,Vitengeni
+1251,Sokoni,2,Coast,Kilifi,Bahari,KE1252,,52,Polygon,,2026-03-04 16:05:59.144721,2026-03-04 16:27:40.969941,f,Kilifi,Bahari
+1252,Solai,7,Rift Valley,Nakuru,Mbogoini,KE1253,,864,Polygon,,2026-03-04 16:05:59.149245,2026-03-04 16:27:40.975495,f,Nakuru,Mbogoini
+1239,Sindindi,6,Nyanza,Siaya,Ugunja,KE1240,,1160,Polygon,spelling,2026-03-04 16:05:59.088509,2026-03-04 16:26:09.254386,f,Siaya,Ugunja
+1253,Soliat,13,Rift Valley,Kericho,Soin,KE1254,,964,Polygon,,2026-03-04 16:05:59.153818,2026-03-04 16:27:40.988033,f,Kericho,Soin
+1258,South 'C',1,Nairobi,Nairobi,Kibera,KE1259,,1384,Polygon,,2026-03-04 16:05:59.176402,2026-03-04 16:27:41.049079,f,Nairobi,Kibera
+1259,South Alego,7,Nyanza,Siaya,Karemo,KE1260,,,,,2026-03-04 16:05:59.18069,2026-03-04 16:27:41.056514,f,Siaya,Karemo
+1260,South Bukusu,3,Western,Bungoma,Bumula,KE1261,,1089,Polygon,,2026-03-04 16:05:59.18495,2026-03-04 16:27:41.062969,f,Bungoma,Bumula
+1261,South East Alego,4,Nyanza,Siaya,Karemo,KE1262,,1168,Polygon,,2026-03-04 16:05:59.1891,2026-03-04 16:27:41.069014,f,Siaya,Karemo
+1263,South Gem,8,Nyanza,Siaya,Wagai,KE1264,,1174,Polygon,,2026-03-04 16:05:59.197576,2026-03-04 16:27:41.074959,f,Siaya,Wagai
+1264,South Kabras,4,Western,Kakamega,Kabras,KE1265,,1008,Polygon,,2026-03-04 16:05:59.201668,2026-03-04 16:27:41.080477,f,Kakamega,Kabras
+1267,South Maragoli,4,Western,Vihiga,Vihiga,KE1268,,1052,Polygon,,2026-03-04 16:05:59.214461,2026-03-04 16:27:41.086147,f,Vihiga,
+1270,South West Kisumu,3,Nyanza,Kisumu,Winam,KE1271,,1191,Polygon,,2026-03-04 16:05:59.228539,2026-03-04 16:27:41.092316,f,Kisumu,Winam
+1272,Soy,2,Rift Valley,Uasin Gishu,Soy,KE1273,,706,Polygon,,2026-03-04 16:05:59.238867,2026-03-04 16:27:41.097647,f,Uasin Gishu,
+1274,Soy South,11,Rift Valley,Elgeyo Marakwet,Soy,KE1275,,748,Polygon,,2026-03-04 16:05:59.250298,2026-03-04 16:27:41.107968,f,Elgeyo Marakwet,
+1275,Soysambu/Mitua,2,Western,Bungoma,Tongaren,KE1276,,1120,Polygon,spelling,2026-03-04 16:05:59.257204,2026-03-04 16:27:41.112987,f,Bungoma,Tongaren
+1277,Suam,6,Rift Valley,West Pokot,Kacheliba,KE1278,,651,Polygon,,2026-03-04 16:05:59.347895,2026-03-04 16:27:41.118082,f,West Pokot,Kacheliba
+1278,Subukia,7,Rift Valley,Nakuru,Mbogoini,KE1279,,857,Polygon,,2026-03-04 16:05:59.365482,2026-03-04 16:27:41.123326,f,Nakuru,Mbogoini
+1279,Suguta Marmar,6,Rift Valley,Samburu,Lorroki,KE1280,,662,Polygon,spelling,2026-03-04 16:05:59.389171,2026-03-04 16:27:41.129894,f,Samburu,Lorroki
+1280,Sukha Central,4,Western,Kakamega,Shinyalu,KE1281,,1043,Polygon,,2026-03-04 16:05:59.401539,2026-03-04 16:27:41.14462,f,Kakamega,Shinyalu
+1281,Sukha East,3,Western,Kakamega,Ileho,KE1282,,,,,2026-03-04 16:05:59.409876,2026-03-04 16:27:41.158181,f,Kakamega,Ileho
+1283,Sukha South,5,Western,Kakamega,Shinyalu,KE1284,,,,,2026-03-04 16:05:59.426146,2026-03-04 16:27:41.195497,f,Kakamega,Shinyalu
+1276,Spring Valley/Matopeni,2,Nairobi,Nairobi,Embakasi,KE1277,,1420,Polygon,,2026-03-04 16:05:59.289808,2026-03-04 16:26:09.516669,f,Nairobi,Embakasi South
+1284,Suna Central,2,Nyanza,Migori,Suba East,KE1285,,1270,Polygon,,2026-03-04 16:05:59.432785,2026-03-04 16:26:09.574376,f,Migori,Suba East
+1286,Syokimau/Mlolongo,1,Eastern,Machakos,Athi River,KE1287,,397,Polygon,,2026-03-04 16:05:59.444219,2026-03-04 16:27:41.217848,f,Machakos,Athi River
+1290,Takaba South,3,North Eastern,Mandera,Takaba,KE1291,,191,Polygon,,2026-03-04 16:05:59.465914,2026-03-04 16:27:41.242146,f,Mandera,Takaba
+1291,Tala,3,Eastern,Machakos,Matungulu,KE1292,,385,Polygon,,2026-03-04 16:05:59.471075,2026-03-04 16:27:41.247954,f,Machakos,Matungulu
+1292,Tambach,7,Rift Valley,Elgeyo Marakwet,Tambach,KE1293,,743,Polygon,,2026-03-04 16:05:59.476168,2026-03-04 16:27:41.253596,f,Elgeyo Marakwet,Tambach
+1293,Tambua,5,Western,Vihiga,Tiriki West,KE1294,,1066,Polygon,,2026-03-04 16:05:59.481254,2026-03-04 16:27:41.25966,f,Vihiga,Tiriki West
+1296,Tapsagoi,4,Rift Valley,Uasin Gishu,Turbo,KE1297,,709,Polygon,,2026-03-04 16:05:59.49566,2026-03-04 16:27:41.276025,f,Uasin Gishu,Turbo
+1297,Tarakwa,5,Rift Valley,Uasin Gishu,Kesses,KE1298,,730,Polygon,,2026-03-04 16:05:59.500412,2026-03-04 16:27:41.281413,f,Uasin Gishu,Kesses
+1301,Tendeno/Sorget,4,Rift Valley,Kericho,Londiani,KE1302,,939,Polygon,,2026-03-04 16:05:59.518415,2026-03-04 16:27:41.296661,f,Kericho,Londiani
+1302,Tenges,9,Rift Valley,Baringo,Sacho,KE1303,,795,Polygon,,2026-03-04 16:05:59.522768,2026-03-04 16:27:41.301607,f,Baringo,Sacho
+1303,Terik,5,Rift Valley,Nandi,Aldai,KE1304,,756,Polygon,,2026-03-04 16:05:59.527083,2026-03-04 16:27:41.306601,f,Nandi,Aldai
+1304,Tezo,3,Coast,Kilifi,Bahari,KE1305,,51,Polygon,,2026-03-04 16:05:59.531579,2026-03-04 16:27:41.311679,f,Kilifi,Bahari
+1306,Thange,4,Eastern,Makueni,Kibwezi,KE1307,,439,Polygon,,2026-03-04 16:05:59.540763,2026-03-04 16:27:41.316388,f,Makueni,Kibwezi
+1307,Tharaka,7,Eastern,Kitui,Mumoni,KE1308,,335,Polygon,,2026-03-04 16:05:59.545393,2026-03-04 16:27:41.321537,f,Kitui,Mumoni
+1308,Thegu River,6,Central,Nyeri,Kieni East,KE1309,,474,Polygon,,2026-03-04 16:05:59.549826,2026-03-04 16:27:41.328215,f,Nyeri,Kieni East
+1310,Thiba,2,Central,Kirinyaga,Mwea,KE1311,,498,Polygon,,2026-03-04 16:05:59.558312,2026-03-04 16:27:41.347985,f,Kirinyaga,Mwea
+1312,Tigithi,2,Rift Valley,Laikipia,Lamuria,KE1313,,818,Polygon,,2026-03-04 16:05:59.567555,2026-03-04 16:27:41.366965,f,Laikipia,Lamuria
+1315,Tinderet,16,Rift Valley,Nandi,Tinderet,KE1316,,752,Polygon,,2026-03-04 16:05:59.580817,2026-03-04 16:27:41.40893,f,Nandi,Tinderet
+1316,Tinet,6,Rift Valley,Nakuru,Njoro,KE1317,,852,Polygon,,2026-03-04 16:05:59.585132,2026-03-04 16:27:41.418057,f,Nakuru,Njoro
+1318,Tirioko,7,Rift Valley,Baringo,Kolowa,KE1319,,781,Polygon,,2026-03-04 16:05:59.593637,2026-03-04 16:27:41.426224,f,Baringo,Kolowa
+1319,Tiwi,3,Coast,Kwale,Matuga,KE1320,,41,Polygon,,2026-03-04 16:05:59.598089,2026-03-04 16:27:41.433184,f,Kwale,Matuga
+1321,Tononoka,1,Coast,Mombasa,Island,KE1322,,28,Polygon,,2026-03-04 16:05:59.606474,2026-03-04 16:27:41.445938,f,Mombasa,Island
+1322,Township(Bungoma),1,Western,Bungoma,Kanduyi,KE1323,,,,,2026-03-04 16:05:59.61074,2026-03-04 16:27:41.451734,f,Bungoma,Kanduyi
+1328,Township(Murang'a),2,Central,Murang'a,Kiharu,KE1329,,,,,2026-03-04 16:05:59.642987,2026-03-04 16:27:41.464796,f,Murang'a,Kiharu
+1332,Tseikuru,12,Eastern,Kitui,Tseikuru,KE1333,,334,Polygon,,2026-03-04 16:05:59.730443,2026-03-04 16:27:41.476365,f,Kitui,Tseikuru
+1333,Tsimba/Golini,5,Coast,Kwale,Matuga,KE1334,,39,Polygon,,2026-03-04 16:05:59.755445,2026-03-04 16:27:41.481898,f,Kwale,Matuga
+1334,Tudor,2,Coast,Mombasa,Island,KE1335,,27,Polygon,,2026-03-04 16:05:59.771614,2026-03-04 16:27:41.487505,f,Mombasa,Island
+1337,Turbi,4,Eastern,Marsabit,Turbi,KE1338,,230,Polygon,,2026-03-04 16:05:59.802892,2026-03-04 16:27:41.503656,f,Marsabit,Turbi
+1338,Turi,2,Rift Valley,Nakuru,Njoro,KE1339,,828,Polygon,,2026-03-04 16:05:59.809127,2026-03-04 16:27:41.509124,f,Nakuru,Njoro
+1298,Tarbaj,3,North Eastern,Wajir,Tarbaji,KE1299,,174,Polygon,,2026-03-04 16:05:59.504827,2026-03-04 16:26:09.635738,f,Wajir,Tarbaj
+1339,Turkwel,9,Rift Valley,Turkana,Turkwel,KE1340,,630,Polygon,,2026-03-04 16:05:59.815442,2026-03-04 16:27:41.51413,f,Turkana,Turkwel
+1340,Marakaru/Tuuti,1,Western,Bungoma,Kanduyi,KE1341,,1102,Polygon,spelling,2026-03-04 16:05:59.821231,2026-03-04 16:27:41.519129,f,Bungoma,Kanduyi
+1343,Ukia,16,Eastern,Makueni,Kaiti,KE1344,,420,Polygon,,2026-03-04 16:05:59.837726,2026-03-04 16:27:41.524678,f,Makueni,Kaiti
+1344,Ukunda,1,Coast,Kwale,Msambweni,KE1345,,32,Polygon,,2026-03-04 16:05:59.843479,2026-03-04 16:27:41.529452,f,Kwale,Msambweni
+1345,Ukwala,7,Nyanza,Siaya,Ukwala,KE1346,,1157,Polygon,,2026-03-04 16:05:59.848933,2026-03-04 16:27:41.533809,f,Siaya,Ukwala
+1348,Upper Kaewa/Iveti,5,Eastern,Machakos,Kathiani,KE1349,,392,Polygon,,2026-03-04 16:05:59.864876,2026-03-04 16:27:41.538446,f,Machakos,Kathiani
+1351,Usonga,3,Nyanza,Siaya,Uranga,KE1352,,1163,Polygon,,2026-03-04 16:05:59.879779,2026-03-04 16:27:41.547484,f,Siaya,Uranga
+1356,Visoi,8,Rift Valley,Nakuru,Rongai,KE1357,,862,Polygon,,2026-03-04 16:05:59.902926,2026-03-04 16:27:41.552362,f,Nakuru,Rongai
+1311,Thingithu,2,Rift Valley,Laikipia,Central,KE1312,,819,Polygon,,2026-03-04 16:05:59.562728,2026-03-04 16:26:09.691927,f,Laikipia,Imenti Central
+1357,Viwanda,1,Rift Valley,Nakuru,Olenguruone,KE1358,,843,Polygon,,2026-03-04 16:05:59.907491,2026-03-04 16:27:41.557777,f,Nakuru,Olenguruone
+1359,Voo/kyamatu,8,Eastern,Kitui,Mwitika,KE1360,,362,Polygon,,2026-03-04 16:05:59.917431,2026-03-04 16:27:41.562397,f,Kitui,Mwitika
+1364,Wagalla,1,North Eastern,Wajir,Griftu,KE1365,,,,,2026-03-04 16:05:59.94185,2026-03-04 16:27:41.571499,f,Wajir,Griftu
+1317,Ting'ang'a,4,Central,Kiambu,Kiambu Municipality,KE1318,,582,Polygon,,2026-03-04 16:05:59.589441,2026-03-04 16:26:09.751062,f,Kiambu,Kiambu
+1366,Waia/Kako,10,Eastern,Makueni,Kisau,KE1367,,415,Polygon,,2026-03-04 16:05:59.952399,2026-03-04 16:27:41.576187,f,Makueni,Kisau
+1323,Township(Garissa),1,North Eastern,Garissa,Central,KE1324,,,,,2026-03-04 16:05:59.615211,2026-03-04 16:26:09.875137,f,Garissa,Imenti Central
+1324,Township(Kiambu),3,Central,Kiambu,Kiambu Municipality,KE1325,,,,,2026-03-04 16:05:59.620045,2026-03-04 16:26:09.88522,f,Kiambu,Kiambu
+1325,Township(Kitui),4,Eastern,Kitui,Central,KE1326,,,,,2026-03-04 16:05:59.626087,2026-03-04 16:26:09.894143,f,Kitui,Imenti Central
+1342,Ugunja,8,Nyanza,Siaya,Ugunja,KE1343,,1162,Polygon,,2026-03-04 16:05:59.832522,2026-03-04 16:26:09.979105,f,Siaya,Ugunja
+1346,Umoja One,1,Nairobi,Nairobi,Embakasi,KE1347,,1426,Polygon,,2026-03-04 16:05:59.854689,2026-03-04 16:26:09.998349,f,Nairobi,Embakasi South
+1347,Umoja Two,1,Nairobi,Nairobi,Embakasi,KE1348,,1427,Polygon,,2026-03-04 16:05:59.859755,2026-03-04 16:26:10.003715,f,Nairobi,Embakasi South
+1349,Upper Savanna,1,Nairobi,Nairobi,Embakasi,KE1350,,1421,Polygon,,2026-03-04 16:05:59.869727,2026-03-04 16:26:10.016489,f,Nairobi,Embakasi South
+1353,Utawala,1,Nairobi,Nairobi,Embakasi,KE1354,,1424,Polygon,,2026-03-04 16:05:59.888996,2026-03-04 16:26:10.082148,f,Nairobi,Embakasi South
+1354,Uthiru,1,Central,Kiambu,Kikuyu,KE1355,,595,Polygon,,2026-03-04 16:05:59.893705,2026-03-04 16:26:10.096201,f,Kiambu,Kikuyu
+1358,Viwandani,1,Nairobi,Nairobi,Makadara,KE1359,,1431,Polygon,,2026-03-04 16:05:59.912681,2026-03-04 16:26:10.176474,f,Nairobi,Makadara
+1362,Wabera,1,Eastern,Isiolo,Central,KE1363,,241,Polygon,,2026-03-04 16:05:59.93213,2026-03-04 16:26:10.213001,f,Isiolo,Imenti Central
+1363,Waberi,1,North Eastern,Garissa,Central,KE1364,,131,Polygon,,2026-03-04 16:05:59.936851,2026-03-04 16:26:10.220554,f,Garissa,Imenti Central
+1365,Wagberi,1,North Eastern,Wajir,Central,KE1366,,168,Polygon,,2026-03-04 16:05:59.947221,2026-03-04 16:26:10.233947,f,Wajir,Imenti Central
+33,Angata Nanyokie,6,Rift Valley,Samburu,Kirisia,KE0034,,670,Polygon,spelling,2026-03-04 16:05:50.074248,2026-03-04 16:27:31.863801,f,Samburu,Kirisia
+53,Banane,7,North Eastern,Wajir,Sabule,KE0054,,184,Polygon,done,2026-03-04 16:05:50.405394,2026-03-04 16:27:32.029113,f,Wajir,Sabule
+60,Tirioko,10,Rift Valley,Baringo,Kabartonjo,KE0061,,781,Polygon,done,2026-03-04 16:05:50.661375,2026-03-04 16:27:32.073418,f,Baringo,Kabartonjo
+109,Bunyala Central,4,Western,Kakamega,Navakholo,KE0110,,1019,Polygon,,2026-03-04 16:05:51.153733,2026-03-04 16:27:32.363441,f,Kakamega,Navakholo
+118,Busali,6,Western,Vihiga,Sabatia,KE0119,,1060,Polygon,,2026-03-04 16:05:51.208564,2026-03-04 16:27:32.406721,f,Vihiga,Sabatia
+130,Central Alego,9,Nyanza,Siaya,Boro,KE0131,,1165,Polygon,,2026-03-04 16:05:51.289594,2026-03-04 16:27:32.619773,f,Siaya,Boro
+150,Chavakali,4,Western,Vihiga,Sabatia,KE0151,,1057,Polygon,,2026-03-04 16:05:51.560615,2026-03-04 16:27:32.93016,f,Vihiga,Sabatia
+167,Chepkorio,9,Rift Valley,Elgeyo Marakwet,Chepkorio,KE0168,,746,Polygon,,2026-03-04 16:05:51.644563,2026-03-04 16:27:33.204689,f,Elgeyo Marakwet,Chepkorio
+176,Cheptororiet/ Seretut,4,Rift Valley,Kericho,Belgut,KE0177,,959,Polygon,spelling,2026-03-04 16:05:51.685081,2026-03-04 16:27:33.271053,f,Kericho,Belgut
+187,Chilchila,6,Rift Valley,Kericho,Chilchila,KE0188,,943,Polygon,,2026-03-04 16:05:51.748349,2026-03-04 16:27:33.417416,f,Kericho,Chilchila
+212,Dundori,3,Rift Valley,Nakuru,Bahati,KE0213,,865,Polygon,,2026-03-04 16:05:52.016621,2026-03-04 16:27:33.517696,f,Nakuru,Bahati
+230,Ekalakala,4,Eastern,Machakos,Masinga,KE0231,,373,Polygon,,2026-03-04 16:05:52.124483,2026-03-04 16:27:33.691907,f,Machakos,Masinga
+238,Eldas,2,North Eastern,Wajir,El-das,KE0239,,180,Polygon,,2026-03-04 16:05:52.16808,2026-03-04 16:27:33.734089,f,Wajir,El-das
+250,Endugh,12,Rift Valley,West Pokot,Chepareria,KE0251,,645,Polygon,,2026-03-04 16:05:52.2348,2026-03-04 16:27:33.91697,f,West Pokot,Chepareria
+256,Ewalel/Chapchap,9,Rift Valley,Baringo,Kabarnet,KE0257,,796,Polygon,,2026-03-04 16:05:52.319146,2026-03-04 16:27:33.952539,f,Baringo,Kabarnet
+265,Gakawa,3,Central,Nyeri,Kieni East,KE0266,,476,Polygon,,2026-03-04 16:05:52.460596,2026-03-04 16:27:34.101806,f,Nyeri,Kieni East
+273,Garsen North,6,Coast,Tana River,Garsen,KE0274,,91,Polygon,,2026-03-04 16:05:52.508211,2026-03-04 16:27:34.14835,f,Tana River,Garsen
+283,Gatitu/Muruguru,6,Central,Nyeri,Nyeri Municipality,KE0284,,493,Polygon,,2026-03-04 16:05:52.559455,2026-03-04 16:27:34.214093,f,Nyeri,Nyeri Municipality
+313,Gombato/Bongwe,2,Coast,Kwale,Msambweni,KE0314,,31,Polygon,,2026-03-04 16:05:52.789985,2026-03-04 16:27:34.501554,f,Kwale,Msambweni
+1367,Waita,7,Eastern,Kitui,Migwani,KE1368,,345,Polygon,,2026-03-04 16:05:59.957749,2026-03-04 16:27:41.580524,f,Kitui,Migwani
+1370,Waldai,3,Rift Valley,Kericho,Belgut,KE1371,,957,Polygon,,2026-03-04 16:05:59.976737,2026-03-04 16:27:41.585191,f,Kericho,Belgut
+202,Dandora Area Two,1,Nairobi,Nairobi,Embakasi,KE0203,,1413,Polygon,,2026-03-04 16:05:51.837622,2026-03-04 16:26:01.706727,f,Nairobi,Embakasi South
+1371,Wamagana,15,Central,Nyeri,Tetu,KE1372,,467,Polygon,,2026-03-04 16:05:59.983644,2026-03-04 16:27:41.590208,f,Nyeri,Tetu
+1372,Wamba East,6,Rift Valley,Samburu,Wamba,KE1373,,674,Polygon,,2026-03-04 16:05:59.992958,2026-03-04 16:27:41.594995,f,Samburu,Wamba
+1373,Wamba North,6,Rift Valley,Samburu,Wamba,KE1374,,675,Polygon,,2026-03-04 16:06:00.017876,2026-03-04 16:27:41.599337,f,Samburu,Wamba
+1374,Wamba West,11,Rift Valley,Samburu,Wamba,KE1375,,673,Polygon,,2026-03-04 16:06:00.028698,2026-03-04 16:27:41.603948,f,Samburu,Wamba
+1375,Wamumu,1,Central,Kirinyaga,Mwea,KE1376,,499,Polygon,,2026-03-04 16:06:00.040118,2026-03-04 16:27:41.608801,f,Kirinyaga,Mwea
+1376,Wamunyu,7,Eastern,Machakos,Yathui,KE1377,,409,Polygon,,2026-03-04 16:06:00.070869,2026-03-04 16:27:41.613374,f,Machakos,Yathui
+1379,Wanjohi,4,Central,Nyandarua,Kipipiri,KE1380,,449,Polygon,,2026-03-04 16:06:00.103936,2026-03-04 16:27:41.622422,f,Nyandarua,Kipipiri
+1380,Waranqara,4,North Eastern,Mandera,Waranqara,KE1381,,219,Polygon,,2026-03-04 16:06:00.111967,2026-03-04 16:27:41.62714,f,Mandera,Waranqara
+1381,Wargadud,8,North Eastern,Wajir,Kotulo,KE1382,,175,Polygon,,2026-03-04 16:06:00.118615,2026-03-04 16:27:41.631774,f,Wajir,Kotulo
+302,Githiga,4,Central,Kiambu,Githunguri,KE0303,,813,Polygon,,2026-03-04 16:05:52.656408,2026-03-04 16:26:02.49846,f,Kiambu,Githunguri
+1383,Waso,6,Rift Valley,Samburu,Waso,KE1384,,672,Polygon,,2026-03-04 16:06:00.130773,2026-03-04 16:27:41.636503,f,Samburu,Waso
+1386,Wayu,6,Coast,Tana River,Galole,KE1387,,95,Polygon,,2026-03-04 16:06:00.147318,2026-03-04 16:27:41.641539,f,Tana River,Galole
+1369,Waithaka,2,Nairobi,Nairobi,Dagoretti,KE1370,,1380,Polygon,,2026-03-04 16:05:59.969904,2026-03-04 16:26:10.25885,f,Nairobi,Dagoretti North
+1388,Wemilabi,6,Western,Vihiga,Emuhaya,KE1389,,1069,Polygon,,2026-03-04 16:06:00.15756,2026-03-04 16:27:41.651369,f,Vihiga,Emuhaya
+1389,Weru,4,Central,Nyandarua,Ol Joro Orok,KE1390,,460,Polygon,,2026-03-04 16:06:00.162851,2026-03-04 16:27:41.658953,f,Nyandarua,Ol Joro Orok
+1392,West Alego,10,Nyanza,Siaya,Uranga,KE1393,,1164,Polygon,,2026-03-04 16:06:00.178259,2026-03-04 16:27:41.670507,f,Siaya,Uranga
+1393,West Bukusu,4,Western,Bungoma,Bumula,KE1394,,1094,Polygon,,2026-03-04 16:06:00.183244,2026-03-04 16:27:41.686228,f,Bungoma,Bumula
+1395,West Gem,10,Nyanza,Siaya,Wagai,KE1396,,1170,Polygon,,2026-03-04 16:06:00.192742,2026-03-04 16:27:41.714197,f,Siaya,Wagai
+1400,West Kisumu,5,Nyanza,Kisumu,Maseno,KE1401,,1194,Polygon,,2026-03-04 16:06:00.215196,2026-03-04 16:27:41.734163,f,Kisumu,Maseno
+1401,West Nalondo,2,Western,Bungoma,Nalondo,KE1402,,1086,Polygon,,2026-03-04 16:06:00.219552,2026-03-04 16:27:41.742245,f,Bungoma,Nalondo
+1403,West Sabatia,5,Western,Vihiga,Sabatia,KE1404,,1056,Polygon,,2026-03-04 16:06:00.228812,2026-03-04 16:27:41.748449,f,Vihiga,Sabatia
+1406,West Seme,10,Nyanza,Kisumu,Kombewa,KE1407,,1202,Polygon,,2026-03-04 16:06:00.241998,2026-03-04 16:27:41.763221,f,Kisumu,Kombewa
+1407,West Ugenya,9,Nyanza,Siaya,Ukwala,KE1408,,1156,Polygon,,2026-03-04 16:06:00.2473,2026-03-04 16:27:41.768344,f,Siaya,Ukwala
+1382,Wasimbete,4,Nyanza,Migori,Suba West,KE1383,,1276,Polygon,,2026-03-04 16:06:00.124574,2026-03-04 16:26:10.332522,f,Migori,Suba West
+1411,Witu,4,Coast,Lamu,Witu,KE1412,,109,Polygon,,2026-03-04 16:06:00.266125,2026-03-04 16:27:41.779148,f,Lamu,Witu
+1412,Wodanga,5,Western,Vihiga,Sabatia,KE1413,,1059,Polygon,,2026-03-04 16:06:00.270549,2026-03-04 16:27:41.784608,f,Vihiga,Sabatia
+1414,Wote,6,Eastern,Makueni,Wote,KE1415,,424,Polygon,,2026-03-04 16:06:00.280111,2026-03-04 16:27:41.790722,f,Makueni,Wote
+1417,Yala Township,3,Nyanza,Siaya,Yala,KE1418,,1172,Polygon,,2026-03-04 16:06:00.294494,2026-03-04 16:27:41.796813,f,Siaya,Yala
+1421,Ziwa,4,Rift Valley,Uasin Gishu,Soy,KE1422,,703,Polygon,,2026-03-04 16:06:00.314763,2026-03-04 16:27:41.802784,f,Uasin Gishu,
+1423,Kabuoch South/Pala,3,Nyanza,Homa Bay,Riana,KE0002,,1249,Polygon,,2026-03-04 16:06:00.327374,2026-03-04 16:27:41.808587,f,Homa Bay,Riana
+1409,Wiga,4,Nyanza,Migori,Suba West,KE1410,,1273,Polygon,,2026-03-04 16:06:00.256977,2026-03-04 16:26:10.474512,f,Migori,Suba West
+1420,Zimmerman,2,Nairobi,Nairobi,Kasarani,KE1421,,1393,Polygon,,2026-03-04 16:06:00.309157,2026-03-04 16:26:10.51326,f,Nairobi,Kasarani
+1422,Ziwani/Kariokor,1,Nairobi,Nairobi,Central,KE1423,,1442,Polygon,,2026-03-04 16:06:00.320246,2026-03-04 16:26:10.54616,f,Nairobi,Imenti Central
+342,Idakho South,6,Western,Kakamega,Ikolomani,KE0343,,1047,Polygon,,2026-03-04 16:05:52.947767,2026-03-04 16:27:34.885554,f,Kakamega,Ikolomani
+367,Iria-ini,6,Central,Nyeri,Othaya,KE0368,,484,Polygon,,2026-03-04 16:05:53.198979,2026-03-04 16:27:35.008784,f,Nyeri,Othaya
+376,Jara Jila,2,North Eastern,Garissa,Jara Jila,KE0377,,154,Polygon,spacing,2026-03-04 16:05:53.245859,2026-03-04 16:27:35.054917,f,Garissa,Jara Jila
+386,Kaaleng/Kaikor,8,Rift Valley,Turkana,Kaaleng,KE0387,,614,Polygon,,2026-03-04 16:05:53.295258,2026-03-04 16:27:35.197245,f,Turkana,Kaaleng
+403,Kabuchai/Chwale,3,Western,Bungoma,Chwele,KE0404,,1085,Polygon,spelling,2026-03-04 16:05:53.386533,2026-03-04 16:27:35.29892,f,Bungoma,Chwele
+424,Kalaliyo,9,North Eastern,Mandera,Kalaliyo,KE0425,,213,Polygon,spelling,2026-03-04 16:05:53.550397,2026-03-04 16:27:35.396846,f,Mandera,Kalaliyo
+434,Kamagut,2,Rift Valley,Uasin Gishu,Turbo,KE0435,,710,Polygon,,2026-03-04 16:05:53.602521,2026-03-04 16:27:35.507156,f,Uasin Gishu,Turbo
+439,Kamasian,7,Rift Valley,Kericho,Kipkelion,KE0440,,941,Polygon,,2026-03-04 16:05:53.628163,2026-03-04 16:27:35.571186,f,Kericho,Kipkelion
+444,Kamukuywa,2,Western,Bungoma,Kimilili,KE0445,,1114,Polygon,,2026-03-04 16:05:53.653687,2026-03-04 16:27:35.591111,f,Bungoma,Kimilili
+452,Kangundo Central,4,Eastern,Machakos,Kangundo,KE0453,,382,Polygon,,2026-03-04 16:05:53.700247,2026-03-04 16:27:35.621188,f,Machakos,Kangundo
+334,Huruma,1,Nairobi,Nairobi,Central,KE0335,,713,Polygon,,2026-03-04 16:05:52.908328,2026-03-04 16:26:02.712346,f,Nairobi,Imenti Central
+477,Kaplamai,1,Rift Valley,Trans Nzoia,Kaplamai,KE0478,,696,Polygon,,2026-03-04 16:05:53.939315,2026-03-04 16:27:35.752192,f,Trans Nzoia,Kaplamai
+351,Ikinu,4,Central,Kiambu,Githunguri,KE0352,,579,Polygon,,2026-03-04 16:05:53.004224,2026-03-04 16:26:02.786769,f,Kiambu,Githunguri
+488,Kapsowar,7,Rift Valley,Elgeyo Marakwet,Kapsowar,KE0489,,739,Polygon,,2026-03-04 16:05:53.99581,2026-03-04 16:27:35.855171,f,Elgeyo Marakwet,Kapsowar
+375,Jara Jara,2,North Eastern,Garissa,Balambala,KE0376,,137,Polygon,spacing,2026-03-04 16:05:53.240417,2026-03-04 16:26:02.993702,f,Garissa,Balambala
+493,Kaptarakwa,7,Rift Valley,Elgeyo Marakwet,Chepkorio,KE0494,,745,Polygon,,2026-03-04 16:05:54.020968,2026-03-04 16:27:35.883778,f,Elgeyo Marakwet,Chepkorio
+501,Kapyemit,2,Rift Valley,Uasin Gishu,Turbo,KE0502,,,,,2026-03-04 16:05:54.067269,2026-03-04 16:27:35.991167,f,Uasin Gishu,Turbo
+505,Karatina Town,7,Central,Nyeri,Mathira,KE0506,,482,Polygon,,2026-03-04 16:05:54.091878,2026-03-04 16:27:35.997872,f,Nyeri,Mathira
+514,Kariti,5,Central,Kirinyaga,Ndia,KE0515,,511,Polygon,,2026-03-04 16:05:54.140577,2026-03-04 16:27:36.044734,f,Kirinyaga,Ndia
+522,Kasemeni / Vanga,4,Coast,Kwale,Lungalunga,KE0523,,38,Polygon,,2026-03-04 16:05:54.187319,2026-03-04 16:27:36.073763,f,Kwale,Lungalunga
+530,Katilu,4,Rift Valley,Turkana,Katilu,KE0531,,634,Polygon,,2026-03-04 16:05:54.230412,2026-03-04 16:27:36.130634,f,Turkana,Katilu
+537,Kedowa/Kimugul,7,Rift Valley,Kericho,Londiani,KE0538,,937,Polygon,,2026-03-04 16:05:54.274072,2026-03-04 16:27:36.18537,f,Kericho,Londiani
+564,Kibauni,9,Eastern,Machakos,Yathui,KE0565,,410,Polygon,,2026-03-04 16:05:54.48523,2026-03-04 16:27:36.296335,f,Machakos,Yathui
+576,Kiima Kiu/Kalanzoni,8,Eastern,Makueni,Kilome,KE0577,,419,Polygon,,2026-03-04 16:05:54.545894,2026-03-04 16:27:36.408761,f,Makueni,Kilome
+593,Kiminini,1,Rift Valley,Trans Nzoia,Kiminini,KE0594,,688,Polygon,,2026-03-04 16:05:54.645873,2026-03-04 16:27:36.58956,f,Trans Nzoia,Kiminini
+602,Kinanie,2,Eastern,Machakos,Athi River,KE0603,,395,Polygon,,2026-03-04 16:05:54.693748,2026-03-04 16:27:36.697728,f,Machakos,Athi River
+611,Kipchimchim,2,Rift Valley,Kericho,Ainamoi,KE0612,,948,Polygon,,2026-03-04 16:05:54.739128,2026-03-04 16:27:36.798518,f,Kericho,Ainamoi
+618,Kipkenyo,1,Rift Valley,Uasin Gishu,Kapsaret,KE0619,,723,Polygon,,2026-03-04 16:05:54.773084,2026-03-04 16:27:36.90093,f,Uasin Gishu,Kapsaret
+628,Kiriita,2,Central,Nyandarua,Ndaragwa,KE0629,,463,Polygon,spelling,2026-03-04 16:05:54.821186,2026-03-04 16:27:37.056401,f,Nyandarua,Ndaragwa
+647,Kitise/Kithuki,10,Eastern,Makueni,Kathonzweni,KE0648,,427,Polygon,,2026-03-04 16:05:55.034221,2026-03-04 16:27:37.312361,f,Makueni,Kathonzweni
+664,Kolowa,6,Rift Valley,Baringo,Kolowa,KE0665,,782,Polygon,,2026-03-04 16:05:55.123776,2026-03-04 16:27:37.458646,f,Baringo,Kolowa
+682,Kuinet/Kapsuswa,2,Rift Valley,Uasin Gishu,Soy,KE0683,,707,Polygon,,2026-03-04 16:05:55.205262,2026-03-04 16:27:37.795716,f,Uasin Gishu,
+691,Kwa Vonza/Yatta,8,Eastern,Kitui,Yatta,KE0692,,352,Polygon,spelling,2026-03-04 16:05:55.250066,2026-03-04 16:27:37.879269,f,Kitui,Yatta
+697,Kyeleni,5,Eastern,Machakos,Matungulu,KE0698,,389,Polygon,,2026-03-04 16:05:55.340797,2026-03-04 16:27:37.896204,f,Machakos,Matungulu
+717,Lapur,9,Rift Valley,Turkana,Lapur,KE0718,,613,Polygon,,2026-03-04 16:05:55.467307,2026-03-04 16:27:38.028858,f,Turkana,Lapur
+584,Kileleshwa,2,Nairobi,Nairobi,Westlands,KE0585,,1374,Polygon,,2026-03-04 16:05:54.587946,2026-03-04 16:26:04.677188,f,Nairobi,Westlands
+734,Lindi,1,Nairobi,Nairobi,Kibera,KE0735,,1387,Polygon,,2026-03-04 16:05:55.566209,2026-03-04 16:27:38.098152,f,Nairobi,Kibera
+742,Loiyangalani,8,Eastern,Marsabit,Loiyangalani,KE0743,,236,Polygon,,2026-03-04 16:05:55.620429,2026-03-04 16:27:38.131865,f,Marsabit,Loiyangalani
+750,London,3,Rift Valley,Nakuru,Municipality,KE0751,,871,Polygon,,2026-03-04 16:05:55.713155,2026-03-04 16:27:38.172122,f,Nakuru,Municipality
+753,Lopur,3,Rift Valley,Turkana,Kakuma,KE0754,,618,Polygon,,2026-03-04 16:05:55.732007,2026-03-04 16:27:38.187617,f,Turkana,Kakuma
+627,Kirenga,6,Central,Kiambu,Lari,KE0628,,610,Polygon,spelling,2026-03-04 16:05:54.816104,2026-03-04 16:26:04.876961,f,Kiambu,Lari
+761,Lulis/Eyemole,2,North Eastern,Mandera,Banissa,KE0762,,,,,2026-03-04 16:05:55.775225,2026-03-04 16:27:38.217477,f,Mandera,Banissa
+769,Melili,1,Rift Valley,Narok,,KE0770,,896,Polygon,spelling,2026-03-04 16:05:55.817222,2026-03-04 16:27:38.554645,f,Narok,
+778,Madogashe,1,North Eastern,Garissa,Madogashe,KE0779,,140,Polygon,spelling,2026-03-04 16:05:55.86284,2026-03-04 16:27:38.578722,f,Garissa,Madogashe
+810,Malalani/Endau,8,Eastern,Kitui,Mwitika,KE0811,,363,Polygon,spelling,2026-03-04 16:05:56.109674,2026-03-04 16:27:38.686425,f,Kitui,Mwitika
+690,Kwa Reuben,1,Nairobi,Nairobi,Embakasi,KE0691,,1408,Polygon,,2026-03-04 16:05:55.244412,2026-03-04 16:26:05.305499,f,Nairobi,Embakasi South
+824,Maraka,2,Western,Bungoma,Webuye,KE0825,,1106,Polygon,,2026-03-04 16:05:56.186964,2026-03-04 16:27:38.8344,f,Bungoma,Webuye
+839,Marmanet,8,Rift Valley,Laikipia,Ng'arua,KE0840,,814,Polygon,,2026-03-04 16:05:56.346252,2026-03-04 16:27:38.903087,f,Laikipia,Ng'arua
+855,Matapato South,6,Rift Valley,Kajiado,Namanga,KE0856,,920,Polygon,,2026-03-04 16:05:56.423636,2026-03-04 16:27:38.954316,f,Kajiado,Namanga
+863,Matungulu East,5,Eastern,Machakos,Matungulu,KE0864,,387,Polygon,,2026-03-04 16:05:56.461867,2026-03-04 16:27:39.010427,f,Machakos,Matungulu
+871,Mavindini,10,Eastern,Makueni,Kathonzweni,KE0872,,426,Polygon,,2026-03-04 16:05:56.504599,2026-03-04 16:27:39.113825,f,Makueni,Kathonzweni
+878,Mbaruk/Eburu,3,Rift Valley,Nakuru,Municipality,KE0879,,846,Polygon,,2026-03-04 16:05:56.687194,2026-03-04 16:27:39.148097,f,Nakuru,Municipality
+801,Makongeni,5,Nairobi,Nairobi,Makadara,KE0802,,1433,Polygon,,2026-03-04 16:05:56.061695,2026-03-04 16:26:06.124802,f,Nairobi,Makadara
+12,Ageng'a/Nanguba,7,Western,Busia,Funyula,KE0013,,1150,Polygon,spelling,2026-03-04 16:05:49.741782,2026-03-04 16:27:31.59537,f,Busia,Funyula
+911,Mji Wa Kale/makadara,3,Coast,Mombasa,Island,KE0912,,26,Polygon,,2026-03-04 16:05:56.866009,2026-03-04 16:27:39.252585,f,Mombasa,Island
+927,Mosiro,2,Rift Valley,Kajiado,Ngong,KE0928,,897,Polygon,,2026-03-04 16:05:56.953626,2026-03-04 16:27:39.43369,f,Kajiado,Ngong
+935,Mtito Andei,8,Eastern,Makueni,Mtito Andei,KE0936,,438,Polygon,,2026-03-04 16:05:57.052429,2026-03-04 16:27:39.464459,f,Makueni,Mtito Andei
+953,Mukogodo West,5,Rift Valley,Laikipia,Mukogodo,KE0954,,824,Polygon,,2026-03-04 16:05:57.162458,2026-03-04 16:27:39.520329,f,Laikipia,Mukogodo
+972,Murhanda,4,Western,Kakamega,Shinyalu,KE0973,,1042,Polygon,,2026-03-04 16:05:57.251027,2026-03-04 16:27:39.63389,f,Kakamega,Shinyalu
+1005,Mwavumbo,4,Coast,Kwale,Samburu,KE1006,,49,Polygon,,2026-03-04 16:05:57.537935,2026-03-04 16:27:39.791747,f,Kwale,
+1026,Naitiri/Kabuyefwe,3,Western,Bungoma,Tongaren,KE1027,,1116,Polygon,,2026-03-04 16:05:57.641362,2026-03-04 16:27:39.937986,f,Bungoma,Tongaren
+1035,Nandi Hills,18,Rift Valley,Nandi,Nandi Hills,KE1036,,761,Polygon,,2026-03-04 16:05:57.691835,2026-03-04 16:27:39.985645,f,Nandi,Nandi Hills
+1044,Ndaraweta,5,Rift Valley,Bomet,Bomet Central,KE1045,,982,Polygon,,2026-03-04 16:05:57.736707,2026-03-04 16:27:40.020841,f,Bomet,Bomet Central
+1062,Ngeria,2,Rift Valley,Uasin Gishu,Kapsaret,KE1063,,724,Polygon,,2026-03-04 16:05:57.818654,2026-03-04 16:27:40.067956,f,Uasin Gishu,Kapsaret
+1069,Ngong,1,Rift Valley,Kajiado,Ngong,KE1070,,915,Polygon,,2026-03-04 16:05:57.854066,2026-03-04 16:27:40.092685,f,Kajiado,Ngong
+1077,Njukiine,4,Central,Kirinyaga,Gichugu,KE1078,,506,Polygon,,2026-03-04 16:05:57.965407,2026-03-04 16:27:40.178573,f,Kirinyaga,Gichugu
+1085,North Horr,4,Eastern,Marsabit,North Horr,KE1086,,231,Polygon,,2026-03-04 16:05:58.018574,2026-03-04 16:27:40.219616,f,Marsabit,North Horr
+1095,North Seme,7,Nyanza,Kisumu,Maseno,KE1096,,1205,Polygon,,2026-03-04 16:05:58.070238,2026-03-04 16:27:40.24363,f,Kisumu,Maseno
+1113,Nyalenda 'A',1,Nyanza,Kisumu,Winam,KE1114,,1189,Polygon,,2026-03-04 16:05:58.150975,2026-03-04 16:27:40.291199,f,Kisumu,Winam
+1130,O'llessos,10,Rift Valley,Nandi,O'llessos,KE1131,,763,Polygon,spelling,2026-03-04 16:05:58.25717,2026-03-04 16:27:40.343028,f,Nandi,O'llessos
+1131,Olokurto,1,Rift Valley,Narok,,KE1132,,892,Polygon,spelling,2026-03-04 16:05:58.289596,2026-03-04 16:27:40.348019,f,Narok,
+1136,Ol Moran,3,Rift Valley,Laikipia,Ol Moran,KE1137,,811,Polygon,,2026-03-04 16:05:58.399985,2026-03-04 16:27:40.371432,f,Laikipia,Ol Moran
+941,Muguga,3,Central,Kiambu,Kikuyu,KE0942,,592,Polygon,,2026-03-04 16:05:57.096524,2026-03-04 16:26:07.068653,f,Kiambu,Kikuyu
+945,Muguru,8,Central,Murang'a,Kangema,KE0946,,517,Polygon,,2026-03-04 16:05:57.119524,2026-03-04 16:26:07.091466,f,Murang'a,Gem
+1154,Racecourse,1,Rift Valley,Uasin Gishu,Kapsaret,KE1155,,727,Polygon,,2026-03-04 16:05:58.505313,2026-03-04 16:27:40.526101,f,Uasin Gishu,Kapsaret
+962,Mumbuni North,3,Eastern,Machakos,Central,KE0963,,402,Polygon,,2026-03-04 16:05:57.200862,2026-03-04 16:26:07.246199,f,Machakos,Imenti Central
+1163,Ribikwo,6,Rift Valley,Baringo,Nginyang,KE1164,,783,Polygon,spelling,2026-03-04 16:05:58.550071,2026-03-04 16:27:40.560511,f,Baringo,Nginyang
+990,Mutituni,6,Eastern,Machakos,Central,KE0991,,400,Polygon,,2026-03-04 16:05:57.458255,2026-03-04 16:26:07.430992,f,Machakos,Imenti Central
+1191,Sagante/Jaldessa,6,Eastern,Marsabit,Gadhamoji,KE1192,,233,Polygon,spelling,2026-03-04 16:05:58.776008,2026-03-04 16:27:40.635456,f,Marsabit,Gadhamoji
+1011,Mwiki,2,Nairobi,Nairobi,Kasarani,KE1012,,575,Polygon,,2026-03-04 16:05:57.565018,2026-03-04 16:26:07.528613,f,Nairobi,Kasarani
+1194,Salama,9,Rift Valley,Laikipia,Rumuruti,KE1195,,816,Polygon,,2026-03-04 16:05:58.79085,2026-03-04 16:27:40.645011,f,Laikipia,Rumuruti
+1195,Sambirir,19,Rift Valley,Elgeyo Marakwet,Tirap,KE1196,,732,Polygon,,2026-03-04 16:05:58.795555,2026-03-04 16:27:40.650527,f,Elgeyo Marakwet,Tirap
+1205,Segero,5,Rift Valley,Uasin Gishu,Soy,KE1206,,,,,2026-03-04 16:05:58.843769,2026-03-04 16:27:40.687718,f,Uasin Gishu,
+1211,Shaabab,1,Rift Valley,Nakuru,Municipality,KE1212,,875,Polygon,,2026-03-04 16:05:58.873233,2026-03-04 16:27:40.711381,f,Nakuru,Municipality
+1220,Shika Adab,2,Coast,Mombasa,Likoni,KE1221,,22,Polygon,,2026-03-04 16:05:58.919593,2026-03-04 16:27:40.743641,f,Mombasa,Likoni
+1227,Shirugu/Mugai,4,Western,Kakamega,Kabras,KE1228,,1007,Polygon,spelling,2026-03-04 16:05:59.013817,2026-03-04 16:27:40.833526,f,Kakamega,Kabras
+1237,Silibwet Township,4,Rift Valley,Bomet,Bomet Central,KE1238,,981,Polygon,,2026-03-04 16:05:59.078409,2026-03-04 16:27:40.906654,f,Bomet,Bomet Central
+1246,Sitatunga,1,Rift Valley,Trans Nzoia,Kaplamai,KE1247,,700,Polygon,,2026-03-04 16:05:59.122617,2026-03-04 16:27:40.944024,f,Trans Nzoia,Kaplamai
+1255,Songot,4,Rift Valley,Turkana,Lokichoggio,KE1256,,620,Polygon,,2026-03-04 16:05:59.163304,2026-03-04 16:27:41.021707,f,Turkana,Lokichoggio
+1257,Sosiani,7,Rift Valley,Laikipia,Rumuruti,KE1258,,822,Polygon,,2026-03-04 16:05:59.172167,2026-03-04 16:27:41.041521,f,Laikipia,Rumuruti
+1282,Sukha North,4,Western,Kakamega,Ileho,KE1283,,,,,2026-03-04 16:05:59.418699,2026-03-04 16:27:41.171917,f,Kakamega,Ileho
+1289,Takaba,2,North Eastern,Mandera,Takaba,KE1290,,192,Polygon,,2026-03-04 16:05:59.460329,2026-03-04 16:27:41.234935,f,Mandera,Takaba
+1145,Parklands/Highridge,3,Nairobi,Nairobi,Westlands,KE1146,,1367,Polygon,,2026-03-04 16:05:58.460134,2026-03-04 16:26:08.400746,f,Nairobi,Westlands
+1294,Tangulbei/Korossi,7,Rift Valley,Baringo,Tangulbei,KE1295,,786,Polygon,spelling,2026-03-04 16:05:59.486154,2026-03-04 16:27:41.264889,f,Baringo,Tangulbei
+1314,Timbwani,1,Coast,Mombasa,Likoni,KE1315,,25,Polygon,,2026-03-04 16:05:59.576351,2026-03-04 16:27:41.391457,f,Mombasa,Likoni
+1171,Ruai,2,Nairobi,Nairobi,Embakasi,KE1172,,1400,Polygon,,2026-03-04 16:05:58.590664,2026-03-04 16:26:08.627702,f,Nairobi,Embakasi South
+1320,Tongaren,2,Western,Bungoma,Tongaren,KE1321,,1119,Polygon,,2026-03-04 16:05:59.602328,2026-03-04 16:27:41.440044,f,Bungoma,Tongaren
+1335,Tulimani,12,Eastern,Makueni,Tulimani,KE1336,,411,Polygon,,2026-03-04 16:05:59.78852,2026-03-04 16:27:41.493225,f,Makueni,Tulimani
+1361,Waa,5,Coast,Kwale,Matuga,KE1362,,40,Polygon,,2026-03-04 16:05:59.927408,2026-03-04 16:27:41.566755,f,Kwale,Matuga
+1387,Wei Wei,12,Rift Valley,West Pokot,Sigor,KE1388,,650,Polygon,,2026-03-04 16:06:00.152184,2026-03-04 16:27:41.646306,f,West Pokot,Sigor
+1396,West Kabras,3,Western,Kakamega,Kabras,KE1397,,1002,Polygon,,2026-03-04 16:06:00.197451,2026-03-04 16:27:41.725696,f,Kakamega,Kabras
+1405,West Sang'alo,2,Western,Bungoma,Kanduyi,KE1406,,1103,Polygon,,2026-03-04 16:06:00.237343,2026-03-04 16:27:41.754732,f,Bungoma,Kanduyi
+1326,Township(Mandera),5,North Eastern,Mandera,Central,KE1327,,,,,2026-03-04 16:05:59.631752,2026-03-04 16:26:09.903883,f,Mandera,Imenti Central
+1341,Tuwani,2,Rift Valley,Trans Nzoia,Central,KE1342,,685,Polygon,,2026-03-04 16:05:59.826882,2026-03-04 16:26:09.974402,f,Trans Nzoia,Imenti Central
+1352,Utalii,2,Nairobi,Nairobi,Kasarani,KE1353,,1402,Polygon,,2026-03-04 16:05:59.884451,2026-03-04 16:26:10.059951,f,Nairobi,Kasarani
+1368,Waitaluk,1,Rift Valley,Trans Nzoia,Central,KE1369,,689,Polygon,,2026-03-04 16:05:59.963744,2026-03-04 16:26:10.253431,f,Trans Nzoia,Imenti Central
+1384,Wasweta II,2,Nyanza,Migori,Suba West,KE1385,,1274,Polygon,,2026-03-04 16:06:00.136364,2026-03-04 16:26:10.372024,f,Migori,Suba West
+106,Bulla Pesa,2,Eastern,Isiolo,Central,KE0107,,242,Polygon,,2026-03-04 16:05:51.132759,2026-03-04 16:26:01.051106,f,Isiolo,Imenti Central
+203,Dandora Area one,2,Nairobi,Nairobi,Kasarani,KE0204,,1412,Polygon,,2026-03-04 16:05:51.843493,2026-03-04 16:26:01.711584,f,Nairobi,Kasarani
+412,Kahawa,3,Nairobi,Nairobi,Kasarani,KE0413,,1395,Polygon,,2026-03-04 16:05:53.476987,2026-03-04 16:26:03.305873,f,Nairobi,Kasarani
+450,Kangemi,1,Nairobi,Nairobi,Westlands,KE0451,,1369,Polygon,,2026-03-04 16:05:53.68647,2026-03-04 16:26:03.55222,f,Nairobi,Westlands
+534,Kayole Central,1,Nairobi,Nairobi,Embakasi,KE0535,,1417,Polygon,,2026-03-04 16:05:54.251977,2026-03-04 16:26:04.277148,f,Nairobi,Embakasi South
+587,Kilimani,2,Nairobi,Nairobi,Westlands,KE0588,,1371,Polygon,,2026-03-04 16:05:54.607799,2026-03-04 16:26:04.699824,f,Nairobi,Westlands
+674,Korogocho,2,Nairobi,Nairobi,Kasarani,KE0675,,1405,Polygon,,2026-03-04 16:05:55.168363,2026-03-04 16:26:05.223041,f,Nairobi,Kasarani
+696,Kyangwithya West,7,Eastern,Kitui,Central,KE0697,,356,Polygon,,2026-03-04 16:05:55.326482,2026-03-04 16:26:05.333816,f,Kitui,Imenti Central
+706,Lagboghol South,5,North Eastern,Wajir,Central,KE0707,,188,Polygon,spelling,2026-03-04 16:05:55.409635,2026-03-04 16:26:05.374337,f,Wajir,Imenti Central
+733,Limuru East,3,Central,Kiambu,Limuru,KE0734,,604,Polygon,,2026-03-04 16:05:55.561239,2026-03-04 16:26:05.610697,f,Kiambu,Limuru
+838,Maringo/Hamza,3,Nairobi,Nairobi,Pumwani,KE0839,,1430,Polygon,,2026-03-04 16:05:56.339799,2026-03-04 16:26:06.349567,f,Nairobi,Pumwani
+897,Mihang'o,1,Nairobi,Nairobi,Embakasi,KE0898,,1425,Polygon,,2026-03-04 16:05:56.800408,2026-03-04 16:26:06.817992,f,Nairobi,Embakasi South
+987,Mutira,4,Central,Kirinyaga,Central,KE0988,,512,Polygon,,2026-03-04 16:05:57.440627,2026-03-04 16:26:07.415748,f,Kirinyaga,Imenti Central
+1055,Ngando,1,Nairobi,Nairobi,Dagoretti,KE1056,,1377,Polygon,,2026-03-04 16:05:57.787856,2026-03-04 16:26:07.863577,f,Nairobi,Dagoretti North
+1183,Rwathia,5,Central,Murang'a,Kangema,KE1184,,518,Polygon,,2026-03-04 16:05:58.730376,2026-03-04 16:26:08.808239,f,Murang'a,Gem
+1204,Segera,5,Rift Valley,Laikipia,Central,KE1205,,823,Polygon,,2026-03-04 16:05:58.839063,2026-03-04 16:26:08.907705,f,Laikipia,Imenti Central
+1244,Sirende,1,Rift Valley,Trans Nzoia,Central,KE1245,,690,Polygon,,2026-03-04 16:05:59.113131,2026-03-04 16:26:09.325739,f,Trans Nzoia,Imenti Central
+1331,Township(Wajir),3,North Eastern,Wajir,Central,KE1332,,,,,2026-03-04 16:05:59.67663,2026-03-04 16:26:09.922743,f,Wajir,Imenti Central
+1355,Uthiru/Ruthimutu,3,Nairobi,Nairobi,Dagoretti,KE1356,,1379,Polygon,,2026-03-04 16:05:59.898299,2026-03-04 16:26:10.119838,f,Nairobi,Dagoretti North
+140,Central Seme,6,Nyanza,Kisumu,Kombewa,KE0141,,1203,Polygon,,2026-03-04 16:05:51.497758,2026-03-04 16:27:32.730341,f,Kisumu,Kombewa
+179,Cherangany/Chebororwa,8,Rift Valley,Elgeyo Marakwet,Kapcherop,KE0180,,737,Polygon,,2026-03-04 16:05:51.700348,2026-03-04 16:27:33.287899,f,Elgeyo Marakwet,Kapcherop
+244,Embobut,6,Rift Valley,Elgeyo Marakwet,Tirap,KE0245,,,,,2026-03-04 16:05:52.202948,2026-03-04 16:27:33.768388,f,Elgeyo Marakwet,Tirap
+271,Garba Tulla,5,Eastern,Isiolo,Garba Tulla,KE0272,,248,Polygon,,2026-03-04 16:05:52.49707,2026-03-04 16:27:34.127382,f,Isiolo,Garba Tulla
+274,Garsen South,6,Coast,Tana River,Garsen,KE0275,,87,Polygon,,2026-03-04 16:05:52.513304,2026-03-04 16:27:34.160641,f,Tana River,Garsen
+317,Guticha,4,North Eastern,Mandera,As-habito,KE0318,,202,Polygon,,2026-03-04 16:05:52.815411,2026-03-04 16:27:34.54585,f,Mandera,As-habito
+326,Hiriman,5,Coast,Tana River,Bura,KE0327,,97,Polygon,,2026-03-04 16:05:52.866422,2026-03-04 16:27:34.69069,f,Tana River,Bura
+357,Ilima,8,Eastern,Makueni,Kilungu,KE0358,,423,Polygon,,2026-03-04 16:05:53.134309,2026-03-04 16:27:34.959837,f,Makueni,Kilungu
+378,Jepkoyai,4,Western,Vihiga,Tiriki West,KE0379,,1067,Polygon,,2026-03-04 16:05:53.25572,2026-03-04 16:27:35.062356,f,Vihiga,Tiriki West
+381,Jomvu Kuu,1,Coast,Mombasa,Changamwe,KE0382,,6,Polygon,,2026-03-04 16:05:53.270572,2026-03-04 16:27:35.068857,f,Mombasa,Changamwe
+480,Kapomboi,4,Rift Valley,Trans Nzoia,Kwanza,KE0481,,676,Polygon,,2026-03-04 16:05:53.954071,2026-03-04 16:27:35.797243,f,Trans Nzoia,Kwanza
+508,Kargi/South Horr,5,Eastern,Marsabit,Loiyangalani,KE0509,,237,Polygon,,2026-03-04 16:05:54.108496,2026-03-04 16:27:36.024437,f,Marsabit,Loiyangalani
+567,Kibwareng/Chebilat/Ndurio,8,Rift Valley,Nandi,Aldai,KE0568,,,,,2026-03-04 16:05:54.500857,2026-03-04 16:27:36.308934,f,Nandi,Aldai
+621,Saimo/ Kipsaraman,7,Rift Valley,Baringo,Kipsaraman,KE0622,,790,Polygon,spelling,2026-03-04 16:05:54.786964,2026-03-04 16:27:36.955963,f,Baringo,Kipsaraman
+659,Koibatek,7,Rift Valley,Baringo,Esageri,KE0660,,810,Polygon,,2026-03-04 16:05:55.098754,2026-03-04 16:27:37.410894,f,Baringo,Esageri
+731,Likuyani,2,Western,Kakamega,Likuyani,KE0732,,997,Polygon,,2026-03-04 16:05:55.551441,2026-03-04 16:27:38.093915,f,Kakamega,Likuyani
+745,Lokiriama/Lorengippi,8,Rift Valley,Turkana,Loima,KE0746,,632,Polygon,,2026-03-04 16:05:55.675144,2026-03-04 16:27:38.147201,f,Turkana,Loima
+785,Magogoni,1,Coast,Mombasa,Kisauni,KE0786,,14,Polygon,,2026-03-04 16:05:55.898013,2026-03-04 16:27:38.599074,f,Mombasa,Kisauni
+820,Marachi East,2,Western,Busia,Butula,KE0821,,1145,Polygon,,2026-03-04 16:05:56.163924,2026-03-04 16:27:38.757843,f,Busia,Butula
+875,Mayoni,2,Western,Kakamega,Matungu,KE0876,,1030,Polygon,,2026-03-04 16:05:56.614124,2026-03-04 16:27:39.126646,f,Kakamega,Matungu
+886,Mbooni,8,Eastern,Makueni,Mbooni,KE0887,,412,Polygon,,2026-03-04 16:05:56.740228,2026-03-04 16:27:39.165273,f,Makueni,Mbooni
+913,Mkongani,4,Coast,Kwale,Kubo,KE0914,,43,Polygon,,2026-03-04 16:05:56.875071,2026-03-04 16:27:39.263018,f,Kwale,Kubo
+916,Mnagei,9,Rift Valley,West Pokot,Kapenguria,KE0917,,643,Polygon,,2026-03-04 16:05:56.890635,2026-03-04 16:27:39.277574,f,West Pokot,Kapenguria
+951,Mukaa,8,Eastern,Makueni,Kilome,KE0952,,418,Polygon,,2026-03-04 16:05:57.152216,2026-03-04 16:27:39.510338,f,Makueni,Kilome
+1003,Mwariki A,1,Rift Valley,Nakuru,Municipality,KE1004,,,,,2026-03-04 16:05:57.528733,2026-03-04 16:27:39.782041,f,Nakuru,Municipality
+1049,Ndithini,4,Eastern,Machakos,Ndithini,KE1050,,375,Polygon,,2026-03-04 16:05:57.760249,2026-03-04 16:27:40.037263,f,Machakos,Ndithini
+1073,Njabini/Kiburu,2,Central,Nyandarua,South Kinangop,KE1074,,445,Polygon,spelling,2026-03-04 16:05:57.88862,2026-03-04 16:27:40.140987,f,Nyandarua,South Kinangop
+1105,Nuu,7,Eastern,Kitui,Nuu,KE1106,,343,Polygon,,2026-03-04 16:05:58.115422,2026-03-04 16:27:40.271106,f,Kitui,
+1111,Nyakio,3,Central,Nyandarua,South Kinangop,KE1112,,446,Polygon,,2026-03-04 16:05:58.142656,2026-03-04 16:27:40.286473,f,Nyandarua,South Kinangop
+1149,Poro,8,Rift Valley,Samburu,Kirisia,KE1150,,665,Polygon,spelling,2026-03-04 16:05:58.48042,2026-03-04 16:27:40.50763,f,Samburu,Kirisia
+1207,Sengwer,8,Rift Valley,Elgeyo Marakwet,Kapcherop,KE1208,,736,Polygon,,2026-03-04 16:05:58.853901,2026-03-04 16:27:40.697489,f,Elgeyo Marakwet,Kapcherop
+1273,Soy North,10,Rift Valley,Elgeyo Marakwet,Soy,KE1274,,747,Polygon,,2026-03-04 16:05:59.244245,2026-03-04 16:27:41.102661,f,Elgeyo Marakwet,
+1285,Suswa,1,Rift Valley,Narok,,KE1286,,900,Polygon,,2026-03-04 16:05:59.438599,2026-03-04 16:27:41.207383,f,Narok,
+1300,Tembelio,7,Rift Valley,Uasin Gishu,Moiben,KE1301,,714,Polygon,,2026-03-04 16:05:59.513815,2026-03-04 16:27:41.291825,f,Uasin Gishu,Moiben
+1378,Wangu,6,Central,Murang'a,Kahuro,KE1379,,522,Polygon,,2026-03-04 16:06:00.094895,2026-03-04 16:27:41.617665,f,Murang'a,Kahuro
+1413,Woodley/Kenyatta Golf,3,Nairobi,Nairobi,Dagoretti,KE1414,,1389,Polygon,,2026-03-04 16:06:00.275375,2026-03-04 16:26:10.495186,f,Nairobi,Dagoretti North

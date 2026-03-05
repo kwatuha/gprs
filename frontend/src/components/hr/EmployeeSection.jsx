@@ -555,6 +555,8 @@ export default function EmployeeSection({
                             padding: '6px 8px',
                         },
                         "& .MuiDataGrid-row": {
+                            minHeight: '48px !important',
+                            maxHeight: '48px !important',
                             '&:hover': {
                                 backgroundColor: `${colors.blueAccent[800]} !important`,
                                 cursor: 'pointer'
@@ -588,10 +590,6 @@ export default function EmployeeSection({
                             minHeight: '48px !important',
                             maxHeight: '48px !important',
                         },
-                        "& .MuiDataGrid-row": {
-                            minHeight: '48px !important',
-                            maxHeight: '48px !important',
-                        },
                         "& .MuiCheckbox-root": {
                             color: `${colors.greenAccent[300]} !important`,
                         },
@@ -620,11 +618,6 @@ export default function EmployeeSection({
                         loading={!employees || employees.length === 0}
                         onRowClick={(params) => {
                             console.log('EmployeeSection: Row clicked:', params.row);
-                        }}
-                        initialState={{
-                            pagination: {
-                                paginationModel: { pageSize: 25 }
-                            }
                         }}
                         disableRowSelectionOnClick={false}
                         pageSizeOptions={[10, 25, 50, 100]}

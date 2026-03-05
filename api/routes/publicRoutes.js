@@ -1981,5 +1981,70 @@ router.get('/announcements/:id', async (req, res) => {
     }
 });
 
+/**
+ * @route GET /api/public/agencies
+ * @description Get all agencies for public use (e.g., registration form)
+ * @access Public
+ */
+router.get('/agencies', async (req, res) => {
+    try {
+        const search = req.query.search || '';
+        
+        // Check if table exists
+        const tableCheck = await pool.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'agencies'
+            );
+        `);
+        
+        if (!tableCheck.rows[0]?.exists) {
+            return res.status(200).json({
+                data: [],
+                total: 0,
+                message: 'agencies table does not exist. Please run the migration script to create it.'
+            });
+        }
+        
+        let query = `
+            SELECT 
+                id,
+                ministry,
+                state_department,
+                agency_name,
+                created_at,
+                updated_at
+            FROM agencies
+            WHERE voided = false
+        `;
+        const params = [];
+        
+        if (search) {
+            query += ` AND (
+                agency_name ILIKE $1 OR
+                ministry ILIKE $1 OR
+                state_department ILIKE $1
+            )`;
+            params.push(`%${search}%`);
+        }
+        
+        query += ` ORDER BY ministry, state_department, agency_name`;
+        
+        const result = await pool.query(query, params);
+        
+        res.status(200).json({
+            data: result.rows,
+            total: result.rows.length
+        });
+    } catch (error) {
+        console.error('Error fetching agencies for public:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch agencies', 
+            details: error.message 
+        });
+    }
+});
+
 module.exports = router;
 

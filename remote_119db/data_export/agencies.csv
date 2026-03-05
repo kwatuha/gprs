@@ -1,0 +1,78 @@
+id,ministry,state_department,agency_name,created_at,updated_at,voided
+3,Executive Office of the President,Executive Office of the President,National Security Council,2026-03-04 21:09:04.117544,2026-03-04 21:09:04.117544,f
+4,Executive Office of the President,Executive Office of the President,National Intelligence Service,2026-03-04 21:09:04.126733,2026-03-04 21:09:04.126733,f
+5,Executive Office of the President,Executive Office of the President,Kenya International Boundaries Office,2026-03-04 21:24:24.084819,2026-03-04 21:24:24.084819,f
+6,Executive Office of the President,Executive Office of the President,Joint Security Secretariat,2026-03-04 21:24:24.094051,2026-03-04 21:24:24.094051,f
+7,Executive Office of the President,Executive Office of the President,National Counter Terrorism Centre,2026-03-04 21:24:24.098951,2026-03-04 21:24:24.098951,f
+8,Executive Office of the President,Executive Office of the President,Power of Mercy Advisory Committee,2026-03-04 21:24:24.104183,2026-03-04 21:24:24.104183,f
+9,Executive Office of the President,Executive Office of the President,Government Press,2026-03-04 21:24:24.109196,2026-03-04 21:24:24.109196,f
+10,Executive Office of the President,Executive Office of the President,National and County Government Summit,2026-03-04 21:24:24.114381,2026-03-04 21:24:24.114381,f
+12,Executive Office of the President,Executive Office of the President,President’s Council of Economic Advisors,2026-03-04 21:24:24.125582,2026-03-04 21:24:24.125582,f
+13,Executive Office of the President,Executive Office of the President,President’s Budget Office,2026-03-04 21:24:24.131839,2026-03-04 21:24:24.131839,f
+14,Executive Office of the President,Executive Office of the President,President’s Economic Transformation Secretariat,2026-03-04 21:24:24.138186,2026-03-04 21:24:24.138186,f
+15,Executive Office of the President,Executive Office of the President,Presidential Advisory Council on Science and Technology,2026-03-04 21:24:24.147482,2026-03-04 21:24:24.147482,f
+16,Executive Office of the President,Executive Office of the President,Directorate of Resource Surveys and Remote Sensing,2026-03-04 21:24:24.162506,2026-03-04 21:24:24.162506,f
+17,Executive Office of the President,Executive Office of the President,Integrated Natural Resources Management Secretariat,2026-03-04 21:24:24.182986,2026-03-04 21:24:24.182986,f
+18,Executive Office of the President,Executive Office of the President,Office of the Government Spokesperson,2026-03-04 21:24:24.203495,2026-03-04 21:24:24.203495,f
+19,Executive Office of the President,Executive Office of the President,Public Entities Oversight Office,2026-03-04 21:24:24.220418,2026-03-04 21:24:24.220418,f
+20,Executive Office of the President,Executive Office of the President,State Corporations Advisory Committee,2026-03-04 21:24:24.230958,2026-03-04 21:24:24.230958,f
+21,Executive Office of the President,Executive Office of the President,Inspectorate of State Corporations,2026-03-04 21:24:24.238306,2026-03-04 21:24:24.238306,f
+22,Executive Office of the President,Executive Office of the President,Public Service Travel Support Unit,2026-03-04 21:24:24.246457,2026-03-04 21:24:24.246457,f
+23,Executive Office of the President,Executive Office of the President,Government Efficiency Office,2026-03-04 21:24:24.25232,2026-03-04 21:24:24.25232,f
+24,Executive Office of the President,Executive Office of the President,Government Delivery Unit,2026-03-04 21:24:24.259164,2026-03-04 21:24:24.259164,f
+25,Office of the Prime Cabinet Secretary & Ministry of Foreign & Diaspora Affairs,State Department for National Government Coordination,National Economic and Social Council,2026-03-04 21:24:24.265843,2026-03-04 21:24:24.265843,f
+26,Office of the Prime Cabinet Secretary & Ministry of Foreign & Diaspora Affairs,State Department for National Government Coordination,Public Service Performance Management Unit,2026-03-04 21:24:24.275416,2026-03-04 21:24:24.275416,f
+27,Office of the Prime Cabinet Secretary & Ministry of Foreign & Diaspora Affairs,State Department for National Government Coordination,National Government Coordination Secretariat,2026-03-04 21:24:24.281036,2026-03-04 21:24:24.281036,f
+28,Office of the Prime Cabinet Secretary & Ministry of Foreign & Diaspora Affairs,State Department for National Government Coordination,Directorate of National Cohesion and Values,2026-03-04 21:24:24.286133,2026-03-04 21:24:24.286133,f
+29,Office of the Prime Cabinet Secretary & Ministry of Foreign & Diaspora Affairs,State Department for Foreign Affairs,Kenya Foreign Service Institute,2026-03-04 21:24:24.29086,2026-03-04 21:24:24.29086,f
+30,Office of the Prime Cabinet Secretary & Ministry of Foreign & Diaspora Affairs,State Department for Foreign Affairs,Kenya Missions Abroad,2026-03-04 21:24:24.295758,2026-03-04 21:24:24.295758,f
+31,Office of the Prime Cabinet Secretary & Ministry of Foreign & Diaspora Affairs,State Department for Diaspora Affairs,Diaspora Placement Agency,2026-03-04 21:24:24.300153,2026-03-04 21:24:24.300153,f
+32,Office of the Prime Cabinet Secretary & Ministry of Foreign & Diaspora Affairs,State Department for Diaspora Affairs,Diaspora Investment Support Office,2026-03-04 21:24:24.304644,2026-03-04 21:24:24.304644,f
+33,Ministry of Interior and National Administration,State Department for Internal Security and National Administration,National Government Administration Officers,2026-03-04 21:24:24.30959,2026-03-04 21:24:24.30959,f
+34,Ministry of Interior and National Administration,State Department for Internal Security and National Administration,National Crime Research Centre,2026-03-04 21:24:24.314413,2026-03-04 21:24:24.314413,f
+35,Ministry of Interior and National Administration,State Department for Internal Security and National Administration,Government Chemist,2026-03-04 21:24:24.32079,2026-03-04 21:24:24.32079,f
+36,Ministry of Interior and National Administration,State Department for Internal Security and National Administration,Public Benefit Organizations Regulatory Authority,2026-03-04 21:24:24.32568,2026-03-04 21:24:24.32568,f
+37,Ministry of Interior and National Administration,State Department for Internal Security and National Administration,National Authority for Campaign Against Alcohol and Drug Abuse,2026-03-04 21:24:24.330207,2026-03-04 21:24:24.330207,f
+38,Ministry of Interior and National Administration,State Department for Internal Security and National Administration,Independent Policing Oversight Authority,2026-03-04 21:24:24.335135,2026-03-04 21:24:24.335135,f
+39,Ministry of Interior and National Administration,State Department for Internal Security and National Administration,Private Security Regulatory Authority,2026-03-04 21:24:24.340345,2026-03-04 21:24:24.340345,f
+40,Ministry of Interior and National Administration,State Department for Internal Security and National Administration,National Cohesion and Integration Commission,2026-03-04 21:24:24.345089,2026-03-04 21:24:24.345089,f
+11,Executive Office of the President,Executive Office of the President,Betting Control and Licensing Board,2026-03-04 21:24:24.119424,2026-03-05 04:57:37.772366,f
+41,Ministry of Interior and National Administration,State Department for Internal Security and National Administration,Kenya Coast Guard Service,2026-03-04 21:24:24.349382,2026-03-04 21:24:24.349382,f
+42,Ministry of Interior and National Administration,State Department for Internal Security and National Administration,Firearms Licensing Board,2026-03-04 21:24:24.357516,2026-03-04 21:24:24.357516,f
+43,Ministry of Interior and National Administration,State Department for Internal Security and National Administration,National Computer Coordination Committee,2026-03-04 21:24:24.362184,2026-03-04 21:24:24.362184,f
+44,Ministry of Defence,Defence,Kenya Defence Forces,2026-03-04 21:24:24.367063,2026-03-04 21:24:24.367063,f
+45,Ministry of Defence,Defence,National Defence Council,2026-03-04 21:24:24.372472,2026-03-04 21:24:24.372472,f
+46,Ministry of Defence,Defence,National Defence University of Kenya,2026-03-04 21:24:24.377758,2026-03-04 21:24:24.377758,f
+47,Ministry of Defence,Defence,Defence Staff College,2026-03-04 21:24:24.382491,2026-03-04 21:24:24.382491,f
+48,Ministry of Defence,Defence,Kenya Ordnance Factory Corporation,2026-03-04 21:24:24.3873,2026-03-04 21:24:24.3873,f
+49,Ministry of Defence,Defence,Kenya Space Agency,2026-03-04 21:24:24.392062,2026-03-04 21:24:24.392062,f
+50,Ministry of Defence,Defence,Kenya Meat Commission,2026-03-04 21:24:24.396747,2026-03-04 21:24:24.396747,f
+51,Ministry of Defence,Defence,Kenya Shipyards Limited,2026-03-04 21:24:24.401992,2026-03-04 21:24:24.401992,f
+52,National Treasury,National Treasury,Central Bank of Kenya,2026-03-04 21:24:24.406562,2026-03-04 21:24:24.406562,f
+53,National Treasury,National Treasury,Kenya Revenue Authority,2026-03-04 21:24:24.411213,2026-03-04 21:24:24.411213,f
+54,National Treasury,National Treasury,Capital Markets Authority,2026-03-04 21:24:24.416258,2026-03-04 21:24:24.416258,f
+55,National Treasury,National Treasury,Insurance Regulatory Authority,2026-03-04 21:24:24.421795,2026-03-04 21:24:24.421795,f
+56,National Treasury,National Treasury,Competition Authority of Kenya,2026-03-04 21:24:24.426483,2026-03-04 21:24:24.426483,f
+57,National Treasury,National Treasury,Kenya Deposit Insurance Corporation,2026-03-04 21:24:24.431026,2026-03-04 21:24:24.431026,f
+58,National Treasury,National Treasury,Nairobi International Financial Centre,2026-03-04 21:24:24.435787,2026-03-04 21:24:24.435787,f
+59,National Treasury,National Treasury,Kenya Reinsurance Corporation,2026-03-04 21:24:24.440492,2026-03-04 21:24:24.440492,f
+60,National Treasury,National Treasury,Financial Reporting Centre,2026-03-04 21:24:24.445064,2026-03-04 21:24:24.445064,f
+61,National Treasury,State Department for Economic Planning,Kenya Vision 2030 Board,2026-03-04 21:24:24.449918,2026-03-04 21:24:24.449918,f
+62,National Treasury,State Department for Economic Planning,Kenya Institute for Public Policy Research and Analysis,2026-03-04 21:24:24.454896,2026-03-04 21:24:24.454896,f
+63,National Treasury,State Department for Economic Planning,Kenya National Bureau of Statistics,2026-03-04 21:24:24.459623,2026-03-04 21:24:24.459623,f
+64,Ministry of Roads and Transport,State Department for Roads,Kenya Roads Board,2026-03-04 21:24:24.464412,2026-03-04 21:24:24.464412,f
+65,Ministry of Roads and Transport,State Department for Roads,Kenya National Highways Authority,2026-03-04 21:24:24.470591,2026-03-04 21:24:24.470591,f
+66,Ministry of Roads and Transport,State Department for Roads,Kenya Urban Roads Authority,2026-03-04 21:24:24.475648,2026-03-04 21:24:24.475648,f
+67,Ministry of Roads and Transport,State Department for Roads,Kenya Rural Roads Authority,2026-03-04 21:24:24.480174,2026-03-04 21:24:24.480174,f
+68,Ministry of Roads and Transport,State Department for Transport,Kenya Railways Corporation,2026-03-04 21:24:24.484963,2026-03-04 21:24:24.484963,f
+69,Ministry of Roads and Transport,State Department for Transport,Kenya Ports Authority,2026-03-04 21:24:24.489605,2026-03-04 21:24:24.489605,f
+70,Ministry of Roads and Transport,State Department for Transport,National Transport and Safety Authority,2026-03-04 21:24:24.494231,2026-03-04 21:24:24.494231,f
+71,Ministry of Roads and Transport,State Department for Transport,Nairobi Metropolitan Area Transport Authority,2026-03-04 21:24:24.498868,2026-03-04 21:24:24.498868,f
+72,Ministry of Roads and Transport,State Department for Aviation,Kenya Airports Authority,2026-03-04 21:24:24.503379,2026-03-04 21:24:24.503379,f
+73,Ministry of Roads and Transport,State Department for Aviation,Kenya Civil Aviation Authority,2026-03-04 21:24:24.507925,2026-03-04 21:24:24.507925,f
+74,"Ministry of Information, Communications and Digital Economy",State Department for ICT and Digital Economy,Kenya ICT Authority,2026-03-04 21:24:24.512482,2026-03-04 21:24:24.512482,f
+75,"Ministry of Information, Communications and Digital Economy",State Department for ICT and Digital Economy,Konza Technopolis Development Authority,2026-03-04 21:24:24.518171,2026-03-04 21:24:24.518171,f
+76,"Ministry of Information, Communications and Digital Economy",State Department for ICT and Digital Economy,Office of the Data Protection Commissioner,2026-03-04 21:24:24.523117,2026-03-04 21:24:24.523117,f
+77,"Ministry of Lands, Public Works, Housing and Urban Development",State Department for Housing and Urban Development,National Housing Corporation,2026-03-04 21:24:24.52867,2026-03-04 21:24:24.52867,f
+78,"Ministry of Lands, Public Works, Housing and Urban Development",State Department for Housing and Urban Development,Affordable Housing Board,2026-03-04 21:24:24.534082,2026-03-04 21:24:24.534082,f
+79,"Ministry of Lands, Public Works, Housing and Urban Development",State Department for Public Works,National Construction Authority,2026-03-04 21:24:24.539222,2026-03-04 21:24:24.539222,f

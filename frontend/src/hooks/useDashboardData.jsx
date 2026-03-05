@@ -57,8 +57,7 @@ const useDashboardData = () => {
         ],
       };
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // No artificial delay - fetch immediately
 
       setDashboardData({
         ...fallbackData,

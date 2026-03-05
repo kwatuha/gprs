@@ -2901,11 +2901,10 @@ const PublicApprovalManagementPage = () => {
                         </Typography>
                         {photo.description && (
                           <Typography variant="caption" color="text.secondary" sx={{ 
-                            display: 'block',
+                            display: '-webkit-box',
                             mt: 0.5,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            display: '-webkit-box',
                             WebkitLineClamp: 2,
                             WebkitBoxOrient: 'vertical'
                           }} title={photo.description}>

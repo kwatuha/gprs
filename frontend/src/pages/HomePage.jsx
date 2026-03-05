@@ -75,91 +75,92 @@ const HomePage = () => {
 
   const [recentProjects, setRecentProjects] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
-  const [upcomingMilestones, setUpcomingMilestones] = useState([]);
-  const [loadingMilestones, setLoadingMilestones] = useState(false);
-  const [projectStatusData, setProjectStatusData] = useState([]);
-  const [loadingStatusData, setLoadingStatusData] = useState(false);
   const [projectCategoryData, setProjectCategoryData] = useState([]);
   const [loadingCategoryData, setLoadingCategoryData] = useState(false);
-  const [countyDistributionData, setCountyDistributionData] = useState([]);
-  const [loadingCountyData, setLoadingCountyData] = useState(false);
-  const [departmentDistributionData, setDepartmentDistributionData] = useState([]);
-  const [loadingDepartmentData, setLoadingDepartmentData] = useState(false);
 
-  // Fetch project statistics
+  // Fetch project statistics - optimized to use stats API first
   useEffect(() => {
     const fetchProjectStats = async () => {
       try {
         setLoadingProjects(true);
-        console.log('Fetching project stats...');
         
-        // Try to get stats from public API first (same as public dashboard)
+        // Try to get stats from public API first (much faster than fetching all projects)
         let statsOverview = null;
         try {
           statsOverview = await apiService.public.getStatsOverview();
-          console.log('Public stats overview:', statsOverview);
         } catch (err) {
-          console.warn('Could not fetch public stats, trying authenticated endpoint...', err.message);
+          // Silently fail and try authenticated endpoint
         }
         
-        // Get full project list from authenticated endpoint (or public as fallback)
+        // If we have stats, use them and only fetch recent projects
+        if (statsOverview && statsOverview.total_projects) {
+          const stats = {
+            total: statsOverview.total_projects || 0,
+            active: statsOverview.ongoing_projects || 0,
+            completed: statsOverview.completed_projects || 0,
+            pending: (statsOverview.not_started_projects || 0) + 
+                     (statsOverview.under_procurement_projects || 0) + 
+                     (statsOverview.stalled_projects || 0),
+          };
+          setProjectStats({ ...stats, loading: false });
+          
+          // Fetch only recent projects (limit to 10 for performance)
+          try {
+            const response = await apiService.projects.getProjects({ limit: 10, sortBy: 'updatedAt', sortOrder: 'desc' });
+            let projects = [];
+            if (Array.isArray(response)) {
+              projects = response;
+            } else if (response?.projects) {
+              projects = response.projects;
+            } else if (response?.data) {
+              projects = response.data;
+            }
+            
+            const recent = projects.slice(0, 5).map(p => ({
+              id: p.id,
+              projectName: p.projectName || p.project_name || 'Untitled Project',
+              status: p.status || 'Unknown',
+              createdAt: p.createdAt,
+              startDate: p.startDate || p.start_date,
+            }));
+            setRecentProjects(recent);
+            setAllProjects(projects); // Store limited set for milestones
+          } catch (err) {
+            setRecentProjects([]);
+            setAllProjects([]);
+          }
+          return;
+        }
+        
+        // Fallback: Get limited project list only if stats API fails
         let response;
         try {
-          // apiService.projects maps to the projects service; no nested .projects needed
-          response = await apiService.projects.getProjects();
+          response = await apiService.projects.getProjects({ limit: 50 }); // Limit to 50 instead of all
         } catch (authErr) {
-          console.warn('Authenticated endpoint failed, trying public endpoint...', authErr.message);
-          const publicData = await apiService.public.getProjects({ limit: 1000 });
-          response = publicData.projects || publicData;
+          try {
+            const publicData = await apiService.public.getProjects({ limit: 50 });
+            response = publicData.projects || publicData;
+          } catch (pubErr) {
+            throw authErr; // Use original error
+          }
         }
-        
-        console.log('API Response:', response);
-        console.log('Response type:', typeof response, 'Is array:', Array.isArray(response));
         
         // Handle different response formats
         let projects = [];
         if (Array.isArray(response)) {
           projects = response;
-        } else if (response && Array.isArray(response.projects)) {
+        } else if (response?.projects) {
           projects = response.projects;
-        } else if (response && response.data && Array.isArray(response.data)) {
+        } else if (response?.data) {
           projects = response.data;
-        } else if (response && typeof response === 'object') {
-          // Try to extract array from object
-          const keys = Object.keys(response);
-          if (keys.length > 0 && Array.isArray(response[keys[0]])) {
-            projects = response[keys[0]];
-          }
-        }
-        
-        console.log('Projects extracted:', projects.length, 'projects');
-        if (projects.length > 0) {
-          console.log('Sample project:', projects[0]);
-          console.log('Sample project status:', projects[0]?.status);
-          console.log('Sample project countyNames:', projects[0]?.countyNames);
-          console.log('Sample project categoryName:', projects[0]?.categoryName);
-          console.log('Sample project name fields:', {
-            projectName: projects[0]?.projectName,
-            project_name: projects[0]?.project_name,
-            name: projects[0]?.name,
-            title: projects[0]?.title
-          });
         }
         
         if (projects.length === 0) {
-          console.warn('⚠️ No projects returned from API. Full response:', response);
-          console.warn('Response type:', typeof response);
-          console.warn('Response keys:', response ? Object.keys(response) : 'null');
-          console.warn('Is error response?', response?.message || response?.error);
           setProjectStats({ total: 0, active: 0, completed: 0, pending: 0, loading: false });
           setAllProjects([]);
           setRecentProjects([]);
           return;
         }
-        
-        // Debug: Log status values
-        const statuses = projects.map(p => p?.status).filter(Boolean);
-        console.log('Unique statuses found:', [...new Set(statuses)]);
         
         // Helper function to normalize status
         const normalizeStatus = (status) => {
@@ -167,10 +168,9 @@ const HomePage = () => {
           return status.toLowerCase().trim();
         };
         
-        // Count projects by status category - improved matching
+        // Count projects by status category
         const activeProjects = projects.filter(p => {
           const status = normalizeStatus(p?.status);
-          // Match: ongoing, in progress, phase X ongoing (but not completed)
           return (status.includes('ongoing') && !status.includes('completed')) || 
                  status.includes('progress') || 
                  status === 'in progress' ||
@@ -179,7 +179,6 @@ const HomePage = () => {
         
         const completedProjects = projects.filter(p => {
           const status = normalizeStatus(p?.status);
-          // Match: completed, complete, phase X completed, final phase
           return status === 'completed' || 
                  status === 'complete' || 
                  (status.includes('completed') && !status.includes('ongoing')) ||
@@ -188,7 +187,6 @@ const HomePage = () => {
         
         const pendingProjects = projects.filter(p => {
           const status = normalizeStatus(p?.status);
-          // Match: initiated, pending, stalled, delayed, not started
           return status === 'initiated' || 
                  status === 'pending' || 
                  status === 'not started' ||
@@ -200,47 +198,19 @@ const HomePage = () => {
                  status.includes('mobilizing');
         });
         
-        // Use public stats if available, otherwise calculate from projects
-        let stats;
-        if (statsOverview && statsOverview.total_projects) {
-          // Use aggregated stats from public API (same as public dashboard - more reliable)
-          stats = {
-            total: statsOverview.total_projects || projects.length,
-            active: statsOverview.ongoing_projects || activeProjects.length,
-            completed: statsOverview.completed_projects || completedProjects.length,
-            pending: (statsOverview.not_started_projects || 0) + 
-                     (statsOverview.under_procurement_projects || 0) + 
-                     (statsOverview.stalled_projects || 0) || 
-                     pendingProjects.length,
-          };
-          console.log('✅ Using public stats overview (same as public dashboard):', stats);
-        } else {
-          // Calculate from project list
-          stats = {
-            total: projects.length,
-            active: activeProjects.length,
-            completed: completedProjects.length,
-            pending: pendingProjects.length,
-          };
-          console.log('📊 Calculated stats from project list:', stats);
-        }
-        
-        // Debug logging
-        console.log('Status matching results:', {
-          total: stats.total,
-          active: stats.active,
-          completed: stats.completed,
-          pending: stats.pending,
-          sampleStatuses: [...new Set(projects.map(p => p?.status).filter(Boolean))].slice(0, 10),
-          usingPublicStats: !!statsOverview,
-        });
+        const stats = {
+          total: projects.length,
+          active: activeProjects.length,
+          completed: completedProjects.length,
+          pending: pendingProjects.length,
+        };
         
         setProjectStats({ ...stats, loading: false });
         setAllProjects(projects);
         
-        // Get recent projects (last 5) - sort by updatedAt or createdAt
+        // Get recent projects (last 5)
         const recent = projects
-          .filter(p => p?.id) // Only projects with IDs
+          .filter(p => p?.id)
           .sort((a, b) => {
             const dateA = new Date(a?.updatedAt || a?.createdAt || a?.startDate || a?.start_date || 0);
             const dateB = new Date(b?.updatedAt || b?.createdAt || b?.startDate || b?.start_date || 0);
@@ -255,30 +225,12 @@ const HomePage = () => {
             startDate: p.startDate || p.start_date,
           }));
         
-        console.log('Recent projects:', recent.length);
         setRecentProjects(recent);
       } catch (error) {
-        console.error('❌ Error fetching project stats:', error);
-        console.error('Error details:', {
-          message: error.message,
-          response: error.response?.data,
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          url: error.config?.url,
-          method: error.config?.method
-        });
-        
-        // If it's a 401, the user might not be authenticated
-        if (error.response?.status === 401) {
-          console.warn('⚠️ Authentication required - user may need to login');
-        } else if (error.response?.status === 500) {
-          console.error('⚠️ Server error - check API logs');
-        } else if (!error.response) {
-          console.error('⚠️ Network error - API might be unreachable');
-        }
-        
+        console.error('Error fetching project stats:', error);
         setProjectStats({ total: 0, active: 0, completed: 0, pending: 0, loading: false });
         setRecentProjects([]);
+        setAllProjects([]);
       } finally {
         setLoadingProjects(false);
       }
@@ -287,130 +239,14 @@ const HomePage = () => {
     fetchProjectStats();
   }, []);
 
-  // Fetch upcoming milestones
-  useEffect(() => {
-    const fetchUpcomingMilestones = async () => {
-      try {
-        setLoadingMilestones(true);
-        console.log('Fetching upcoming milestones...');
-        const projectsArray = Array.isArray(allProjects) ? allProjects : [];
-        console.log('Projects for milestones (from cache):', projectsArray.length);
-        
-        if (projectsArray.length === 0) {
-          setUpcomingMilestones([]);
-          return;
-        }
-        
-        const allMilestones = [];
-        const projectsToFetch = projectsArray
-          .filter(p => p?.id)
-          .slice(0, 5); // Reduced from 20 to 5 to improve performance
-
-        // Fetch milestones for each project in parallel (faster than sequential awaits)
-        // Use Promise.allSettled to prevent one failure from blocking others
-        const milestoneResults = await Promise.allSettled(
-          projectsToFetch.map(async (project) => {
-            try {
-              const milestones = await apiService.milestones.getMilestonesForProject(project.id) || [];
-              if (Array.isArray(milestones) && milestones.length > 0) {
-                return milestones.map(m => ({
-                  ...m,
-                  projectName: project.projectName || 'Unknown Project',
-                  projectId: project.id,
-                }));
-              }
-              return [];
-            } catch (err) {
-              // Skip projects without milestones - this is normal
-              console.debug('No milestones for project:', project?.id);
-              return [];
-            }
-          }),
-        );
-        
-        // Extract successful results
-        milestoneResults.forEach(result => {
-          if (result.status === 'fulfilled' && Array.isArray(result.value)) {
-            allMilestones.push(...result.value);
-          }
-        });
-        
-        console.log('Total milestones found:', allMilestones.length);
-        
-        // Filter milestones due in next 14 days
-        const now = new Date();
-        const twoWeeksFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-        
-        const upcoming = allMilestones
-          .filter(m => {
-            if (!m?.dueDate) return false;
-            try {
-              const dueDate = new Date(m.dueDate);
-              if (isNaN(dueDate.getTime())) return false;
-              const status = (m.status || '').toLowerCase();
-              return dueDate >= now && dueDate <= twoWeeksFromNow && status !== 'completed';
-            } catch {
-              return false;
-            }
-          })
-          .sort((a, b) => {
-            try {
-              return new Date(a.dueDate) - new Date(b.dueDate);
-            } catch {
-              return 0;
-            }
-          })
-          .slice(0, 5);
-        
-        console.log('Upcoming milestones:', upcoming.length);
-        setUpcomingMilestones(upcoming);
-      } catch (error) {
-        console.error('Error fetching upcoming milestones:', error);
-        setUpcomingMilestones([]);
-      } finally {
-        setLoadingMilestones(false);
-      }
-    };
-
-    // Only fetch if we have cached projects loaded
-    if (Array.isArray(allProjects) && allProjects.length > 0) {
-      fetchUpcomingMilestones();
-    }
-  }, [allProjects]);
-
-
-  // Fetch project status distribution - lazy load after initial render
-  useEffect(() => {
-    const fetchStatusDistribution = async () => {
-      try {
-        setLoadingStatusData(true);
-        console.log('Fetching project status distribution...');
-        // analytics is a top-level service on apiService
-        const statusCounts = await apiService.analytics.getProjectStatusCounts() || [];
-        console.log('Status counts fetched:', statusCounts);
-        setProjectStatusData(Array.isArray(statusCounts) ? statusCounts : []);
-      } catch (error) {
-        console.error('Error fetching status distribution:', error);
-        setProjectStatusData([]);
-      } finally {
-        setLoadingStatusData(false);
-      }
-    };
-
-    // Delay this fetch to prioritize critical data
-    const timeoutId = setTimeout(fetchStatusDistribution, 500);
-    return () => clearTimeout(timeoutId);
-  }, []);
 
   // Fetch project category distribution - lazy load after initial render
   useEffect(() => {
     const fetchCategoryDistribution = async () => {
       try {
         setLoadingCategoryData(true);
-        console.log('Fetching project category distribution...');
         const categoryData = await apiService.reports.getProjectCategorySummary() || [];
         const categoryArray = Array.isArray(categoryData) ? categoryData : [];
-        console.log('Category data fetched:', categoryArray.length, 'categories');
         
         // Transform to chart-friendly format
         const formatted = categoryArray
@@ -421,8 +257,6 @@ const HomePage = () => {
             name: item.name || 'Uncategorized',
             count: item.value || 0,
           }));
-        
-        console.log('Formatted category data:', formatted);
         setProjectCategoryData(formatted);
       } catch (error) {
         console.error('❌ Error fetching category distribution:', error);
@@ -433,94 +267,11 @@ const HomePage = () => {
       }
     };
 
-    // Delay this fetch to prioritize critical data
-    const timeoutId = setTimeout(fetchCategoryDistribution, 1000);
+    // Delay this fetch slightly to prioritize critical data
+    const timeoutId = setTimeout(fetchCategoryDistribution, 400);
     return () => clearTimeout(timeoutId);
   }, []);
 
-  // Fetch sub-county distribution from public API - lazy load after initial render
-  useEffect(() => {
-    const fetchSubCountyDistribution = async () => {
-      try {
-        setLoadingCountyData(true);
-        console.log('Fetching sub-county distribution from public API...');
-        const subCountyStats = await apiService.public.getSubCountyStats() || [];
-        const statsArray = Array.isArray(subCountyStats) ? subCountyStats : [];
-        console.log('Sub-county stats fetched:', statsArray.length, 'sub-counties');
-        
-        if (statsArray.length === 0) {
-          setCountyDistributionData([]);
-          return;
-        }
-        
-        // Transform to chart-friendly format
-        const formatted = statsArray
-          .map(item => ({
-            name: item.subcounty_name || 'Unassigned',
-            count: item.project_count || 0,
-          }))
-          .filter(item => item.count > 0) // Only show sub-counties with projects
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 10); // Top 10 sub-counties
-        
-        console.log('Sub-county distribution formatted:', formatted.length, 'sub-counties');
-        console.log('Sample sub-county data:', formatted.slice(0, 3));
-        setCountyDistributionData(formatted);
-      } catch (error) {
-        console.error('❌ Error fetching sub-county distribution:', error);
-        console.error('Error details:', error.response?.data || error.message);
-        setCountyDistributionData([]);
-      } finally {
-        setLoadingCountyData(false);
-      }
-    };
-
-    // Delay this fetch to prioritize critical data
-    const timeoutId = setTimeout(fetchSubCountyDistribution, 1500);
-    return () => clearTimeout(timeoutId);
-  }, []);
-
-  // Fetch department distribution from public API
-  useEffect(() => {
-    const fetchDepartmentDistribution = async () => {
-      try {
-        setLoadingDepartmentData(true);
-        console.log('Fetching department distribution from public API...');
-        const departmentStats = await apiService.public.getDepartmentStats() || [];
-        const statsArray = Array.isArray(departmentStats) ? departmentStats : [];
-        console.log('Department stats fetched:', statsArray.length, 'departments');
-        
-        if (statsArray.length === 0) {
-          setDepartmentDistributionData([]);
-          return;
-        }
-        
-        // Transform to chart-friendly format - use alias when available, fallback to full name
-        const formatted = statsArray
-          .map(item => ({
-            name: item.departmentAlias || item.department_name || 'Unassigned',
-            count: item.total_projects || 0,
-          }))
-          .filter(item => item.count > 0) // Only show departments with projects
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 10); // Top 10 departments
-        
-        console.log('Department distribution formatted:', formatted.length, 'departments');
-        console.log('Sample department data:', formatted.slice(0, 3));
-        setDepartmentDistributionData(formatted);
-      } catch (error) {
-        console.error('❌ Error fetching department distribution:', error);
-        console.error('Error details:', error.response?.data || error.message);
-        setDepartmentDistributionData([]);
-      } finally {
-        setLoadingDepartmentData(false);
-      }
-    };
-
-    // Delay this fetch to prioritize critical data
-    const timeoutId = setTimeout(fetchDepartmentDistribution, 2000);
-    return () => clearTimeout(timeoutId);
-  }, []);
 
   const quickAccessItems = [
     { label: 'Projects', route: ROUTES.PROJECTS, icon: <ProjectsIcon />, color: '#1976d2' },
@@ -1036,93 +787,6 @@ const HomePage = () => {
           </Grid>
         </Grid>
 
-        {/* New Sections Row */}
-        <Grid container spacing={2} sx={{ mt: 1.5 }}>
-          {/* Upcoming Milestones */}
-          <Grid item xs={12} md={6}>
-            <Card elevation={2} sx={{ borderRadius: 2, height: '100%' }}>
-              <CardContent sx={{ p: 1.25 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                  <Box display="flex" alignItems="center" gap={0.75}>
-                    <EventIcon sx={{ color: '#ff9800', fontSize: 20 }} />
-                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', fontSize: '0.875rem' }}>
-                      Upcoming Milestones
-                    </Typography>
-                  </Box>
-                  <Chip 
-                    label={upcomingMilestones.length} 
-                    size="small" 
-                    sx={{ bgcolor: '#ff980015', color: '#ff9800', fontWeight: 'bold' }}
-                  />
-                </Box>
-                {loadingMilestones ? (
-                  <Box display="flex" justifyContent="center" p={3}>
-                    <CircularProgress size={24} />
-                  </Box>
-                ) : upcomingMilestones.length > 0 ? (
-                  <List sx={{ p: 0 }}>
-                    {upcomingMilestones.map((milestone, index) => {
-                      const dueDate = new Date(milestone.dueDate);
-                      const daysUntil = Math.ceil((dueDate - new Date()) / (1000 * 60 * 60 * 24));
-                      const isUrgent = daysUntil <= 3;
-                      
-                      return (
-                        <React.Fragment key={milestone.milestoneId || index}>
-                          <ListItem
-                            button
-                            onClick={() => navigate(`${ROUTES.PROJECTS}/${milestone.projectId}`)}
-                            sx={{
-                              borderRadius: 1,
-                              mb: 0.5,
-                              bgcolor: isUrgent ? '#fff3e015' : 'transparent',
-                              '&:hover': {
-                                bgcolor: isUrgent ? '#fff3e025' : 'action.hover',
-                              },
-                            }}
-                          >
-                            <ListItemIcon>
-                              <ScheduleIcon sx={{ color: isUrgent ? '#f44336' : '#ff9800', fontSize: 20 }} />
-                            </ListItemIcon>
-                            <ListItemText
-                              primary={
-                                <Box display="flex" justifyContent="space-between" alignItems="center">
-                                  <Typography variant="body2" sx={{ fontWeight: 600, flex: 1 }}>
-                                    {milestone.milestoneName || 'Untitled Milestone'}
-                                  </Typography>
-                                  <Chip
-                                    label={daysUntil === 0 ? 'Today' : `${daysUntil}d left`}
-                                    size="small"
-                                    sx={{
-                                      bgcolor: isUrgent ? '#f4433615' : '#ff980015',
-                                      color: isUrgent ? '#f44336' : '#ff9800',
-                                      fontSize: '0.7rem',
-                                      height: 20,
-                                    }}
-                                  />
-                                </Box>
-                              }
-                              secondary={
-                                <Typography variant="caption" color="text.secondary">
-                                  {milestone.projectName} • {dueDate.toLocaleDateString()}
-                                </Typography>
-                              }
-                            />
-                          </ListItem>
-                          {index < upcomingMilestones.length - 1 && <Divider />}
-                        </React.Fragment>
-                      );
-                    })}
-                  </List>
-                ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
-                    No upcoming milestones in the next 14 days
-                  </Typography>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-
-        </Grid>
 
         {/* Project Distribution Charts */}
         <Grid container spacing={2} sx={{ mt: 1.5 }}>
@@ -1159,190 +823,8 @@ const HomePage = () => {
               </CardContent>
             </Card>
           </Grid>
-
-          {/* Projects by Sub-county */}
-          <Grid item xs={12} md={4}>
-            <Card elevation={1} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
-              <CardContent sx={{ p: 2 }}>
-                <Box display="flex" alignItems="center" gap={1} mb={1.5}>
-                  <Box sx={{ p: 0.75, borderRadius: 1, bgcolor: '#4caf5015', display: 'flex', alignItems: 'center' }}>
-                    <MapIcon sx={{ color: '#4caf50', fontSize: 20 }} />
-                  </Box>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1rem' }}>
-                    Projects by Sub-county
-                  </Typography>
-                </Box>
-                {loadingCountyData ? (
-                  <Box display="flex" justifyContent="center" p={3}>
-                    <CircularProgress size={24} />
-                  </Box>
-                ) : countyDistributionData.length > 0 ? (
-                  <BarChart
-                    title=""
-                    data={countyDistributionData}
-                    xDataKey="name"
-                    yDataKey="count"
-                    yAxisLabel="Number of Projects"
-                    horizontal={true}
-                  />
-                ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
-                    No sub-county data available
-                  </Typography>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Projects by Department */}
-          <Grid item xs={12} md={4}>
-            <Card elevation={1} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', height: '100%' }}>
-              <CardContent sx={{ p: 2 }}>
-                <Box display="flex" alignItems="center" gap={1} mb={1.5}>
-                  <Box sx={{ p: 0.75, borderRadius: 1, bgcolor: '#ff980015', display: 'flex', alignItems: 'center' }}>
-                    <BusinessIcon sx={{ color: '#ff9800', fontSize: 20 }} />
-                  </Box>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1rem' }}>
-                    Projects by Department
-                  </Typography>
-                </Box>
-                {loadingDepartmentData ? (
-                  <Box display="flex" justifyContent="center" p={3}>
-                    <CircularProgress size={24} />
-                  </Box>
-                ) : departmentDistributionData.length > 0 ? (
-                  <BarChart
-                    title=""
-                    data={departmentDistributionData}
-                    xDataKey="name"
-                    yDataKey="count"
-                    yAxisLabel="Number of Projects"
-                    horizontal={true}
-                  />
-                ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
-                    No department data available
-                  </Typography>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Project Status Distribution */}
-          <Grid item xs={12}>
-            <Card elevation={1} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-              <CardContent sx={{ p: 2 }}>
-                <Box display="flex" alignItems="center" gap={1} mb={1.5}>
-                  <Box sx={{ p: 0.75, borderRadius: 1, bgcolor: '#9c27b015', display: 'flex', alignItems: 'center' }}>
-                    <PieChartIcon sx={{ color: '#9c27b0', fontSize: 20 }} />
-                  </Box>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1rem' }}>
-                    Project Status Distribution
-                  </Typography>
-                </Box>
-                {loadingStatusData ? (
-                  <Box display="flex" justifyContent="center" p={2}>
-                    <CircularProgress size={24} />
-                  </Box>
-                ) : projectStatusData.length > 0 ? (
-                  <Grid container spacing={2}>
-                    {projectStatusData.map((status, index) => {
-                      const total = projectStatusData.reduce((sum, s) => sum + s.count, 0);
-                      const percentage = total > 0 ? ((status.count / total) * 100).toFixed(1) : 0;
-                      const getStatusColor = (statusName) => {
-                        const name = (statusName || '').toLowerCase();
-                        if (name.includes('ongoing') || name.includes('progress')) return '#4caf50';
-                        if (name.includes('completed')) return '#9c27b0';
-                        if (name.includes('pending') || name.includes('initiated')) return '#ff9800';
-                        if (name.includes('stalled') || name.includes('delayed')) return '#f44336';
-                        return '#1976d2';
-                      };
-                      
-                      return (
-                        <Grid item xs={6} sm={4} md={3} key={index}>
-                          <Box
-                            sx={{
-                              p: 1.5,
-                              borderRadius: 2,
-                              bgcolor: `${getStatusColor(status.status)}10`,
-                              border: `1px solid ${getStatusColor(status.status)}30`,
-                            }}
-                          >
-                            <Box display="flex" alignItems="center" gap={1} mb={1}>
-                              <Box
-                                sx={{
-                                  width: 12,
-                                  height: 12,
-                                  borderRadius: '50%',
-                                  bgcolor: getStatusColor(status.status),
-                                }}
-                              />
-                              <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                                {status.status || 'Unknown'}
-                              </Typography>
-                            </Box>
-                            <Typography variant="h5" sx={{ fontWeight: 'bold', color: getStatusColor(status.status) }}>
-                              {status.count}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {percentage}% of total
-                            </Typography>
-                          </Box>
-                        </Grid>
-                      );
-                    })}
-                  </Grid>
-                ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
-                    No status data available
-                  </Typography>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
         </Grid>
 
-        {/* System Overview Section */}
-        <Grid container spacing={2} sx={{ mt: 1.5 }}>
-          <Grid item xs={12} md={4}>
-            <Card elevation={2} sx={{ borderRadius: 2 }}>
-              <CardContent sx={{ p: 2 }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1, fontSize: '0.875rem' }}>
-                  System Overview
-                </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={12}>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontSize: '0.875rem' }}>
-                        Budget Utilization
-                      </Typography>
-                      <Box display="flex" alignItems="center" gap={2}>
-                        <LinearProgress
-                          variant="determinate"
-                          value={actualMetrics.budgetUtilization || 0}
-                          sx={{ flexGrow: 1, height: 8, borderRadius: 1 }}
-                        />
-                        <Typography variant="body2" sx={{ fontWeight: 'bold', minWidth: 45, fontSize: '0.875rem' }}>
-                          {actualMetrics.budgetUtilization || 0}%
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontSize: '0.875rem' }}>
-                        Team Members
-                      </Typography>
-                      <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                        {actualMetrics.teamMembers || 0}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
       </Container>
     </Box>
   );

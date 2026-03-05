@@ -66,11 +66,11 @@ async function getPrivilegesByRole(roleId) {
 // @desc    Register a new user (requires admin approval)
 // @access  Public
 router.post('/register', async (req, res) => {
-    const { username, email, password, firstName, lastName, roleName, idNumber, employeeNumber, consentGiven } = req.body;
+    const { username, email, password, firstName, lastName, roleName, idNumber, employeeNumber, consentGiven, ministry, state_department, agency_id, phoneNumber } = req.body;
 
     // Validate required fields
-    if (!username || !email || !password || !firstName || !lastName || !idNumber || !employeeNumber) {
-        return res.status(400).json({ error: 'Please enter all required fields: username, email, password, first name, last name, ID number, and employee number.' });
+    if (!username || !email || !password || !firstName || !lastName || !idNumber || !employeeNumber || !ministry || !state_department || !agency_id) {
+        return res.status(400).json({ error: 'Please enter all required fields: username, email, password, first name, last name, ID number, employee number, ministry, state department, and agency.' });
     }
 
     // Validate email format
@@ -149,18 +149,78 @@ router.post('/register', async (req, res) => {
         let insertQuery;
         let insertParams;
         if (DB_TYPE === 'postgresql') {
-            insertQuery = `
-                INSERT INTO users (username, email, passwordhash, firstname, lastname, roleid, id_number, employee_number, createdat, updatedat, isactive, voided)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false)
-                RETURNING userid
-            `;
-            insertParams = [username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber];
+            // Check if ministry, state_department, agency_id, and phone_number columns exist
+            const columnCheck = await pool.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'users' 
+                AND column_name IN ('ministry', 'state_department', 'agency_id', 'phone_number')
+            `);
+            const hasMinistry = columnCheck.rows.some(row => row.column_name === 'ministry');
+            const hasStateDepartment = columnCheck.rows.some(row => row.column_name === 'state_department');
+            const hasAgencyId = columnCheck.rows.some(row => row.column_name === 'agency_id');
+            const hasPhoneNumber = columnCheck.rows.some(row => row.column_name === 'phone_number');
+            
+            if (hasMinistry && hasStateDepartment && hasAgencyId && hasPhoneNumber) {
+                insertQuery = `
+                    INSERT INTO users (username, email, phone_number, passwordhash, firstname, lastname, roleid, id_number, employee_number, ministry, state_department, agency_id, createdat, updatedat, isactive, voided)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false)
+                    RETURNING userid
+                `;
+                insertParams = [username, email, phoneNumber || null, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, state_department, agency_id];
+            } else if (hasMinistry && hasStateDepartment && hasAgencyId) {
+                insertQuery = `
+                    INSERT INTO users (username, email, passwordhash, firstname, lastname, roleid, id_number, employee_number, ministry, state_department, agency_id, createdat, updatedat, isactive, voided)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false)
+                    RETURNING userid
+                `;
+                insertParams = [username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, state_department, agency_id];
+            } else if (hasMinistry && hasAgencyId && hasPhoneNumber) {
+                insertQuery = `
+                    INSERT INTO users (username, email, phone_number, passwordhash, firstname, lastname, roleid, id_number, employee_number, ministry, agency_id, createdat, updatedat, isactive, voided)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false)
+                    RETURNING userid
+                `;
+                insertParams = [username, email, phoneNumber || null, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, agency_id];
+            } else {
+                insertQuery = `
+                    INSERT INTO users (username, email, passwordhash, firstname, lastname, roleid, id_number, employee_number, createdat, updatedat, isactive, voided)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false)
+                    RETURNING userid
+                `;
+                insertParams = [username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber];
+            }
         } else {
-            insertQuery = `
-                INSERT INTO users (username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, createdAt, updatedAt, isActive, voided)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), 0, 0)
-            `;
-            insertParams = [username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber];
+            // MySQL - check if columns exist
+            const columnCheck = await pool.query(`
+                SELECT COLUMN_NAME 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_NAME = 'users' 
+                AND COLUMN_NAME IN ('ministry', 'state_department', 'agency_id')
+            `);
+            const hasMinistry = Array.isArray(columnCheck) ? columnCheck.some(row => row.COLUMN_NAME === 'ministry') : false;
+            const hasStateDepartment = Array.isArray(columnCheck) ? columnCheck.some(row => row.COLUMN_NAME === 'state_department') : false;
+            const hasAgencyId = Array.isArray(columnCheck) ? columnCheck.some(row => row.COLUMN_NAME === 'agency_id') : false;
+            
+            if (hasMinistry && hasStateDepartment && hasAgencyId) {
+                insertQuery = `
+                    INSERT INTO users (username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, state_department, agency_id, createdAt, updatedAt, isActive, voided)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), 0, 0)
+                `;
+                insertParams = [username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, state_department, agency_id];
+            } else if (hasMinistry && hasAgencyId) {
+                insertQuery = `
+                    INSERT INTO users (username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, agency_id, createdAt, updatedAt, isActive, voided)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), 0, 0)
+                `;
+                insertParams = [username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, agency_id];
+            } else {
+                insertQuery = `
+                    INSERT INTO users (username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, createdAt, updatedAt, isActive, voided)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), 0, 0)
+                `;
+                insertParams = [username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber];
+            }
         }
         
         const insertResult = await pool.query(insertQuery, insertParams);

@@ -4,11 +4,12 @@ import {
   DialogContent, DialogActions, Paper, CircularProgress, IconButton,
   Select, MenuItem, FormControl, InputLabel, Snackbar, Alert, Stack, useTheme,
   OutlinedInput, Chip, ListSubheader, Checkbox, ListItemText, Avatar,
-  DialogContentText, InputAdornment, Grid,
+  DialogContentText, InputAdornment, Grid, Autocomplete,
 } from '@mui/material';
 import { DataGrid } from "@mui/x-data-grid";
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, PersonAdd as PersonAddIcon, Settings as SettingsIcon, Lock as LockIcon, LockReset as LockResetIcon, Block as BlockIcon, CheckCircle as CheckCircleIcon, Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
 import apiService from '../api/userService';
+import apiServiceMain from '../api';
 import { useAuth } from '../context/AuthContext.jsx';
 import { tokens } from "./dashboard/theme";
 
@@ -51,6 +52,7 @@ function UserManagementPage() {
   const [userFormData, setUserFormData] = useState({
     username: '',
     email: '',
+    phoneNumber: '',
     password: '',
     confirmPassword: '',
     firstName: '',
@@ -58,8 +60,16 @@ function UserManagementPage() {
     idNumber: '',
     employeeNumber: '',
     role: '',
+    ministry: '',
+    stateDepartment: '',
+    agencyId: '',
   });
   const [userFormErrors, setUserFormErrors] = useState({});
+  const [agencies, setAgencies] = useState([]);
+  const [filteredAgencies, setFilteredAgencies] = useState([]);
+  const [filteredStateDepartments, setFilteredStateDepartments] = useState([]);
+  const [ministries, setMinistries] = useState([]);
+  const [loadingAgencies, setLoadingAgencies] = useState(false);
 
   // Delete Confirmation Dialog States
   const [openDeleteConfirmDialog, setOpenDeleteConfirmDialog] = useState(false);
@@ -190,11 +200,90 @@ function UserManagementPage() {
   }, [hasPrivilege]);
 
 
+  // Fetch agencies
+  const fetchAgencies = useCallback(async () => {
+    setLoadingAgencies(true);
+    try {
+      const response = await apiServiceMain.agencies.getAllAgencies();
+      const agenciesList = Array.isArray(response) ? response : [];
+      setAgencies(agenciesList);
+      
+      // Extract unique ministries
+      const uniqueMinistries = [...new Set(agenciesList.map(agency => agency.ministry).filter(Boolean))].sort();
+      setMinistries(uniqueMinistries);
+    } catch (err) {
+      console.error('Error fetching agencies:', err);
+    } finally {
+      setLoadingAgencies(false);
+    }
+  }, []);
+
+  // Filter state departments when ministry changes
+  useEffect(() => {
+    if (userFormData.ministry) {
+      const filtered = agencies
+        .filter(agency => 
+          agency.ministry && agency.ministry.toLowerCase() === userFormData.ministry.toLowerCase()
+        )
+        .map(agency => agency.state_department || agency.stateDepartment)
+        .filter(Boolean);
+      const uniqueStateDepartments = [...new Set(filtered)].sort();
+      setFilteredStateDepartments(uniqueStateDepartments);
+      
+      // Clear state department and agency if current selection doesn't match the ministry
+      if (userFormData.stateDepartment) {
+        const selectedAgency = agencies.find(a => 
+          (a.state_department || a.stateDepartment)?.toLowerCase() === userFormData.stateDepartment.toLowerCase() &&
+          a.ministry?.toLowerCase() === userFormData.ministry.toLowerCase()
+        );
+        if (!selectedAgency) {
+          setUserFormData(prev => ({ ...prev, stateDepartment: '', agencyId: '' }));
+        }
+      }
+      if (userFormData.agencyId) {
+        const selectedAgency = agencies.find(a => (a.id === userFormData.agencyId || a.agencyId === userFormData.agencyId));
+        if (!selectedAgency || selectedAgency.ministry?.toLowerCase() !== userFormData.ministry.toLowerCase()) {
+          setUserFormData(prev => ({ ...prev, agencyId: '' }));
+        }
+      }
+    } else {
+      setFilteredStateDepartments([]);
+      setUserFormData(prev => ({ ...prev, stateDepartment: '', agencyId: '' }));
+    }
+  }, [userFormData.ministry, agencies]);
+
+  // Filter agencies when state department changes
+  useEffect(() => {
+    if (userFormData.ministry && userFormData.stateDepartment) {
+      const filtered = agencies.filter(agency => 
+        agency.ministry && agency.ministry.toLowerCase() === userFormData.ministry.toLowerCase() &&
+        (agency.state_department || agency.stateDepartment)?.toLowerCase() === userFormData.stateDepartment.toLowerCase()
+      );
+      setFilteredAgencies(filtered);
+      
+      // Clear agency if current selection doesn't match the state department
+      if (userFormData.agencyId) {
+        const selectedAgency = agencies.find(a => (a.id === userFormData.agencyId || a.agencyId === userFormData.agencyId));
+        if (!selectedAgency || 
+            selectedAgency.ministry?.toLowerCase() !== userFormData.ministry.toLowerCase() ||
+            (selectedAgency.state_department || selectedAgency.stateDepartment)?.toLowerCase() !== userFormData.stateDepartment.toLowerCase()) {
+          setUserFormData(prev => ({ ...prev, agencyId: '' }));
+        }
+      }
+    } else {
+      setFilteredAgencies([]);
+      if (!userFormData.stateDepartment) {
+        setUserFormData(prev => ({ ...prev, agencyId: '' }));
+      }
+    }
+  }, [userFormData.ministry, userFormData.stateDepartment, agencies]);
+
   useEffect(() => {
     fetchUsers();
     fetchRoles();
     fetchPrivileges();
-  }, [fetchUsers, fetchRoles, fetchPrivileges]);
+    fetchAgencies();
+  }, [fetchUsers, fetchRoles, fetchPrivileges, fetchAgencies]);
 
 
   // --- User Management Handlers ---
@@ -205,9 +294,12 @@ function UserManagementPage() {
     }
     setCurrentUserToEdit(null);
     setUserFormData({
-      username: '', email: '', password: '', confirmPassword: '', firstName: '', lastName: '',
+      username: '', email: '', phoneNumber: '', password: '', confirmPassword: '', firstName: '', lastName: '',
       idNumber: '', employeeNumber: '',
       role: roles.length > 0 ? roles[0].roleName : '',
+      ministry: '',
+      stateDepartment: '',
+      agencyId: '',
     });
     setUserFormErrors({});
     setOpenUserDialog(true);
@@ -222,6 +314,7 @@ function UserManagementPage() {
     setUserFormData({
       username: userItem.username || '',
       email: userItem.email || '',
+      phoneNumber: userItem.phoneNumber || userItem.phone || '',
       password: '',
       confirmPassword: '',
       firstName: userItem.firstName || '',
@@ -229,6 +322,9 @@ function UserManagementPage() {
       idNumber: userItem.idNumber || '',
       employeeNumber: userItem.employeeNumber || '',
       role: userItem.role || '',
+      ministry: userItem.ministry || '',
+      stateDepartment: userItem.stateDepartment || userItem.state_department || '',
+      agencyId: userItem.agencyId || userItem.agency_id || '',
     });
     setUserFormErrors({});
     setOpenUserDialog(true);
@@ -286,12 +382,16 @@ function UserManagementPage() {
       const selectedRole = roles.find(role => role.roleName === userFormData.role);
       const dataToSend = {
         ...userFormData,
-        roleId: selectedRole ? selectedRole.roleId : null
+        roleId: selectedRole ? selectedRole.roleId : null,
+        agency_id: userFormData.agencyId || null,
+        state_department: userFormData.stateDepartment || null
       };
       
       // Remove fields that backend doesn't expect
       delete dataToSend.role;
       delete dataToSend.confirmPassword;
+      delete dataToSend.agencyId;
+      delete dataToSend.stateDepartment;
 
       if (currentUserToEdit) {
         if (!hasPrivilege('user.update')) {
@@ -797,6 +897,9 @@ function UserManagementPage() {
         `${user.firstName || ''} ${user.lastName || ''}`.trim(), // Full name
         user.isActive ? 'active' : 'disabled',
         user.isActive ? 'enabled' : 'disabled',
+        user.ministry || '',
+        user.stateDepartment || user.state_department || '',
+        user.agencyName || '',
       ];
 
       return searchableFields.some(field => 
@@ -825,6 +928,12 @@ function UserManagementPage() {
       headerName: "Email",
       flex: 1.5,
       minWidth: 180,
+    },
+    {
+      field: "phoneNumber",
+      headerName: "Phone Number",
+      flex: 1,
+      minWidth: 140,
     },
     {
       field: "fullName",
@@ -893,6 +1002,24 @@ function UserManagementPage() {
           </Box>
         );
       },
+    },
+    {
+      field: "ministry",
+      headerName: "Ministry",
+      flex: 1,
+      minWidth: 150,
+    },
+    {
+      field: "stateDepartment",
+      headerName: "State Department",
+      flex: 1,
+      minWidth: 150,
+    },
+    {
+      field: "agencyName",
+      headerName: "Agency",
+      flex: 1,
+      minWidth: 150,
     },
     {
       field: "isActive",
@@ -1407,31 +1534,267 @@ function UserManagementPage() {
 
       {/* Create/Edit User Dialog */}
       <Dialog open={openUserDialog} onClose={handleCloseUserDialog} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ backgroundColor: colors.blueAccent[700], color: 'white' }}>
+        <DialogTitle sx={{ backgroundColor: colors.blueAccent[700], color: 'white', fontWeight: 700, fontSize: '1.25rem' }}>
           {currentUserToEdit ? 'Edit User' : 'Add New User'}
         </DialogTitle>
-        <DialogContent dividers sx={{ backgroundColor: colors.primary[400] }}>
-          <TextField autoFocus margin="dense" name="username" label="Username" type="text" fullWidth variant="outlined" value={userFormData.username} onChange={handleUserFormChange} error={!!userFormErrors.username} helperText={userFormErrors.username} disabled={!!currentUserToEdit} sx={{ mb: 2 }} />
-          <TextField margin="dense" name="email" label="Email" type="email" fullWidth variant="outlined" value={userFormData.email} onChange={handleUserFormChange} error={!!userFormErrors.email} helperText={userFormErrors.email} disabled={!!currentUserToEdit} sx={{ mb: 2 }} />
-          <TextField margin="dense" name="firstName" label="First Name" type="text" fullWidth variant="outlined" value={userFormData.firstName} onChange={handleUserFormChange} error={!!userFormErrors.firstName} helperText={userFormErrors.firstName} disabled={!!currentUserToEdit} sx={{ mb: 2 }} />
-          <TextField margin="dense" name="lastName" label="Last Name" type="text" fullWidth variant="outlined" value={userFormData.lastName} onChange={handleUserFormChange} error={!!userFormErrors.lastName} helperText={userFormErrors.lastName} disabled={!!currentUserToEdit} sx={{ mb: 2 }} />
-          <TextField margin="dense" name="idNumber" label="ID Number" type="text" fullWidth variant="outlined" value={userFormData.idNumber} onChange={handleUserFormChange} error={!!userFormErrors.idNumber} helperText={userFormErrors.idNumber || 'National ID number'} sx={{ mb: 2 }} />
-          <TextField margin="dense" name="employeeNumber" label="Employee Number" type="text" fullWidth variant="outlined" value={userFormData.employeeNumber} onChange={handleUserFormChange} error={!!userFormErrors.employeeNumber} helperText={userFormErrors.employeeNumber || 'Employee number'} sx={{ mb: 2 }} />
+        <DialogContent 
+          dividers 
+          sx={{ 
+            backgroundColor: theme.palette.mode === 'dark' ? colors.primary[400] : '#f9fafb',
+            '& .MuiFormLabel-root': {
+              color: theme.palette.mode === 'dark' ? colors.grey[100] : '#374151',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+            },
+            '& .MuiInputBase-input': {
+              color: theme.palette.mode === 'dark' ? colors.grey[100] : '#111827',
+              fontSize: '0.95rem',
+              fontWeight: 500,
+            },
+            '& .MuiFormHelperText-root': {
+              color: theme.palette.mode === 'dark' ? colors.grey[200] : '#6b7280',
+              fontSize: '0.8rem',
+              fontWeight: 400,
+            },
+          }}
+        >
+          <TextField 
+            autoFocus 
+            margin="dense" 
+            name="username" 
+            label="Username" 
+            type="text" 
+            fullWidth 
+            variant="outlined" 
+            value={userFormData.username} 
+            onChange={handleUserFormChange} 
+            error={!!userFormErrors.username} 
+            helperText={userFormErrors.username} 
+            disabled={!!currentUserToEdit} 
+            sx={{ 
+              mb: 2, 
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: '#ffffff',
+                borderRadius: 1.5,
+              },
+            }} 
+          />
+          <TextField 
+            margin="dense" 
+            name="email" 
+            label="Email" 
+            type="email" 
+            fullWidth 
+            variant="outlined" 
+            value={userFormData.email} 
+            onChange={handleUserFormChange} 
+            error={!!userFormErrors.email} 
+            helperText={userFormErrors.email} 
+            disabled={!!currentUserToEdit} 
+            sx={{ 
+              mb: 2,
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: '#ffffff',
+                borderRadius: 1.5,
+              },
+            }} 
+          />
+          <TextField 
+            margin="dense" 
+            name="phoneNumber" 
+            label="Phone Number" 
+            type="tel" 
+            fullWidth 
+            variant="outlined" 
+            value={userFormData.phoneNumber} 
+            onChange={handleUserFormChange} 
+            error={!!userFormErrors.phoneNumber} 
+            helperText={userFormErrors.phoneNumber} 
+            sx={{ 
+              mb: 2,
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: '#ffffff',
+                borderRadius: 1.5,
+              },
+            }} 
+          />
+          <TextField 
+            margin="dense" 
+            name="firstName" 
+            label="First Name" 
+            type="text" 
+            fullWidth 
+            variant="outlined" 
+            value={userFormData.firstName} 
+            onChange={handleUserFormChange} 
+            error={!!userFormErrors.firstName} 
+            helperText={userFormErrors.firstName} 
+            disabled={!!currentUserToEdit} 
+            sx={{ 
+              mb: 2,
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: '#ffffff',
+                borderRadius: 1.5,
+              },
+            }} 
+          />
+          <TextField 
+            margin="dense" 
+            name="lastName" 
+            label="Last Name" 
+            type="text" 
+            fullWidth 
+            variant="outlined" 
+            value={userFormData.lastName} 
+            onChange={handleUserFormChange} 
+            error={!!userFormErrors.lastName} 
+            helperText={userFormErrors.lastName} 
+            disabled={!!currentUserToEdit} 
+            sx={{ 
+              mb: 2,
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: '#ffffff',
+                borderRadius: 1.5,
+              },
+            }} 
+          />
+          <TextField 
+            margin="dense" 
+            name="idNumber" 
+            label="ID Number" 
+            type="text" 
+            fullWidth 
+            variant="outlined" 
+            value={userFormData.idNumber} 
+            onChange={handleUserFormChange} 
+            error={!!userFormErrors.idNumber} 
+            helperText={userFormErrors.idNumber || 'National ID number'} 
+            sx={{ 
+              mb: 2,
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: '#ffffff',
+                borderRadius: 1.5,
+              },
+            }} 
+          />
+          <TextField 
+            margin="dense" 
+            name="employeeNumber" 
+            label="Employee Number" 
+            type="text" 
+            fullWidth 
+            variant="outlined" 
+            value={userFormData.employeeNumber} 
+            onChange={handleUserFormChange} 
+            error={!!userFormErrors.employeeNumber} 
+            helperText={userFormErrors.employeeNumber || 'Employee number'} 
+            sx={{ 
+              mb: 2,
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: '#ffffff',
+                borderRadius: 1.5,
+              },
+            }} 
+          />
           {!currentUserToEdit ? (
             <>
-              <TextField margin="dense" name="password" label="Password" type="password" fullWidth variant="outlined" value={userFormData.password} onChange={handleUserFormChange} error={!!userFormErrors.password} helperText={userFormErrors.password} sx={{ mb: 2 }} />
-              <TextField margin="dense" name="confirmPassword" label="Confirm Password" type="password" fullWidth variant="outlined" value={userFormData.confirmPassword} onChange={handleUserFormChange} error={!!userFormErrors.confirmPassword} helperText={userFormErrors.confirmPassword} sx={{ mb: 2 }} />
+              <TextField 
+                margin="dense" 
+                name="password" 
+                label="Password" 
+                type="password" 
+                fullWidth 
+                variant="outlined" 
+                value={userFormData.password} 
+                onChange={handleUserFormChange} 
+                error={!!userFormErrors.password} 
+                helperText={userFormErrors.password} 
+                sx={{ 
+                  mb: 2,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#ffffff',
+                    borderRadius: 1.5,
+                  },
+                }} 
+              />
+              <TextField 
+                margin="dense" 
+                name="confirmPassword" 
+                label="Confirm Password" 
+                type="password" 
+                fullWidth 
+                variant="outlined" 
+                value={userFormData.confirmPassword} 
+                onChange={handleUserFormChange} 
+                error={!!userFormErrors.confirmPassword} 
+                helperText={userFormErrors.confirmPassword} 
+                sx={{ 
+                  mb: 2,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#ffffff',
+                    borderRadius: 1.5,
+                  },
+                }} 
+              />
             </>
           ) : (
             <>
-              <TextField margin="dense" name="password" label="New Password (leave blank to keep current)" type="password" fullWidth variant="outlined" value={userFormData.password} onChange={handleUserFormChange} error={!!userFormErrors.password} helperText={userFormErrors.password} sx={{ mb: 2 }} />
+              <TextField 
+                margin="dense" 
+                name="password" 
+                label="New Password (leave blank to keep current)" 
+                type="password" 
+                fullWidth 
+                variant="outlined" 
+                value={userFormData.password} 
+                onChange={handleUserFormChange} 
+                error={!!userFormErrors.password} 
+                helperText={userFormErrors.password} 
+                sx={{ 
+                  mb: 2,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#ffffff',
+                    borderRadius: 1.5,
+                  },
+                }} 
+              />
               {userFormData.password && (
-                <TextField margin="dense" name="confirmPassword" label="Confirm New Password" type="password" fullWidth variant="outlined" value={userFormData.confirmPassword} onChange={handleUserFormChange} error={!!userFormErrors.confirmPassword} helperText={userFormErrors.confirmPassword} sx={{ mb: 2 }} />
+                <TextField 
+                  margin="dense" 
+                  name="confirmPassword" 
+                  label="Confirm New Password" 
+                  type="password" 
+                  fullWidth 
+                  variant="outlined" 
+                  value={userFormData.confirmPassword} 
+                  onChange={handleUserFormChange} 
+                  error={!!userFormErrors.confirmPassword} 
+                  helperText={userFormErrors.confirmPassword} 
+                  sx={{ 
+                    mb: 2,
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: '#ffffff',
+                      borderRadius: 1.5,
+                    },
+                  }} 
+                />
               )}
             </>
           )}
-          <FormControl fullWidth margin="dense" variant="outlined" sx={{ mb: 2, minWidth: 120 }}>
-            <InputLabel>Role</InputLabel>
+          <FormControl 
+            fullWidth 
+            margin="dense" 
+            variant="outlined" 
+            sx={{ 
+              mb: 2, 
+              minWidth: 120,
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: '#ffffff',
+                borderRadius: 1.5,
+              },
+            }}
+          >
+            <InputLabel sx={{ fontWeight: 600, color: colors.grey[100] }}>Role</InputLabel>
             <Select
               name="role"
               label="Role"
@@ -1443,6 +1806,103 @@ function UserManagementPage() {
               ))}
             </Select>
           </FormControl>
+          <Autocomplete
+            fullWidth
+            options={ministries}
+            value={userFormData.ministry || null}
+            onChange={(event, newValue) => {
+              setUserFormData(prev => ({ 
+                ...prev, 
+                ministry: newValue || '',
+                stateDepartment: '', // Clear state department when ministry changes
+                agencyId: '' // Clear agency when ministry changes
+              }));
+              setUserFormErrors(prev => ({ ...prev, ministry: '', stateDepartment: '', agencyId: '' }));
+            }}
+            loading={loadingAgencies}
+            disabled={!!currentUserToEdit}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                margin="dense"
+                label="Ministry"
+                required
+                error={!!userFormErrors.ministry}
+                helperText={userFormErrors.ministry || 'Select the ministry'}
+                sx={{ 
+                  mb: 2,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#ffffff',
+                    borderRadius: 1.5,
+                  },
+                }}
+              />
+            )}
+          />
+          <Autocomplete
+            fullWidth
+            options={filteredStateDepartments}
+            value={userFormData.stateDepartment || null}
+            onChange={(event, newValue) => {
+              setUserFormData(prev => ({ 
+                ...prev, 
+                stateDepartment: newValue || '',
+                agencyId: '' // Clear agency when state department changes
+              }));
+              setUserFormErrors(prev => ({ ...prev, stateDepartment: '', agencyId: '' }));
+            }}
+            loading={loadingAgencies}
+            disabled={!!currentUserToEdit || !userFormData.ministry}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                margin="dense"
+                label="State Department"
+                required
+                error={!!userFormErrors.stateDepartment}
+                helperText={userFormErrors.stateDepartment || (userFormData.ministry ? 'Select the state department' : 'Please select a ministry first')}
+                sx={{ 
+                  mb: 2,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#ffffff',
+                    borderRadius: 1.5,
+                  },
+                }}
+              />
+            )}
+          />
+          <Autocomplete
+            fullWidth
+            options={filteredAgencies}
+            value={filteredAgencies.find(agency => 
+              (agency.id === userFormData.agencyId || agency.agencyId === userFormData.agencyId)
+            ) || null}
+            getOptionLabel={(option) => option.agency_name || option.agencyName || ''}
+            onChange={(event, newValue) => {
+              const agencyId = newValue ? (newValue.id || newValue.agencyId) : '';
+              setUserFormData(prev => ({ ...prev, agencyId }));
+              setUserFormErrors(prev => ({ ...prev, agencyId: '' }));
+            }}
+            loading={loadingAgencies}
+            disabled={!!currentUserToEdit || !userFormData.ministry || !userFormData.stateDepartment}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                margin="dense"
+                label="Agency"
+                required
+                error={!!userFormErrors.agencyId}
+                helperText={userFormErrors.agencyId || (userFormData.ministry && userFormData.stateDepartment ? 'Select the agency' : 'Please select a ministry and state department first')}
+                sx={{ 
+                  mb: 2,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#ffffff',
+                    borderRadius: 1.5,
+                  },
+                }}
+              />
+            )}
+          />
         </DialogContent>
         <DialogActions sx={{ padding: '16px 24px', borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: colors.primary[400] }}>
           <Button onClick={handleCloseUserDialog} color="primary" variant="outlined">Cancel</Button>

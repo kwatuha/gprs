@@ -7,14 +7,10 @@ services:
   nginx_proxy:
     image: nginx:alpine
     container_name: gov_nginx_proxy
-    ports:
-      - "8081:80"
+    network_mode: host
     volumes:
       - ./nginx/nginx-production.conf:/etc/nginx/nginx.conf
       - nginx_cache:/var/cache/nginx
-    depends_on:
-      - frontend
-      - api
     restart: unless-stopped
 
   frontend:
@@ -22,30 +18,29 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.production
     container_name: gov_react_frontend
-    restart: unless-stopped
-    # No need to expose port externally, nginx will proxy to it
     expose:
       - "80"
+    volumes:
+      - ./frontend/nginx-frontend.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped
+    # Note: Using bridge network, nginx proxy will connect via service name
 
   api:
     build:
       context: ./api
       dockerfile: Dockerfile
     container_name: gov_node_api
-    ports:
-      - "3010:3000"
+    network_mode: host
     volumes:
       - ./api:/app
       - /app/node_modules
       - ./uploads:/app/uploads
-    depends_on:
-      postgres_db:
-        condition: service_healthy
     environment:
       NODE_ENV: production
       # PostgreSQL connection (primary) - override via .env in production
+      # Note: App connects to localhost PostgreSQL, not Docker container
       DB_TYPE: postgresql
-      DB_HOST: ${DB_HOST:-postgres_db}
+      DB_HOST: ${DB_HOST:-127.0.0.1}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-government_projects}
@@ -66,26 +61,29 @@ services:
   #     - "5177:80"
 
   # PostgreSQL database (primary)
-  postgres_db:
-    image: postgres:16-alpine
-    container_name: gov_postgres
-    restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-${DB_USER:-postgres}}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-${DB_PASSWORD:-postgres}}
-      POSTGRES_DB: ${POSTGRES_DB:-${DB_NAME:-government_projects}}
-    volumes:
-      - gov_postgres_data:/var/lib/postgresql/data
-      - ./scripts/migration/init-postgres.sql:/docker-entrypoint-initdb.d/init-postgres.sql
-    ports:
-      - "5433:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+  # NOTE: Database is now running on the host (localhost), not in Docker
+  # The app connects to localhost PostgreSQL via network_mode: host
+  # This service is commented out to prevent deploying a Docker database container
+  # postgres_db:
+  #   image: postgres:16-alpine
+  #   container_name: gov_postgres
+  #   restart: always
+  #   environment:
+  #     POSTGRES_USER: ${POSTGRES_USER:-${DB_USER:-postgres}}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-${DB_PASSWORD:-postgres}}
+  #     POSTGRES_DB: ${POSTGRES_DB:-${DB_NAME:-government_projects}}
+  #   volumes:
+  #     - gov_postgres_data:/var/lib/postgresql/data
+  #     - ./scripts/migration/init-postgres.sql:/docker-entrypoint-initdb.d/init-postgres.sql
+  #   ports:
+  #     - "5433:5432"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
 
 volumes:
-  gov_postgres_data:
+  # gov_postgres_data:  # No longer needed - using host PostgreSQL
   nginx_cache:

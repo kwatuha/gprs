@@ -52,17 +52,22 @@ const Register = () => {
         const fetchAgencies = async () => {
             setLoadingAgencies(true);
             try {
-                const response = await apiService.agencies.getAllAgencies();
+                // Use public endpoint for registration form (no auth required)
+                const response = await axiosInstance.get('/public/agencies');
                 console.log('Agencies API response:', response); // Debug log
                 
-                // Handle different response structures
+                // Handle different response structures - public endpoint returns {data: [...], total: number}
                 let agenciesList = [];
-                if (Array.isArray(response)) {
+                if (response && response.data) {
+                    if (Array.isArray(response.data)) {
+                        agenciesList = response.data;
+                    } else if (response.data.data && Array.isArray(response.data.data)) {
+                        agenciesList = response.data.data;
+                    } else if (Array.isArray(response.data)) {
+                        agenciesList = response.data;
+                    }
+                } else if (Array.isArray(response)) {
                     agenciesList = response;
-                } else if (response && Array.isArray(response.data)) {
-                    agenciesList = response.data;
-                } else if (response && response.data && Array.isArray(response.data.data)) {
-                    agenciesList = response.data.data;
                 }
                 
                 console.log('Agencies list:', agenciesList); // Debug log

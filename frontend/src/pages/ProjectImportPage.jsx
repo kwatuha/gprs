@@ -133,7 +133,7 @@ function ProjectImportPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'project_import_template.xlsx';
+      a.download = 'projects_upload_template.xlsx';
       document.body.appendChild(a);
       a.click();
       a.remove();

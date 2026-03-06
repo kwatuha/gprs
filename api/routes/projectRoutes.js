@@ -277,10 +277,10 @@ const projectHeaderMap = {
     // Canonical -> Variants (normalized)
     projectName: ['projectname', 'name', 'title', 'project', 'project_name', 'project name'],
     ProjectDescription: ['projectdescription', 'description', 'details', 'projectdesc'],
-    Status: ['status', 'projectstatus', 'currentstatus'],
-    budget: ['budget', 'estimatedcost', 'budgetkes', 'projectcost', 'costofproject'],
+    Status: ['status', 'projectstatus', 'currentstatus', 'status ongoing complete stalled dropped', 'statusongoingcompletestalleddropped'],
+    budget: ['budget', 'estimatedcost', 'budgetkes', 'projectcost', 'costofproject', 'allocated amount kes', 'allocatedamountkes', 'allocated amount', 'allocated amount kes'],
     amountPaid: ['amountpaid', 'disbursed', 'expenditure', 'paidout', 'amount paid'],
-    Disbursed: ['disbursed', 'amountdisbursed', 'disbursedamount', 'amountpaid', 'paidout', 'amount paid', 'expenditure'],
+    Disbursed: ['disbursed', 'amountdisbursed', 'disbursedamount', 'amountpaid', 'paidout', 'amount paid', 'expenditure', 'disbursed amount kes', 'disbursedamountkes', 'disbursed amount', 'disbursed amount kes'],
     financialYear: ['financialyear', 'financial-year', 'financial year', 'fy', 'adp', 'year'],
     department: ['department', 'implementingdepartment'],
     directorate: ['directorate'],
@@ -291,8 +291,19 @@ const projectHeaderMap = {
     'sub-county': ['subcounty', 'subcountyname', 'subcountyid', 'sub-county', 'subcounty_', 'sub county'],
     ward: ['ward', 'wardname', 'wardid', 'ward name'],
     Contracted: ['contracted', 'contractamount', 'contractedamount', 'contractsum', 'contract value', 'contract value (kes)'],
-    StartDate: ['startdate', 'projectstartdate', 'commencementdate', 'start', 'start date'],
-    EndDate: ['enddate', 'projectenddate', 'completiondate', 'end', 'end date']
+    StartDate: ['startdate', 'projectstartdate', 'commencementdate', 'start', 'start date', 'start date yyyymmdd', 'startdateyyyymmdd'],
+    EndDate: ['enddate', 'projectenddate', 'completiondate', 'end', 'end date', 'expected completion date yyyymmdd', 'expectedcompletiondate', 'expectedcompletiondateyyyymmdd'],
+    // New columns from projects_upload_template.xlsx - include exact header names
+    Latitude: ['latitude', 'lat', 'geolat', 'geocoordinateslat'],
+    Longitude: ['longitude', 'lng', 'lon', 'geolng', 'geocoordinateslng'],
+    BudgetSource: ['budgetsource', 'budget source', 'fundingsource', 'funding source', 'source'],
+    LastUpdated: ['lastupdated', 'last updated', 'last updated yyyymmdd', 'updatedat', 'updated at', 'lastupdatedyyyymmdd'],
+    PercentageComplete: ['percentagecomplete', 'percentage complete', 'progress', 'completionpercentage', 'completion percentage', 'percentage complete 0100', 'percentagecomplete0100'],
+    LatestUpdateSummary: ['latestupdatesummary', 'latest update summary', 'updatesummary', 'update summary', 'progresssummary', 'progress summary'],
+    FeedbackEnabled: ['feedbackenabled', 'feedback enabled', 'feedbackenabled truefalse', 'allowfeedback', 'allow feedback', 'feedbackenabledtruefalse'],
+    ComplaintsReceived: ['complaintsreceived', 'complaints received', 'complaintsreceived number', 'complaints', 'numberofcomplaints', 'complaintsreceivednumber'],
+    CommonFeedback: ['commonfeedback', 'common feedback', 'feedback', 'publicfeedback', 'public feedback'],
+    DataSources: ['datasources', 'data sources', 'data sources json array or leave empty', 'sources', 'datasource', 'datasourcesjsonarrayorleaveempty']
 };
 
 // Reverse lookup: normalized variant -> canonical
@@ -1384,26 +1395,63 @@ router.post('/confirm-import-data', async (req, res) => {
         const budget = JSON.stringify({
             allocated_amount_kes: projectPayload.costOfProject || null,
             disbursed_amount_kes: projectPayload.paidOut || null,
-            contracted: projectPayload.Contracted || null
+            contracted: projectPayload.Contracted || null,
+            source: projectPayload.budgetSource || null
         });
 
         const progress = JSON.stringify({
             status: projectPayload.status || null,
-            percentage_complete: null
+            percentage_complete: projectPayload.percentageComplete || null,
+            latest_update_summary: projectPayload.latestUpdateSummary || null
         });
 
-        const dataSources = JSON.stringify({
+        // Build data_sources JSONB - preserve existing sources and add new ones if provided
+        let dataSourcesObj = {
             created_by_user_id: 1 // TODO: Get from authenticated user
-        });
+        };
+        // Get existing data_sources to preserve them
+        const existingDataSourcesResult = await connection.query(
+            'SELECT data_sources FROM projects WHERE project_id = $1 AND voided = false',
+            [projectId]
+        );
+        if (existingDataSourcesResult.rows.length > 0 && existingDataSourcesResult.rows[0].data_sources) {
+            const existing = existingDataSourcesResult.rows[0].data_sources;
+            if (existing.created_by_user_id) dataSourcesObj.created_by_user_id = existing.created_by_user_id;
+            if (existing.project_ref_num) dataSourcesObj.project_ref_num = existing.project_ref_num;
+            if (existing.sources && Array.isArray(existing.sources)) {
+                dataSourcesObj.sources = existing.sources;
+            }
+        }
+        // Add new data sources if provided
+        if (projectPayload.dataSources && Array.isArray(projectPayload.dataSources) && projectPayload.dataSources.length > 0) {
+            if (!dataSourcesObj.sources) dataSourcesObj.sources = [];
+            // Merge new sources with existing ones, avoiding duplicates
+            const existingSources = dataSourcesObj.sources || [];
+            projectPayload.dataSources.forEach(source => {
+                if (!existingSources.includes(source)) {
+                    existingSources.push(source);
+                }
+            });
+            dataSourcesObj.sources = existingSources;
+        }
+        const dataSources = JSON.stringify(dataSourcesObj);
 
         // Build location JSONB - use provided locationData or get existing location and merge
         let location = null;
         if (locationData) {
-            location = JSON.stringify({
+            const locationObj = {
                 county: locationData.county && locationData.county.trim() !== '' ? locationData.county.trim() : null,
                 constituency: locationData.constituency && locationData.constituency.trim() !== '' ? locationData.constituency.trim() : null,
                 ward: locationData.ward && locationData.ward.trim() !== '' ? locationData.ward.trim() : null
-            });
+            };
+            // Add geocoordinates if provided
+            if (locationData.geocoordinates && (locationData.geocoordinates.lat != null || locationData.geocoordinates.lng != null)) {
+                locationObj.geocoordinates = {
+                    lat: locationData.geocoordinates.lat,
+                    lng: locationData.geocoordinates.lng
+                };
+            }
+            location = JSON.stringify(locationObj);
         } else {
             // Get existing location and preserve it
             const existingLocationResult = await connection.query(
@@ -1414,6 +1462,27 @@ router.post('/confirm-import-data', async (req, res) => {
                 location = JSON.stringify(existingLocationResult.rows[0].location);
             }
         }
+        
+        // Build public_engagement JSONB - preserve existing and update with new values
+        let publicEngagementObj = {};
+        const existingPublicEngagementResult = await connection.query(
+            'SELECT public_engagement FROM projects WHERE project_id = $1 AND voided = false',
+            [projectId]
+        );
+        if (existingPublicEngagementResult.rows.length > 0 && existingPublicEngagementResult.rows[0].public_engagement) {
+            publicEngagementObj = { ...existingPublicEngagementResult.rows[0].public_engagement };
+        }
+        // Update with new values if provided
+        if (projectPayload.feedbackEnabled !== undefined) {
+            publicEngagementObj.feedback_enabled = projectPayload.feedbackEnabled;
+        }
+        if (projectPayload.complaintsReceived !== undefined && projectPayload.complaintsReceived !== null) {
+            publicEngagementObj.complaints_received = projectPayload.complaintsReceived;
+        }
+        if (projectPayload.commonFeedback !== undefined && projectPayload.commonFeedback !== null) {
+            publicEngagementObj.common_feedback = projectPayload.commonFeedback;
+        }
+        const publicEngagement = JSON.stringify(publicEngagementObj);
 
         // Update project using JSONB structure
         const updateQuery = `
@@ -1428,9 +1497,10 @@ router.post('/confirm-import-data', async (req, res) => {
                 budget = $8::jsonb,
                 progress = $9::jsonb,
                 data_sources = $10::jsonb,
-                ${location ? 'location = $11::jsonb,' : ''}
+                public_engagement = $11::jsonb,
+                ${location ? 'location = $12::jsonb,' : ''}
                 updated_at = CURRENT_TIMESTAMP
-            WHERE project_id = ${location ? '$12' : '$11'} AND voided = false
+            WHERE project_id = ${location ? '$13' : '$12'} AND voided = false
         `;
         
         const updateParams = [
@@ -1443,7 +1513,8 @@ router.post('/confirm-import-data', async (req, res) => {
             timeline,
             budget,
             progress,
-            dataSources
+            dataSources,
+            publicEngagement
         ];
         
         if (location) {
@@ -1628,6 +1699,43 @@ router.post('/confirm-import-data', async (req, res) => {
                         return { date: null, corrected: false };
                     }
                 };
+                // Helper to parse boolean values
+                const toBool = (v) => {
+                    if (typeof v === 'number') return v !== 0;
+                    if (typeof v === 'boolean') return v;
+                    if (typeof v === 'string') {
+                        const s = v.trim().toLowerCase();
+                        return ['1','true','yes','y'].includes(s);
+                    }
+                    return false;
+                };
+                
+                // Helper to parse number (for percentage, complaints, etc.)
+                const toNumber = (v) => {
+                    if (v == null || v === '') return null;
+                    const cleaned = String(v).replace(/,/g, '').trim();
+                    if (!cleaned) return null;
+                    const num = Number(cleaned);
+                    return isNaN(num) ? null : num;
+                };
+                
+                // Helper to parse JSON array or string
+                const parseDataSources = (v) => {
+                    if (!v || v === '') return null;
+                    if (typeof v === 'string') {
+                        try {
+                            // Try to parse as JSON array
+                            const parsed = JSON.parse(v);
+                            return Array.isArray(parsed) ? parsed : [parsed];
+                        } catch (e) {
+                            // If not valid JSON, treat as comma-separated string
+                            return v.split(',').map(s => s.trim()).filter(s => s);
+                        }
+                    }
+                    if (Array.isArray(v)) return v;
+                    return null;
+                };
+                
                 const projectPayload = {
                     projectName: projectName || null,
                     projectDescription: normalizeStr(row.ProjectDescription || row.Description) || null,
@@ -1642,6 +1750,17 @@ router.post('/confirm-import-data', async (req, res) => {
                     sectionId: (sectionId != null && !isNaN(sectionId)) ? sectionId : null, // Store sectionId when directorate is resolved
                     departmentId: (departmentId != null && !isNaN(departmentId)) ? departmentId : null,
                     Contracted: toMoney(row.Contracted),
+                    // New fields from projects_upload_template.xlsx
+                    budgetSource: normalizeStr(row.BudgetSource || row.budgetSource) || null,
+                    percentageComplete: toNumber(row.PercentageComplete || row.percentageComplete),
+                    latestUpdateSummary: normalizeStr(row.LatestUpdateSummary || row.latestUpdateSummary) || null,
+                    feedbackEnabled: toBool(row.FeedbackEnabled || row.feedbackEnabled),
+                    complaintsReceived: toNumber(row.ComplaintsReceived || row.complaintsReceived),
+                    commonFeedback: normalizeStr(row.CommonFeedback || row.commonFeedback) || null,
+                    dataSources: parseDataSources(row.DataSources || row.dataSources),
+                    lastUpdated: normalizeDate(row.LastUpdated, 'LastUpdated').date,
+                    latitude: toNumber(row.Latitude || row.latitude),
+                    longitude: toNumber(row.Longitude || row.longitude),
                 };
                 
                 // Remove any properties with NaN values to prevent MySQL errors
@@ -1653,14 +1772,18 @@ router.post('/confirm-import-data', async (req, res) => {
                     }
                 });
 
-                // Extract location data from row (county, constituency, ward) for updates
+                // Extract location data from row (county, constituency, ward, latitude, longitude) for updates
                 const countyName = normalizeStr(row.County || row.county || row['County Name']);
                 const constituencyName = normalizeStr(row.Constituency || row.constituency || row['Constituency Name']);
                 const wardName = normalizeStr(row.ward || row.Ward || row['Ward Name']);
                 const locationData = {
                     county: countyName,
                     constituency: constituencyName,
-                    ward: wardName
+                    ward: wardName,
+                    geocoordinates: {
+                        lat: projectPayload.latitude,
+                        lng: projectPayload.longitude
+                    }
                 };
 
                 // Upsert by projectName
@@ -1721,12 +1844,14 @@ router.post('/confirm-import-data', async (req, res) => {
                         const budget = JSON.stringify({
                             allocated_amount_kes: projectPayload.costOfProject || null,
                             disbursed_amount_kes: projectPayload.paidOut || null,
-                            contracted: projectPayload.Contracted || null
+                            contracted: projectPayload.Contracted || null,
+                            source: projectPayload.budgetSource || null
                         });
 
                         const progress = JSON.stringify({
                             status: projectPayload.status || null,
-                            percentage_complete: null
+                            percentage_complete: projectPayload.percentageComplete || null,
+                            latest_update_summary: projectPayload.latestUpdateSummary || null
                         });
 
                         const notes = JSON.stringify({
@@ -1737,28 +1862,37 @@ router.post('/confirm-import-data', async (req, res) => {
                             subprogram_id: null
                         });
 
-                        const dataSources = JSON.stringify({
-                            created_by_user_id: 1 // TODO: Get from authenticated user
-                        });
+                        // Build data_sources JSONB - include imported data sources if provided
+                        const dataSourcesObj = {
+                            created_by_user_id: 1, // TODO: Get from authenticated user
+                            project_ref_num: null
+                        };
+                        // If dataSources array is provided, add it to the object
+                        if (projectPayload.dataSources && Array.isArray(projectPayload.dataSources) && projectPayload.dataSources.length > 0) {
+                            dataSourcesObj.sources = projectPayload.dataSources;
+                        }
+                        const dataSources = JSON.stringify(dataSourcesObj);
 
                         const publicEngagement = JSON.stringify({
-                            approved_for_public: false,
-                            approved_by: null,
-                            approved_at: null,
-                            approval_notes: null,
-                            revision_requested: false,
-                            revision_notes: null,
-                            revision_requested_by: null,
-                            revision_requested_at: null,
-                            revision_submitted_at: null
+                            feedback_enabled: projectPayload.feedbackEnabled || false,
+                            complaints_received: projectPayload.complaintsReceived || 0,
+                            common_feedback: projectPayload.commonFeedback || null
                         });
 
-                        // Store location data in location JSONB field (county, constituency, ward)
-                        const location = JSON.stringify({
+                        // Store location data in location JSONB field (county, constituency, ward, geocoordinates)
+                        const locationObj = {
                             county: countyName && countyName.trim() !== '' ? countyName.trim() : null,
                             constituency: constituencyName && constituencyName.trim() !== '' ? constituencyName.trim() : null,
                             ward: wardName && wardName.trim() !== '' ? wardName.trim() : null
-                        });
+                        };
+                        // Add geocoordinates if latitude and longitude are provided
+                        if (projectPayload.latitude != null && projectPayload.longitude != null) {
+                            locationObj.geocoordinates = {
+                                lat: projectPayload.latitude,
+                                lng: projectPayload.longitude
+                            };
+                        }
+                        const location = JSON.stringify(locationObj);
 
                         // Build is_public JSONB with default approval structure
                         const isPublic = JSON.stringify({
@@ -1996,12 +2130,13 @@ router.post('/confirm-import-data', async (req, res) => {
 router.get('/template', async (req, res) => {
     try {
         // Resolve the path to the projects template stored under api/templates
-        const templatePath = path.resolve(__dirname, '..', 'templates', 'projects_import_template.xlsx');
+        // Updated to use projects_upload_template.xlsx as requested by client
+        const templatePath = path.resolve(__dirname, '..', 'templates', 'projects_upload_template.xlsx');
         if (!fs.existsSync(templatePath)) {
             return res.status(404).json({ message: 'Projects template not found on server' });
         }
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', 'attachment; filename="projects_import_template.xlsx"');
+        res.setHeader('Content-Disposition', 'attachment; filename="projects_upload_template.xlsx"');
         return res.sendFile(templatePath);
     } catch (err) {
         console.error('Error serving projects template:', err);

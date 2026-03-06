@@ -709,7 +709,27 @@ function UserManagementPage() {
       fetchUsers();
     } catch (err) {
       console.error("Submit role error:", err);
-      const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to save role.';
+      // Extract error message - check multiple possible locations
+      // The axios interceptor may return error.response.data directly, or we may have an Error object
+      let errorMessage = 'Failed to save role.';
+      if (err && typeof err === 'object') {
+        // Check if it's a plain object with error property (from axios interceptor)
+        if (err.error && typeof err.error === 'string') {
+          errorMessage = err.error;
+        }
+        // Check if it's an Error object with message property
+        else if (err.message && typeof err.message === 'string') {
+          errorMessage = err.message;
+        }
+        // Check standard axios error structure
+        else if (err.response?.data) {
+          errorMessage = err.response.data.error || err.response.data.message || err.message || errorMessage;
+        }
+        // Fallback to message if available
+        else if (err.message) {
+          errorMessage = err.message;
+        }
+      }
       setSnackbar({ open: true, message: errorMessage, severity: 'error' });
     } finally {
       setLoading(false);

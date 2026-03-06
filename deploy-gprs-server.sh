@@ -168,6 +168,7 @@ sync_files() {
         --exclude 'run*.sh' \
         --exclude 'deploy*.sh' \
         --include 'deploy-gprs-server.sh' \
+        --include 'nginx-gprs-server.conf' \
         ./ "$SERVER_USER@$SERVER_IP:$SERVER_PATH/"
     
     if [ $? -eq 0 ]; then
@@ -231,35 +232,30 @@ deploy_on_server() {
         print_status "Checking container status..."
         \$DOCKER_COMPOSE_CMD -f \$COMPOSE_FILE ps
         
-        # Set up cron job for PostgreSQL password reset (always ensure it's configured correctly)
-        print_status "Setting up cron job for PostgreSQL password maintenance..."
-        CRON_SCRIPT="$SERVER_PATH/scripts/reset-postgres-password.sh"
-        
-        # Ensure script is executable
-        chmod +x "\$CRON_SCRIPT" 2>/dev/null || true
-        
-        # Ensure logs directory exists
-        mkdir -p "$SERVER_PATH/logs" 2>/dev/null || true
-        
-        # Remove any existing PostgreSQL password reset cronjobs (to avoid duplicates)
+        # NOTE: PostgreSQL password reset cron jobs have been removed
+        # The app now connects to localhost PostgreSQL, not a Docker container
+        # Remove any existing PostgreSQL password reset cronjobs if they exist
+        print_status "Cleaning up any existing PostgreSQL password reset cron jobs..."
         TEMP_CRON=$(mktemp)
         crontab -l 2>/dev/null | grep -v "reset-postgres-password.sh" | grep -v "ALTER USER postgres WITH PASSWORD" > "\$TEMP_CRON" || true
-        
-        # Add the correct cron job (runs every 2 minutes to prevent authentication issues)
-        CRON_JOB="*/2 * * * * cd $SERVER_PATH && bash \$CRON_SCRIPT > /dev/null 2>&1"
-        echo "\$CRON_JOB" >> "\$TEMP_CRON"
-        
-        # Install the updated crontab
-        crontab "\$TEMP_CRON"
+        crontab "\$TEMP_CRON" 2>/dev/null || true
         rm -f "\$TEMP_CRON"
+        print_success "PostgreSQL cron jobs cleaned up (using localhost PostgreSQL now)"
         
-        print_success "Cron job configured to run PostgreSQL password reset every 2 minutes"
-        
-        # Verify the cron job was added
-        if crontab -l 2>/dev/null | grep -q "reset-postgres-password.sh"; then
-            print_success "Cron job verified successfully"
+        # Setup system nginx configuration for port 80 proxy
+        print_status "Setting up system nginx configuration..."
+        if [ -f "$SERVER_PATH/nginx-gprs-server.conf" ]; then
+            sudo cp "$SERVER_PATH/nginx-gprs-server.conf" /etc/nginx/sites-available/gprs
+            sudo ln -sf /etc/nginx/sites-available/gprs /etc/nginx/sites-enabled/gprs
+            if sudo nginx -t 2>/dev/null; then
+                sudo systemctl reload nginx 2>/dev/null || true
+                print_success "System nginx configuration updated and reloaded"
+            else
+                print_warning "Nginx configuration test failed, but continuing..."
+            fi
         else
-            print_warning "Cron job may not have been set up correctly - please check manually"
+            print_warning "nginx-gprs-server.conf not found, skipping nginx setup"
+            print_status "You may need to manually configure nginx for port 80 access"
         fi
         
         print_success "Deployment completed!"
@@ -286,8 +282,14 @@ show_deployment_info() {
     print_status "  - Path: $SERVER_PATH"
     echo
         print_status "Access your application at:"
-        print_status "  - Admin Frontend: http://$SERVER_IP:8081/impes/"
-        print_status "  - API: http://$SERVER_IP:3010/api/"
+        print_status "  - Admin Frontend (Port 80): http://$SERVER_IP/impes/"
+        print_status "  - Admin Frontend (Port 8081): http://$SERVER_IP:8081/impes/"
+        print_status "  - API (Port 80): http://$SERVER_IP/api/"
+        print_status "  - API (Port 8081): http://$SERVER_IP:8081/api/"
+        print_status ""
+        print_status "Note: Database connection uses localhost PostgreSQL (not Docker container)"
+        print_status "      Ensure .env file has correct DB_HOST=127.0.0.1 configuration"
+        print_status "      System nginx on port 80 proxies to Docker containers on port 8081"
     echo
     print_status "Useful commands:"
     print_status "  - View logs: ssh -i $SSH_KEY $SERVER_USER@$SERVER_IP 'cd $SERVER_PATH && (docker compose -f docker-compose.prod.yml logs -f || docker-compose -f docker-compose.prod.yml logs -f)'"

@@ -91,8 +91,30 @@ const userService = {
       return response.data;
     } catch (error) {
       console.error('Error creating role:', error);
-      console.error('Error response:', error.response?.data);
-      throw error;
+      // The axios interceptor rejects with error.response.data directly, so error might be the data object
+      // Check if error is a plain object with error/message properties (from interceptor)
+      if (error && typeof error === 'object' && !error.response && (error.error || error.message)) {
+        const errorMessage = error.error || error.message || 'Failed to create role';
+        const customError = new Error(errorMessage);
+        customError.originalError = error;
+        // Preserve error property for easier access
+        customError.error = error.error;
+        throw customError;
+      }
+      // Standard axios error structure
+      if (error.response) {
+        const errorData = error.response.data;
+        const errorMessage = errorData?.error || errorData?.message || error.message || 'Failed to create role';
+        const customError = new Error(errorMessage);
+        customError.response = error.response;
+        customError.status = error.response.status;
+        customError.error = errorData?.error;
+        throw customError;
+      } else if (error.request) {
+        throw new Error('Network error: No response from server');
+      } else {
+        throw error;
+      }
     }
   },
 
@@ -101,8 +123,27 @@ const userService = {
       const response = await axiosInstance.put(`/users/roles/${roleId}`, roleData);
       return response.data;
     } catch (error) {
-      console.error(`Error updating role with ID ${roleId}:`, error);
-      throw error;
+      // The axios interceptor rejects with error.response.data directly, so error might be the data object
+      // Check if error is a plain object with error/message properties (from interceptor)
+      if (error && typeof error === 'object' && !error.response && (error.error || error.message)) {
+        const errorMessage = error.error || error.message || 'Failed to update role';
+        const customError = new Error(errorMessage);
+        customError.originalError = error;
+        throw customError;
+      }
+      // Standard axios error structure
+      if (error.response) {
+        const errorData = error.response.data;
+        const errorMessage = errorData?.error || errorData?.message || error.message || 'Failed to update role';
+        const customError = new Error(errorMessage);
+        customError.response = error.response;
+        customError.status = error.response.status;
+        throw customError;
+      } else if (error.request) {
+        throw new Error('Network error: No response from server');
+      } else {
+        throw error;
+      }
     }
   },
 

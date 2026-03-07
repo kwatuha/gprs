@@ -1,4 +1,4 @@
-version: '3.8'
+# version: '3.8'  # Removed - obsolete in newer docker compose
 
 # Production Docker Compose Configuration
 # This uses optimized production builds
@@ -11,7 +11,10 @@ services:
     volumes:
       - ./nginx/nginx-production.conf:/etc/nginx/nginx.conf
       - nginx_cache:/var/cache/nginx
+    depends_on:
+      - frontend
     restart: unless-stopped
+    # Note: Using host network to access API on localhost:3001, but need to connect to frontend via its IP
 
   frontend:
     build:

@@ -141,6 +141,7 @@ sync_files() {
         --exclude '*.sql' \
         --exclude '*.txt' \
         --exclude '*.html' \
+        --include 'frontend/index.html' \
         --exclude '*.md' \
         --exclude 'api/migrations' \
         --exclude 'api/dump' \
@@ -169,6 +170,9 @@ sync_files() {
         --exclude 'deploy*.sh' \
         --include 'deploy-gprs-server.sh' \
         --include 'nginx-gprs-server.conf' \
+        --include 'nginx/' \
+        --include 'nginx/nginx-production.conf' \
+        --include 'frontend/nginx-frontend.conf' \
         ./ "$SERVER_USER@$SERVER_IP:$SERVER_PATH/"
     
     if [ $? -eq 0 ]; then
@@ -176,6 +180,16 @@ sync_files() {
     else
         print_error "Failed to sync files"
         exit 1
+    fi
+    
+    # Manually ensure index.html is synced (rsync pattern may not work correctly)
+    print_status "Ensuring frontend/index.html is synced..."
+    rsync -avz -e "ssh -i $SSH_KEY" \
+        ./frontend/index.html "$SERVER_USER@$SERVER_IP:$SERVER_PATH/frontend/index.html"
+    if [ $? -eq 0 ]; then
+        print_success "frontend/index.html synced"
+    else
+        print_warning "Failed to sync frontend/index.html, but continuing..."
     fi
 }
 
@@ -209,7 +223,20 @@ deploy_on_server() {
         docker stop gov_public_dashboard 2>/dev/null || true
         docker rm gov_public_dashboard 2>/dev/null || true
 
-        \$DOCKER_COMPOSE_CMD -f \$COMPOSE_FILE down 2>/dev/null || true
+        # Stop and remove any existing containers that might conflict
+        print_status "Removing any existing containers..."
+        docker stop gov_react_frontend gov_node_api gov_nginx_proxy 2>/dev/null || true
+        docker rm gov_react_frontend gov_node_api gov_nginx_proxy 2>/dev/null || true
+
+        \$DOCKER_COMPOSE_CMD -f \$COMPOSE_FILE down --remove-orphans 2>/dev/null || true
+        
+        # Verify docker-compose.prod.yml was synced
+        if [ ! -f \$COMPOSE_FILE ]; then
+            print_error "docker-compose.prod.yml not found! Deployment cannot continue."
+            print_status "Please ensure the file was synced correctly."
+            exit 1
+        fi
+        print_success "docker-compose.prod.yml found"
         
         # Build and start containers
         print_status "Building and starting containers..."
@@ -217,6 +244,42 @@ deploy_on_server() {
         
         print_status "Starting services..."
         \$DOCKER_COMPOSE_CMD -f \$COMPOSE_FILE up -d
+        
+        # Wait for containers to be fully started
+        print_status "Waiting for containers to start..."
+        sleep 5
+        
+        # Get frontend container IP and update nginx config if needed
+        print_status "Getting frontend container IP address..."
+        # Wait a bit more for network to be fully initialized
+        sleep 2
+        FRONTEND_IP=\$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' gov_react_frontend 2>/dev/null || echo "")
+        if [ -n "\$FRONTEND_IP" ] && [ "\$FRONTEND_IP" != "" ]; then
+            print_status "Frontend container IP: \$FRONTEND_IP"
+            # Update nginx config with the actual frontend IP
+            if [ -f ./nginx/nginx-production.conf ]; then
+                # Check if IP needs to be updated (only if different)
+                # Use a more reliable method to extract current IP
+                CURRENT_IP=\$(grep -oE 'http://[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}:80' ./nginx/nginx-production.conf | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1 || echo "")
+                if [ "\$CURRENT_IP" != "\$FRONTEND_IP" ]; then
+                    print_status "Updating nginx config with frontend IP: \$FRONTEND_IP (was: \$CURRENT_IP)"
+                    # Update all occurrences of the frontend IP in nginx config
+                    sed -i "s|http://[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}:80|http://\$FRONTEND_IP:80|g" ./nginx/nginx-production.conf
+                    # Restart nginx_proxy to pick up the new config
+                    print_status "Restarting nginx_proxy to apply new frontend IP..."
+                    \$DOCKER_COMPOSE_CMD -f \$COMPOSE_FILE restart nginx_proxy
+                    sleep 3
+                    print_success "Nginx config updated with frontend IP: \$FRONTEND_IP"
+                else
+                    print_status "Nginx config already has correct frontend IP: \$FRONTEND_IP"
+                fi
+            else
+                print_warning "nginx/nginx-production.conf not found, skipping IP update"
+            fi
+        else
+            print_warning "Could not get frontend container IP, nginx may need manual configuration"
+            print_status "You may need to manually update nginx/nginx-production.conf with the frontend container IP"
+        fi
         
         # Restart API to reconnect to database (in case of configuration changes)
         print_status "Restarting API to reconnect to database..."
@@ -226,7 +289,7 @@ deploy_on_server() {
         print_status "Restarting frontend to load latest changes..."
         \$DOCKER_COMPOSE_CMD -f \$COMPOSE_FILE restart frontend
         
-        sleep 5
+        sleep 3
         
         # Check status
         print_status "Checking container status..."
@@ -243,19 +306,50 @@ deploy_on_server() {
         print_success "PostgreSQL cron jobs cleaned up (using localhost PostgreSQL now)"
         
         # Setup system nginx configuration for port 80 proxy
-        print_status "Setting up system nginx configuration..."
+        # Only update if the config file doesn't exist or is different
+        print_status "Checking system nginx configuration..."
         if [ -f "$SERVER_PATH/nginx-gprs-server.conf" ]; then
-            sudo cp "$SERVER_PATH/nginx-gprs-server.conf" /etc/nginx/sites-available/gprs
-            sudo ln -sf /etc/nginx/sites-available/gprs /etc/nginx/sites-enabled/gprs
-            if sudo nginx -t 2>/dev/null; then
-                sudo systemctl reload nginx 2>/dev/null || true
-                print_success "System nginx configuration updated and reloaded"
+            # Check if system nginx config already exists and is working
+            if [ -f /etc/nginx/sites-available/gprs ] && [ -L /etc/nginx/sites-enabled/gprs ]; then
+                # Compare files - only update if different
+                if ! diff -q "$SERVER_PATH/nginx-gprs-server.conf" /etc/nginx/sites-available/gprs >/dev/null 2>&1; then
+                    print_status "System nginx config differs, updating..."
+                    if sudo -n cp "$SERVER_PATH/nginx-gprs-server.conf" /etc/nginx/sites-available/gprs 2>/dev/null; then
+                        if sudo -n nginx -t 2>/dev/null; then
+                            sudo -n systemctl reload nginx 2>/dev/null || true
+                            print_success "System nginx configuration updated and reloaded"
+                        else
+                            print_warning "Nginx configuration test failed, keeping existing config"
+                        fi
+                    else
+                        print_warning "Could not update system nginx config (requires sudo)"
+                        print_status "Existing config will be used"
+                    fi
+                else
+                    print_status "System nginx config is up to date, skipping update"
+                fi
             else
-                print_warning "Nginx configuration test failed, but continuing..."
+                # Config doesn't exist, try to create it (non-fatal)
+                print_status "System nginx config not found, attempting to create..."
+                if sudo -n cp "$SERVER_PATH/nginx-gprs-server.conf" /etc/nginx/sites-available/gprs 2>/dev/null; then
+                    sudo -n ln -sf /etc/nginx/sites-available/gprs /etc/nginx/sites-enabled/gprs 2>/dev/null || true
+                    if sudo -n nginx -t 2>/dev/null; then
+                        sudo -n systemctl reload nginx 2>/dev/null || true
+                        print_success "System nginx configuration created and reloaded"
+                    else
+                        print_warning "Nginx configuration test failed, but continuing..."
+                    fi
+                else
+                    print_warning "Could not create system nginx config (requires sudo without password)"
+                    print_status "If system nginx is already configured, this is fine"
+                    print_status "Otherwise, manually run: sudo cp $SERVER_PATH/nginx-gprs-server.conf /etc/nginx/sites-available/gprs"
+                    print_status "     sudo ln -sf /etc/nginx/sites-available/gprs /etc/nginx/sites-enabled/gprs"
+                    print_status "     sudo nginx -t && sudo systemctl reload nginx"
+                fi
             fi
         else
-            print_warning "nginx-gprs-server.conf not found, skipping nginx setup"
-            print_status "You may need to manually configure nginx for port 80 access"
+            print_warning "nginx-gprs-server.conf not found in deployment"
+            print_status "If system nginx is already configured, this is fine"
         fi
         
         print_success "Deployment completed!"
@@ -370,6 +464,8 @@ if [ "$1" = "--dry-run" ]; then
         --exclude '*.sql' \
         --exclude '*.txt' \
         --exclude '*.html' \
+        --include 'frontend/' \
+        --include 'frontend/index.html' \
         --exclude '*.md' \
         --exclude 'api/migrations' \
         --exclude 'api/dump' \

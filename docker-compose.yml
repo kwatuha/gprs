@@ -4,13 +4,11 @@ services:
     image: nginx:alpine
     container_name: gov_nginx_proxy
     restart: always
-    ports:
-      - "8081:80"
+    network_mode: host  # Use host network to access localhost:3000 (API) and localhost:5176 (frontend)
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - frontend
-      - api
+    # Note: With host network, ports mapping is not needed
+    # Access via http://localhost:80 (or configure nginx to listen on 8081)
 
   frontend:
     build:
@@ -57,25 +55,17 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
-      network: host
     container_name: gov_node_api
     restart: always
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
-    ports:
-      - "3010:3000"
+    network_mode: host  # Use host network to access localhost PostgreSQL
     volumes:
       - ./api:/app
       - /app/node_modules
-    depends_on:
-      postgres_db:
-        condition: service_healthy
     environment:
-      # PostgreSQL connection (primary)
+      # PostgreSQL connection (primary) - connects to localhost PostgreSQL
+      # Override via .env file for your local setup
       DB_TYPE: postgresql
-      # Use service name by default; can be overridden via .env
-      DB_HOST: ${DB_HOST:-postgres_db}
+      DB_HOST: ${DB_HOST:-127.0.0.1}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-government_projects}
@@ -84,33 +74,36 @@ services:
     command: npm run dev
 
   # PostgreSQL database (primary)
-  postgres_db:
-    image: postgres:16-alpine
-    container_name: gov_postgres
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: government_projects
-    command: >
-      postgres
-      -c max_connections=200
-      -c shared_buffers=256MB
-      -c tcp_keepalives_idle=600
-      -c tcp_keepalives_interval=30
-      -c tcp_keepalives_count=3
-      -c statement_timeout=30000
-    volumes:
-      - gov_postgres_data:/var/lib/postgresql/data
-      - ./scripts/migration/init-postgres.sql:/docker-entrypoint-initdb.d/init-postgres.sql
-    ports:
-      - "5433:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+  # NOTE: For local development, use PostgreSQL installed on your host machine
+  # This matches the production setup where PostgreSQL runs on localhost
+  # To use Docker PostgreSQL instead, uncomment below and change API network_mode to bridge
+  # postgres_db:
+  #   image: postgres:16-alpine
+  #   container_name: gov_postgres
+  #   restart: always
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: postgres
+  #     POSTGRES_DB: government_projects
+  #   command: >
+  #     postgres
+  #     -c max_connections=200
+  #     -c shared_buffers=256MB
+  #     -c tcp_keepalives_idle=600
+  #     -c tcp_keepalives_interval=30
+  #     -c tcp_keepalives_count=3
+  #     -c statement_timeout=30000
+  #   volumes:
+  #     - gov_postgres_data:/var/lib/postgresql/data
+  #     - ./scripts/migration/init-postgres.sql:/docker-entrypoint-initdb.d/init-postgres.sql
+  #   ports:
+  #     - "5433:5432"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
 
-volumes:
-  gov_postgres_data:
+# volumes:
+  # gov_postgres_data:  # Commented out - using host PostgreSQL

@@ -29,7 +29,7 @@ const ContractorLandingPage = () => {
         }}>
           <CardContent>
             <Typography variant="h3" fontWeight="bold" color={colors.redAccent[500]} mb={2}>
-              Contractor Dashboard
+              Personal Dashboard
             </Typography>
             <Typography variant="h6" color={colors.grey[100]} mb={4}>
               Welcome, {user?.username || 'Contractor'}!

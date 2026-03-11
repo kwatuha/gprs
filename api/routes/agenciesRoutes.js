@@ -136,6 +136,7 @@ router.get('/:id', async (req, res) => {
                 ministry,
                 state_department,
                 agency_name,
+                COALESCE(alias, '') AS alias,
                 created_at,
                 updated_at
             FROM agencies
@@ -163,7 +164,8 @@ router.post('/', async (req, res) => {
         const {
             ministry,
             state_department,
-            agency_name
+            agency_name,
+            alias
         } = req.body;
 
         if (!agency_name) {
@@ -178,6 +180,20 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ message: 'State Department is required' });
         }
 
+        // Check if alias column exists
+        let aliasColumnExists = false;
+        try {
+            const checkResult = await pool.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'agencies' AND column_name = 'alias'
+            `);
+            aliasColumnExists = checkResult.rows.length > 0;
+        } catch (checkError) {
+            console.warn('Could not check for alias column in agencies, assuming it does not exist:', checkError.message);
+            aliasColumnExists = false;
+        }
+
         // Check if agency with same name already exists
         const existingCheck = await pool.query(
             'SELECT id FROM agencies WHERE agency_name = $1 AND voided = false',
@@ -188,13 +204,26 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ message: 'An agency with this name already exists' });
         }
 
-        const result = await pool.query(
-            `INSERT INTO agencies (
-                ministry, state_department, agency_name
-            ) VALUES ($1, $2, $3)
-            RETURNING id, ministry, state_department, agency_name, created_at, updated_at`,
-            [ministry, state_department, agency_name]
-        );
+        let query, params;
+        if (aliasColumnExists) {
+            query = `
+                INSERT INTO agencies (
+                    ministry, state_department, agency_name, alias
+                ) VALUES ($1, $2, $3, $4)
+                RETURNING id, ministry, state_department, agency_name, COALESCE(alias, '') AS alias, created_at, updated_at
+            `;
+            params = [ministry, state_department, agency_name, alias?.trim() || null];
+        } else {
+            query = `
+                INSERT INTO agencies (
+                    ministry, state_department, agency_name
+                ) VALUES ($1, $2, $3)
+                RETURNING id, ministry, state_department, agency_name, '' AS alias, created_at, updated_at
+            `;
+            params = [ministry, state_department, agency_name];
+        }
+
+        const result = await pool.query(query, params);
 
         res.status(201).json({
             message: 'Agency created successfully',
@@ -216,7 +245,8 @@ router.put('/:id', async (req, res) => {
         const {
             ministry,
             state_department,
-            agency_name
+            agency_name,
+            alias
         } = req.body;
 
         if (!agency_name) {
@@ -229,6 +259,20 @@ router.put('/:id', async (req, res) => {
 
         if (!state_department) {
             return res.status(400).json({ message: 'State Department is required' });
+        }
+
+        // Check if alias column exists
+        let aliasColumnExists = false;
+        try {
+            const checkResult = await pool.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'agencies' AND column_name = 'alias'
+            `);
+            aliasColumnExists = checkResult.rows.length > 0;
+        } catch (checkError) {
+            console.warn('Could not check for alias column in agencies, assuming it does not exist:', checkError.message);
+            aliasColumnExists = false;
         }
 
         // Check if agency exists
@@ -251,17 +295,40 @@ router.put('/:id', async (req, res) => {
             return res.status(400).json({ message: 'An agency with this name already exists' });
         }
 
-        const result = await pool.query(
-            `UPDATE agencies 
-            SET 
-                ministry = $1,
-                state_department = $2,
-                agency_name = $3,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = $4 AND voided = false
-            RETURNING id, ministry, state_department, agency_name, created_at, updated_at`,
-            [ministry, state_department, agency_name, id]
-        );
+        console.log(`[Agencies Update] Alias column exists: ${aliasColumnExists}, Alias value: "${alias}"`);
+        
+        let query, params;
+        if (aliasColumnExists) {
+            query = `
+                UPDATE agencies 
+                SET 
+                    ministry = $1,
+                    state_department = $2,
+                    agency_name = $3,
+                    alias = $4,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = $5 AND voided = false
+                RETURNING id, ministry, state_department, agency_name, COALESCE(alias, '') AS alias, created_at, updated_at
+            `;
+            params = [ministry, state_department, agency_name, alias?.trim() || null, id];
+        } else {
+            console.warn('[Agencies Update] Alias column does not exist, alias value will not be saved. Please run migration script.');
+            query = `
+                UPDATE agencies 
+                SET 
+                    ministry = $1,
+                    state_department = $2,
+                    agency_name = $3,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = $4 AND voided = false
+                RETURNING id, ministry, state_department, agency_name, '' AS alias, created_at, updated_at
+            `;
+            params = [ministry, state_department, agency_name, id];
+        }
+
+        console.log(`[Agencies Update] Executing query with params:`, params);
+        const result = await pool.query(query, params);
+        console.log(`[Agencies Update] Update result:`, result.rows?.[0] || result);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Agency not found' });

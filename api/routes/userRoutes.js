@@ -1557,4 +1557,180 @@ router.delete('/website_public_profiles/:id', async (req, res) => {
     }
 });
 
+// --- User Approval Management Routes ---
+
+/**
+ * @route GET /api/users/pending
+ * @description Get all pending users (users with isActive = false)
+ * @access Protected - requires user.read or user.approve privilege or admin role
+ */
+router.get('/pending', async (req, res) => {
+    try {
+        const DB_TYPE = process.env.DB_TYPE || 'mysql';
+        let query;
+        
+        if (DB_TYPE === 'postgresql') {
+            query = `
+                SELECT 
+                    u.userid AS "userId", 
+                    u.username, 
+                    u.email, 
+                    u.firstname AS "firstName", 
+                    u.lastname AS "lastName", 
+                    u.id_number AS "idNumber", 
+                    u.employee_number AS "employeeNumber",
+                    u.createdat AS "createdAt", 
+                    u.updatedat AS "updatedAt", 
+                    u.isactive AS "isActive", 
+                    u.roleid AS "roleId", 
+                    r.name AS role,
+                    u.ministry, 
+                    u.state_department AS "stateDepartment", 
+                    u.agency_id AS "agencyId", 
+                    a.agency_name AS "agencyName"
+                FROM users u
+                LEFT JOIN roles r ON u.roleid = r.roleid
+                LEFT JOIN agencies a ON u.agency_id = a.id
+                WHERE u.voided = false AND u.isactive = false
+                ORDER BY u.createdat DESC
+            `;
+        } else {
+            query = `
+                SELECT 
+                    u.userId, 
+                    u.username, 
+                    u.email,
+                    u.firstName, 
+                    u.lastName, 
+                    u.idNumber, 
+                    u.employeeNumber,
+                    u.createdAt, 
+                    u.updatedAt, 
+                    u.isActive, 
+                    u.roleId, 
+                    r.roleName AS role,
+                    u.ministry, 
+                    u.state_department AS stateDepartment, 
+                    u.agency_id AS agencyId, 
+                    a.agency_name AS agencyName
+                FROM users u
+                LEFT JOIN roles r ON u.roleId = r.roleId
+                LEFT JOIN agencies a ON u.agency_id = a.id
+                WHERE u.voided = 0 AND u.isActive = 0
+                ORDER BY u.createdAt DESC
+            `;
+        }
+        
+        const result = await pool.query(query);
+        const rows = DB_TYPE === 'postgresql' ? (result.rows || result) : (Array.isArray(result) ? result[0] : result);
+        res.status(200).json(rows);
+    } catch (error) {
+        console.error('Error fetching pending users:', error);
+        res.status(500).json({ message: 'Error fetching pending users', error: error.message });
+    }
+});
+
+/**
+ * @route GET /api/users/approved/summary
+ * @description Get summary of approved users (users with isActive = true)
+ * @query approvedBy - Optional: Filter by user ID who approved (if tracking is available)
+ * @access Protected - requires user.read or user.approve privilege or admin role
+ */
+router.get('/approved/summary', async (req, res) => {
+    try {
+        const DB_TYPE = process.env.DB_TYPE || 'mysql';
+        const { approvedBy, startDate, endDate } = req.query;
+        let query;
+        let params = [];
+        
+        if (DB_TYPE === 'postgresql') {
+            let whereConditions = ['u.voided = false', 'u.isactive = true'];
+            
+            if (startDate) {
+                whereConditions.push(`u.updatedat >= $${params.length + 1}`);
+                params.push(startDate);
+            }
+            if (endDate) {
+                whereConditions.push(`u.updatedat <= $${params.length + 1}`);
+                params.push(endDate);
+            }
+            
+            query = `
+                SELECT 
+                    COUNT(*) AS "totalApproved",
+                    COUNT(CASE WHEN u.updatedat >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) AS "approvedLast30Days",
+                    COUNT(CASE WHEN u.updatedat >= CURRENT_DATE - INTERVAL '7 days' THEN 1 END) AS "approvedLast7Days",
+                    COUNT(DISTINCT u.roleid) AS "uniqueRoles",
+                    COUNT(DISTINCT u.ministry) AS "uniqueMinistries"
+                FROM users u
+                WHERE ${whereConditions.join(' AND ')}
+            `;
+        } else {
+            let whereConditions = ['u.voided = 0', 'u.isActive = 1'];
+            
+            if (startDate) {
+                whereConditions.push('u.updatedAt >= ?');
+                params.push(startDate);
+            }
+            if (endDate) {
+                whereConditions.push('u.updatedAt <= ?');
+                params.push(endDate);
+            }
+            
+            query = `
+                SELECT 
+                    COUNT(*) AS totalApproved,
+                    COUNT(CASE WHEN u.updatedAt >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 END) AS approvedLast30Days,
+                    COUNT(CASE WHEN u.updatedAt >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 END) AS approvedLast7Days,
+                    COUNT(DISTINCT u.roleId) AS uniqueRoles,
+                    COUNT(DISTINCT u.ministry) AS uniqueMinistries
+                FROM users u
+                WHERE ${whereConditions.join(' AND ')}
+            `;
+        }
+        
+        const result = await pool.query(query, params);
+        const rows = DB_TYPE === 'postgresql' ? (result.rows || result) : (Array.isArray(result) ? result[0] : result);
+        
+        // Get breakdown by role
+        let roleBreakdownQuery;
+        if (DB_TYPE === 'postgresql') {
+            roleBreakdownQuery = `
+                SELECT 
+                    r.name AS role,
+                    COUNT(*) AS count
+                FROM users u
+                LEFT JOIN roles r ON u.roleid = r.roleid
+                WHERE u.voided = false AND u.isactive = true
+                GROUP BY r.name
+                ORDER BY count DESC
+            `;
+        } else {
+            roleBreakdownQuery = `
+                SELECT 
+                    r.roleName AS role,
+                    COUNT(*) AS count
+                FROM users u
+                LEFT JOIN roles r ON u.roleId = r.roleId
+                WHERE u.voided = 0 AND u.isActive = 1
+                GROUP BY r.roleName
+                ORDER BY count DESC
+            `;
+        }
+        
+        const roleBreakdownResult = await pool.query(roleBreakdownQuery);
+        const roleBreakdown = DB_TYPE === 'postgresql' 
+            ? (roleBreakdownResult.rows || roleBreakdownResult) 
+            : (Array.isArray(roleBreakdownResult) ? roleBreakdownResult[0] : roleBreakdownResult);
+        
+        const summary = Array.isArray(rows) ? rows[0] : rows;
+        summary.roleBreakdown = Array.isArray(roleBreakdown) ? roleBreakdown : [roleBreakdown];
+        
+        res.status(200).json(summary);
+    } catch (error) {
+        console.error('Error fetching approved users summary:', error);
+        res.status(500).json({ message: 'Error fetching approved users summary', error: error.message });
+    }
+});
+
 module.exports = router;

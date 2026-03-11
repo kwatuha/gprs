@@ -10,7 +10,7 @@ const routeTitles = {
   '/dashboard': { title: 'Dashboard', subtitle: 'Overview & Analytics' },
   '/raw-data': { title: 'Raw Data', subtitle: 'Data Management' },
   '/projects': { title: 'Projects', subtitle: 'Project Management' },
-  '/contractor-dashboard': { title: 'Contractor Dashboard', subtitle: 'My Projects' },
+  '/contractor-dashboard': { title: 'Personal Dashboard', subtitle: 'My Activities' },
   '/project-analytics': { title: 'Project Analytics', subtitle: 'Performance Metrics & Statistics' },
   
   // Reporting routes

@@ -14,6 +14,12 @@ import {
   Assignment as AssignmentIcon,
   People as PeopleIcon,
   Analytics as AnalyticsIcon,
+  TrendingUp as TrendingUpIcon,
+  AttachMoney as AttachMoneyIcon,
+  Schedule as ScheduleIcon,
+  CheckCircle as CheckCircleIcon,
+  Warning as WarningIcon,
+  Assessment as AssessmentIcon,
 } from '@mui/icons-material';
 import { tokens } from '../pages/dashboard/theme';
 import ActiveUsersCard from './ActiveUsersCard';
@@ -133,6 +139,45 @@ const TabbedDashboard = ({ user, dashboardData }) => {
         {/* Overview Tab */}
         <TabPanel value={activeTab} index={0}>
           <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
+            {/* Welcome Section */}
+            <Grid item xs={12}>
+              <Card sx={{ 
+                borderRadius: 3, 
+                background: theme.palette.mode === 'dark' 
+                  ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                boxShadow: `0 8px 32px ${theme.palette.mode === 'dark' ? 'rgba(102, 126, 234, 0.3)' : 'rgba(102, 126, 234, 0.4)'}`,
+                border: 'none',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: -50,
+                  right: -50,
+                  width: 200,
+                  height: 200,
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '50%',
+                },
+              }}>
+                <CardContent sx={{ p: 4, position: 'relative', zIndex: 1 }}>
+                  <Box display="flex" alignItems="center" gap={2} mb={2}>
+                    <DashboardIcon sx={{ fontSize: 40, opacity: 0.9 }} />
+                    <Box>
+                      <Typography variant="h4" fontWeight="bold" mb={0.5}>
+                        Dashboard Overview
+                      </Typography>
+                      <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                        Welcome back! Here's your project performance summary
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
             {/* Key Metrics */}
             <Grid item xs={12}>
               <Typography variant="h5" fontWeight="bold" color={theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]} mb={3}>
@@ -143,18 +188,30 @@ const TabbedDashboard = ({ user, dashboardData }) => {
                   <Card sx={{ 
                     height: '100%',
                     borderRadius: 3, 
-                    bgcolor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[100],
-                    boxShadow: `0 4px 20px ${theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[200]}15`,
-                    border: `1px solid ${theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[200]}30`,
+                    background: theme.palette.mode === 'dark' 
+                      ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    boxShadow: `0 4px 20px ${theme.palette.mode === 'dark' ? 'rgba(102, 126, 234, 0.3)' : 'rgba(102, 126, 234, 0.4)'}`,
+                    border: 'none',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: `0 8px 24px ${theme.palette.mode === 'dark' ? 'rgba(102, 126, 234, 0.4)' : 'rgba(102, 126, 234, 0.5)'}`,
+                    },
                   }}>
-                    <CardContent sx={{ p: 3, textAlign: 'center' }}>
-                      <Typography variant="h4" fontWeight="bold" color={colors.blueAccent?.[500] || '#6870fa'} mb={1}>
+                    <CardContent sx={{ p: 3 }}>
+                      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                        <DashboardIcon sx={{ fontSize: 32, opacity: 0.9 }} />
+                        <TrendingUpIcon sx={{ fontSize: 20, opacity: 0.7 }} />
+                      </Box>
+                      <Typography variant="h3" fontWeight="bold" mb={1}>
                         {dashboardData?.metrics?.totalProjects || 24}
                       </Typography>
-                      <Typography variant="h6" color={theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]} mb={1}>
+                      <Typography variant="h6" sx={{ opacity: 0.9, mb: 0.5 }}>
                         Total Projects
                       </Typography>
-                      <Typography variant="body2" color={theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[600]}>
+                      <Typography variant="body2" sx={{ opacity: 0.8 }}>
                         Across all categories
                       </Typography>
                     </CardContent>
@@ -164,18 +221,30 @@ const TabbedDashboard = ({ user, dashboardData }) => {
                   <Card sx={{ 
                     height: '100%',
                     borderRadius: 3, 
-                    bgcolor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[100],
-                    boxShadow: `0 4px 20px ${theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[200]}15`,
-                    border: `1px solid ${theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[200]}30`,
+                    background: theme.palette.mode === 'dark' 
+                      ? 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)'
+                      : 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+                    color: 'white',
+                    boxShadow: `0 4px 20px ${theme.palette.mode === 'dark' ? 'rgba(17, 153, 142, 0.3)' : 'rgba(17, 153, 142, 0.4)'}`,
+                    border: 'none',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: `0 8px 24px ${theme.palette.mode === 'dark' ? 'rgba(17, 153, 142, 0.4)' : 'rgba(17, 153, 142, 0.5)'}`,
+                    },
                   }}>
-                    <CardContent sx={{ p: 3, textAlign: 'center' }}>
-                      <Typography variant="h4" fontWeight="bold" color={colors.greenAccent?.[500] || '#4caf50'} mb={1}>
+                    <CardContent sx={{ p: 3 }}>
+                      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                        <CheckCircleIcon sx={{ fontSize: 32, opacity: 0.9 }} />
+                        <TrendingUpIcon sx={{ fontSize: 20, opacity: 0.7 }} />
+                      </Box>
+                      <Typography variant="h3" fontWeight="bold" mb={1}>
                         {dashboardData?.metrics?.completedProjects || 18}
                       </Typography>
-                      <Typography variant="h6" color={theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]} mb={1}>
+                      <Typography variant="h6" sx={{ opacity: 0.9, mb: 0.5 }}>
                         Completed
                       </Typography>
-                      <Typography variant="body2" color={theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[600]}>
+                      <Typography variant="body2" sx={{ opacity: 0.8 }}>
                         This quarter
                       </Typography>
                     </CardContent>
@@ -185,18 +254,30 @@ const TabbedDashboard = ({ user, dashboardData }) => {
                   <Card sx={{ 
                     height: '100%',
                     borderRadius: 3, 
-                    bgcolor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[100],
-                    boxShadow: `0 4px 20px ${theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[200]}15`,
-                    border: `1px solid ${theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[200]}30`,
+                    background: theme.palette.mode === 'dark' 
+                      ? 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
+                      : 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    color: 'white',
+                    boxShadow: `0 4px 20px ${theme.palette.mode === 'dark' ? 'rgba(245, 87, 108, 0.3)' : 'rgba(245, 87, 108, 0.4)'}`,
+                    border: 'none',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: `0 8px 24px ${theme.palette.mode === 'dark' ? 'rgba(245, 87, 108, 0.4)' : 'rgba(245, 87, 108, 0.5)'}`,
+                    },
                   }}>
-                    <CardContent sx={{ p: 3, textAlign: 'center' }}>
-                      <Typography variant="h4" fontWeight="bold" color={colors.yellowAccent?.[500] || '#ff9800'} mb={1}>
+                    <CardContent sx={{ p: 3 }}>
+                      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                        <ScheduleIcon sx={{ fontSize: 32, opacity: 0.9 }} />
+                        <TrendingUpIcon sx={{ fontSize: 20, opacity: 0.7 }} />
+                      </Box>
+                      <Typography variant="h3" fontWeight="bold" mb={1}>
                         {dashboardData?.metrics?.activeProjects || 6}
                       </Typography>
-                      <Typography variant="h6" color={theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]} mb={1}>
+                      <Typography variant="h6" sx={{ opacity: 0.9, mb: 0.5 }}>
                         Active
                       </Typography>
-                      <Typography variant="body2" color={theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[600]}>
+                      <Typography variant="body2" sx={{ opacity: 0.8 }}>
                         In progress
                       </Typography>
                     </CardContent>
@@ -206,20 +287,150 @@ const TabbedDashboard = ({ user, dashboardData }) => {
                   <Card sx={{ 
                     height: '100%',
                     borderRadius: 3, 
+                    background: theme.palette.mode === 'dark' 
+                      ? 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
+                      : 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                    color: 'white',
+                    boxShadow: `0 4px 20px ${theme.palette.mode === 'dark' ? 'rgba(250, 112, 154, 0.3)' : 'rgba(250, 112, 154, 0.4)'}`,
+                    border: 'none',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: `0 8px 24px ${theme.palette.mode === 'dark' ? 'rgba(250, 112, 154, 0.4)' : 'rgba(250, 112, 154, 0.5)'}`,
+                    },
+                  }}>
+                    <CardContent sx={{ p: 3 }}>
+                      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                        <WarningIcon sx={{ fontSize: 32, opacity: 0.9 }} />
+                        <TrendingUpIcon sx={{ fontSize: 20, opacity: 0.7 }} />
+                      </Box>
+                      <Typography variant="h3" fontWeight="bold" mb={1}>
+                        {dashboardData?.metrics?.overdueProjects || 2}
+                      </Typography>
+                      <Typography variant="h6" sx={{ opacity: 0.9, mb: 0.5 }}>
+                        Overdue
+                      </Typography>
+                      <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                        Need attention
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+            </Grid>
+
+            {/* Additional Metrics Row */}
+            <Grid item xs={12}>
+              <Grid container spacing={{ xs: 2, sm: 3 }}>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card sx={{ 
+                    height: '100%',
+                    borderRadius: 3, 
                     bgcolor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[100],
                     boxShadow: `0 4px 20px ${theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[200]}15`,
                     border: `1px solid ${theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[200]}30`,
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: `0 6px 24px ${theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[200]}25`,
+                    },
                   }}>
-                    <CardContent sx={{ p: 3, textAlign: 'center' }}>
-                      <Typography variant="h4" fontWeight="bold" color={colors.redAccent?.[500] || '#f44336'} mb={1}>
-                        {dashboardData?.metrics?.overdueProjects || 2}
-                      </Typography>
-                      <Typography variant="h6" color={theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]} mb={1}>
-                        Overdue
-                      </Typography>
-                      <Typography variant="body2" color={theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[600]}>
-                        Need attention
-                      </Typography>
+                    <CardContent sx={{ p: 3 }}>
+                      <Box display="flex" alignItems="center" gap={2} mb={2}>
+                        <AttachMoneyIcon sx={{ fontSize: 28, color: colors.greenAccent?.[500] || '#4caf50' }} />
+                        <Box flex={1}>
+                          <Typography variant="h4" fontWeight="bold" color={theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]}>
+                            ${(dashboardData?.metrics?.totalBudget || 0).toLocaleString()}
+                          </Typography>
+                          <Typography variant="body2" color={theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[600]}>
+                            Total Budget
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card sx={{ 
+                    height: '100%',
+                    borderRadius: 3, 
+                    bgcolor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[100],
+                    boxShadow: `0 4px 20px ${theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[200]}15`,
+                    border: `1px solid ${theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[200]}30`,
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: `0 6px 24px ${theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[200]}25`,
+                    },
+                  }}>
+                    <CardContent sx={{ p: 3 }}>
+                      <Box display="flex" alignItems="center" gap={2} mb={2}>
+                        <PeopleIcon sx={{ fontSize: 28, color: colors.blueAccent?.[500] || '#6870fa' }} />
+                        <Box flex={1}>
+                          <Typography variant="h4" fontWeight="bold" color={theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]}>
+                            {dashboardData?.metrics?.teamMembers || 45}
+                          </Typography>
+                          <Typography variant="body2" color={theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[600]}>
+                            Team Members
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card sx={{ 
+                    height: '100%',
+                    borderRadius: 3, 
+                    bgcolor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[100],
+                    boxShadow: `0 4px 20px ${theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[200]}15`,
+                    border: `1px solid ${theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[200]}30`,
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: `0 6px 24px ${theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[200]}25`,
+                    },
+                  }}>
+                    <CardContent sx={{ p: 3 }}>
+                      <Box display="flex" alignItems="center" gap={2} mb={2}>
+                        <AssessmentIcon sx={{ fontSize: 28, color: colors.yellowAccent?.[500] || '#ff9800' }} />
+                        <Box flex={1}>
+                          <Typography variant="h4" fontWeight="bold" color={theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]}>
+                            {dashboardData?.metrics?.onTimeProjects || 85}%
+                          </Typography>
+                          <Typography variant="body2" color={theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[600]}>
+                            On-Time Rate
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card sx={{ 
+                    height: '100%',
+                    borderRadius: 3, 
+                    bgcolor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.primary[100],
+                    boxShadow: `0 4px 20px ${theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[200]}15`,
+                    border: `1px solid ${theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[200]}30`,
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: `0 6px 24px ${theme.palette.mode === 'dark' ? colors.primary[300] : colors.primary[200]}25`,
+                    },
+                  }}>
+                    <CardContent sx={{ p: 3 }}>
+                      <Box display="flex" alignItems="center" gap={2} mb={2}>
+                        <TrendingUpIcon sx={{ fontSize: 28, color: colors.greenAccent?.[500] || '#4caf50' }} />
+                        <Box flex={1}>
+                          <Typography variant="h4" fontWeight="bold" color={theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[900]}>
+                            {dashboardData?.metrics?.budgetUtilization || 68}%
+                          </Typography>
+                          <Typography variant="body2" color={theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[600]}>
+                            Budget Utilization
+                          </Typography>
+                        </Box>
+                      </Box>
                     </CardContent>
                   </Card>
                 </Grid>

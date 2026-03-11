@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Box, Typography, Button, TextField, Dialog, DialogTitle,
   DialogContent, DialogActions, Paper, CircularProgress, IconButton,
@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import { DataGrid } from "@mui/x-data-grid";
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, PersonAdd as PersonAddIcon, Settings as SettingsIcon, Lock as LockIcon, LockReset as LockResetIcon, Block as BlockIcon, CheckCircle as CheckCircleIcon, Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
+import { useSearchParams } from 'react-router-dom';
 import apiService from '../api/userService';
 import apiServiceMain from '../api';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -37,6 +38,10 @@ function UserManagementPage() {
   const { user, logout, hasPrivilege } = useAuth();
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Check if we should show only pending users from URL parameter
+  const showPendingOnly = searchParams.get('pending') === 'true';
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -127,12 +132,49 @@ function UserManagementPage() {
 
   // --- Fetching Data ---
 
-  const fetchUsers = useCallback(async () => {
+  const fetchUsers = useCallback(async (pendingOnly = false) => {
     setLoading(true);
     setError(null);
     try {
-      if (hasPrivilege('user.read_all')) {
-        const data = await apiService.getUsers();
+      if (hasPrivilege('user.read_all') || hasPrivilege('user.read') || hasPrivilege('user.approve')) {
+        let data;
+        
+        // If pendingOnly is true, fetch only pending users
+        if (pendingOnly) {
+          try {
+            // Try using the users service from main API
+            if (apiServiceMain.users && typeof apiServiceMain.users.getPendingUsers === 'function') {
+              data = await apiServiceMain.users.getPendingUsers();
+            } else {
+              // Fallback: fetch all users and filter
+              const allUsers = await apiService.getUsers();
+              data = allUsers.filter(u => {
+                const isActive = u.isActive !== undefined ? u.isActive : u.is_active;
+                return !isActive || isActive === false || isActive === 0;
+              });
+            }
+            // Ensure it's an array
+            if (!Array.isArray(data)) {
+              data = [];
+            }
+          } catch (pendingErr) {
+            console.error('Error fetching pending users:', pendingErr);
+            // Fallback to fetching all users and filtering
+            try {
+              const allUsers = await apiService.getUsers();
+              data = allUsers.filter(u => {
+                const isActive = u.isActive !== undefined ? u.isActive : u.is_active;
+                return !isActive || isActive === false || isActive === 0;
+              });
+            } catch (fallbackErr) {
+              console.error('Error in fallback fetch:', fallbackErr);
+              data = [];
+            }
+          }
+        } else {
+          data = await apiService.getUsers();
+        }
+        
         const camelCaseData = data.map(u => snakeToCamelCase(u));
         setUsers(camelCaseData);
       } else {
@@ -278,12 +320,29 @@ function UserManagementPage() {
     }
   }, [userFormData.ministry, userFormData.stateDepartment, agencies]);
 
+  // Use ref to track the last user ID we fetched for to prevent infinite loops
+  const lastFetchedUserIdRef = useRef(null);
+  
   useEffect(() => {
-    fetchUsers();
-    fetchRoles();
-    fetchPrivileges();
-    fetchAgencies();
-  }, [fetchUsers, fetchRoles, fetchPrivileges, fetchAgencies]);
+    const currentUserId = user?.userId || user?.id;
+    // Only fetch if user ID changed (login/logout) or on initial mount
+    if (lastFetchedUserIdRef.current !== currentUserId) {
+      lastFetchedUserIdRef.current = currentUserId;
+      fetchUsers(showPendingOnly);
+      fetchRoles();
+      fetchPrivileges();
+      fetchAgencies();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId, user?.id]); // Only re-fetch if user ID changes (user login/logout)
+
+  // Refetch users when pending filter changes
+  useEffect(() => {
+    if (lastFetchedUserIdRef.current === (user?.userId || user?.id)) {
+      fetchUsers(showPendingOnly);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPendingOnly]);
 
 
   // --- User Management Handlers ---

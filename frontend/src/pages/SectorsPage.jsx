@@ -29,12 +29,14 @@ function SectorsPage() {
   const [error, setError] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [searchQuery, setSearchQuery] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Dialog states
   const [openDialog, setOpenDialog] = useState(false);
   const [currentSector, setCurrentSector] = useState(null);
   const [formData, setFormData] = useState({
     sectorName: '',
+    alias: '',
     description: '',
   });
   const [formErrors, setFormErrors] = useState({});
@@ -71,6 +73,7 @@ function SectorsPage() {
     const query = searchQuery.toLowerCase();
     return (
       (sector.sectorName || '').toLowerCase().includes(query) ||
+      (sector.alias || '').toLowerCase().includes(query) ||
       (sector.description || '').toLowerCase().includes(query)
     );
   });
@@ -99,9 +102,11 @@ function SectorsPage() {
     if (!validateForm()) return;
 
     try {
+      let response;
       if (currentSector) {
         // Update
-        await axiosInstance.put(`/sectors/${currentSector.id}`, formData);
+        response = await axiosInstance.put(`/sectors/${currentSector.id}`, formData);
+        console.log('Update response:', response.data);
         setSnackbar({
           open: true,
           message: 'Sector updated successfully',
@@ -109,7 +114,8 @@ function SectorsPage() {
         });
       } else {
         // Create
-        await axiosInstance.post('/sectors', formData);
+        response = await axiosInstance.post('/sectors', formData);
+        console.log('Create response:', response.data);
         setSnackbar({
           open: true,
           message: 'Sector created successfully',
@@ -118,7 +124,12 @@ function SectorsPage() {
       }
       setOpenDialog(false);
       resetForm();
-      fetchSectors();
+      // Force refresh by updating key and fetching
+      setRefreshKey(prev => prev + 1);
+      // Small delay to ensure database commit
+      setTimeout(() => {
+        fetchSectors();
+      }, 100);
     } catch (err) {
       console.error('Error saving sector:', err);
       const errorMessage = err?.response?.data?.message || err.message || 'Failed to save sector';
@@ -166,6 +177,7 @@ function SectorsPage() {
     setCurrentSector(sector);
     setFormData({
       sectorName: sector.sectorName || '',
+      alias: sector.alias || '',
       description: sector.description || '',
     });
     setFormErrors({});
@@ -176,6 +188,7 @@ function SectorsPage() {
   const resetForm = () => {
     setFormData({
       sectorName: '',
+      alias: '',
       description: '',
     });
     setFormErrors({});
@@ -194,8 +207,23 @@ function SectorsPage() {
       field: 'sectorName',
       headerName: 'Sector Name',
       flex: 1,
-      minWidth: 250,
+      minWidth: 200,
       editable: false,
+    },
+    {
+      field: 'alias',
+      headerName: 'Alias',
+      flex: 1,
+      minWidth: 150,
+      editable: false,
+      renderCell: (params) => (
+        <Typography variant="body2" sx={{ 
+          fontStyle: params.value ? 'normal' : 'italic',
+          color: params.value ? 'text.primary' : 'text.secondary'
+        }}>
+          {params.value || '-'}
+        </Typography>
+      ),
     },
     {
       field: 'description',
@@ -308,6 +336,7 @@ function SectorsPage() {
       {/* DataGrid */}
       <Paper sx={{ height: 600, width: '100%' }}>
         <DataGrid
+          key={refreshKey}
           rows={filteredSectors}
           columns={columns}
           loading={loading}
@@ -351,6 +380,16 @@ function SectorsPage() {
               onChange={(e) => handleInputChange('sectorName', e.target.value)}
               error={!!formErrors.sectorName}
               helperText={formErrors.sectorName}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              margin="dense"
+              label="Alias (Short Name)"
+              fullWidth
+              variant="outlined"
+              value={formData.alias}
+              onChange={(e) => handleInputChange('alias', e.target.value)}
+              helperText="Optional: A shorter name or abbreviation for use in dashboards and reports"
               sx={{ mb: 2 }}
             />
             <TextField

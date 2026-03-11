@@ -20,7 +20,7 @@ const useProjectData = (user, authLoading, filterState) => {
     projectCategories: [],
   });
 
-  const fetchProjects = useCallback(async () => {
+  const fetchProjects = useCallback(async (loadAll = false) => {
     setLoading(true);
     setError(null);
     
@@ -57,6 +57,12 @@ const useProjectData = (user, authLoading, filterState) => {
     const filterParams = Object.fromEntries(
       Object.entries(filterState).filter(([key, value]) => value !== '' && value !== null)
     );
+
+    // Add limit for initial load (default 100 projects for better performance)
+    // If loadAll is true, don't add limit to fetch all projects
+    if (!loadAll) {
+      filterParams.limit = filterParams.limit || 100;
+    }
 
     try {
       const data = await apiService.projects.getProjects(filterParams);
@@ -110,7 +116,7 @@ const useProjectData = (user, authLoading, filterState) => {
 
   useEffect(() => {
     if (!authLoading && user) {
-        fetchProjects();
+        fetchProjects(false); // Initial load with limit (100 projects)
         fetchAllMetadata();
     }
   }, [authLoading, user, fetchProjects, fetchAllMetadata]);

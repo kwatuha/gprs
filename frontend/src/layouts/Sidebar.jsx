@@ -350,7 +350,7 @@ const Sidebar = ({ isPinnedOpen = false, onTogglePinned }) => {
     { title: "Dashboard", to: ROUTES.DASHBOARD, icon: <DashboardIcon /> },
     { title: "Raw Data", to: ROUTES.RAW_DATA, icon: <TableChartIcon /> },
     { title: "Projects", to: ROUTES.PROJECTS, icon: <FolderOpenIcon /> },
-    { title: "Contractor Dashboard", to: ROUTES.CONTRACTOR_DASHBOARD, icon: <PaidIcon /> },
+    { title: "Personal Dashboard", to: ROUTES.CONTRACTOR_DASHBOARD, icon: <PaidIcon /> },
   ];
 
   const reportingItems = [
@@ -363,10 +363,6 @@ const Sidebar = ({ isPinnedOpen = false, onTogglePinned }) => {
 
   const managementItems = [
     { title: "Central Data Import", to: "/data-import", icon: <CloudUploadIcon /> },
-    { title: "GIS Mapping", to: ROUTES.GIS_MAPPING, icon: <MapIcon /> },
-    { title: "Import Map Data", to: ROUTES.MAP_DATA_IMPORT, icon: <CloudUploadIcon /> },
-    { title: "Strategic Planning", to: ROUTES.STRATEGIC_PLANNING, icon: <AssignmentIcon /> },
-    { title: "Import Strategic Data", to: ROUTES.STRATEGIC_DATA_IMPORT, icon: <CloudUploadIcon /> },
     // HR Module - Hidden
     // { title: "HR Module", to: ROUTES.HR, icon: <PeopleIcon />, privilege: () => hasPrivilege('hr.access') },
   ];
@@ -384,7 +380,7 @@ const Sidebar = ({ isPinnedOpen = false, onTogglePinned }) => {
   ];
 
   const contractorItems = [
-    { title: "My Projects", to: ROUTES.CONTRACTOR_DASHBOARD, icon: <FolderOpenIcon /> },
+    { title: "Personal Dashboard", to: ROUTES.CONTRACTOR_DASHBOARD, icon: <FolderOpenIcon /> },
     { title: "Payment Requests", to: `${ROUTES.CONTRACTOR_DASHBOARD}/payments`, icon: <PaidIcon /> },
     { title: "Progress Photos", to: `${ROUTES.CONTRACTOR_DASHBOARD}/photos`, icon: <PhotoCameraIcon /> },
   ];

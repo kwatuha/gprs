@@ -6,19 +6,52 @@
       "icon": "DashboardIcon",
       "submenus": [
         {
-          "title": "Dashboard",
+          "title": "Personal Dashboard",
           "icon": "DashboardIcon",
           "route": "DASHBOARD"
         },
         {
-          "title": "Contractor Dashboard",
+          "title": "System Dashboard",
+          "icon": "AnalyticsIcon",
+          "route": "SYSTEM_DASHBOARD"
+        },
+        {
+          "title": "Operations Dashboard",
+          "icon": "AssessmentIcon",
+          "route": "OPERATIONS_DASHBOARD"
+        },
+        {
+          "title": "Project By Status",
+          "icon": "AssessmentIcon",
+          "route": "PROJECT_BY_STATUS_DASHBOARD"
+        },
+        {
+          "title": "Reporting Dashboard",
+          "icon": "AssessmentIcon",
+          "route": "REPORTING_DASHBOARD",
+          "hidden": true
+        },
+        {
+          "title": "Jobs & Impact",
+          "icon": "WorkIcon",
+          "route": "JOBS_DASHBOARD"
+        },
+        {
+          "title": "Finance Dashboard",
+          "icon": "AttachMoneyIcon",
+          "route": "FINANCE_DASHBOARD"
+        },
+        {
+          "title": "Personal Dashboard",
           "icon": "PaidIcon",
-          "route": "CONTRACTOR_DASHBOARD"
+          "route": "CONTRACTOR_DASHBOARD",
+          "hidden": true
         },
         {
           "title": "Analytics",
           "icon": "AnalyticsIcon",
-          "route": "PROJECT_ANALYTICS"
+          "route": "PROJECT_ANALYTICS",
+          "hidden": true
         }
       ]
     },
@@ -101,26 +134,6 @@
           "title": "Central Import",
           "icon": "CloudUploadIcon",
           "route": "CENTRAL_IMPORT"
-        },
-        {
-          "title": "GIS Mapping",
-          "icon": "MapIcon",
-          "route": "GIS_MAPPING"
-        },
-        {
-          "title": "Map Import",
-          "icon": "CloudUploadIcon",
-          "route": "MAP_DATA_IMPORT"
-        },
-        {
-          "title": "Strategic Planning",
-          "icon": "SettingsIcon",
-          "route": "STRATEGIC_PLANNING"
-        },
-        {
-          "title": "Import Strategic Data",
-          "icon": "CloudUploadIcon",
-          "route": "STRATEGIC_DATA_IMPORT"
         }
       ]
     },

@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   nginx_proxy:
     image: nginx:alpine
@@ -27,7 +26,7 @@ services:
       - /app/node_modules
     depends_on:
       - api
-    command: npm run dev
+    command: sh -c "cd /app && npm run dev"
     # Remove VITE_API_URL - let .env.development handle it
     # environment:
     #   VITE_API_URL: /api  # Uses vite.config.js proxy to api:3000

@@ -367,7 +367,7 @@ const RoleBasedDashboard = ({ user, dashboardData }) => {
     <Box>
       <Typography variant="h5" fontWeight="bold" color={colors.grey[100]} mb={3}>
         {user?.roleName === 'admin' ? 'System Management' : 
-         user?.roleName === 'contractor' ? 'Contractor Dashboard' : 
+         user?.roleName === 'contractor' ? 'Personal Dashboard' : 
          'Personal Dashboard'}
       </Typography>
       {renderRoleDashboard()}

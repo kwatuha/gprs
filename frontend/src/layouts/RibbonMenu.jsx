@@ -212,10 +212,21 @@ export default function RibbonMenu({ isAdmin = false }) {
       return currentPath === routePath || currentPath.startsWith(routePath + '/');
     });
     
+    // Check if current path belongs to ANY category (to prevent redirecting when navigating to valid routes)
+    const belongsToAnyCategory = menuCategories.some(cat => {
+      if (!cat.submenus) return false;
+      return cat.submenus.some(s => {
+        const route = s.route && ROUTES[s.route] ? ROUTES[s.route] : s.to;
+        if (!route) return false;
+        const routePath = String(route).split('?')[0];
+        return currentPath === routePath || currentPath.startsWith(routePath + '/');
+      });
+    });
+    
     // If not on a category route, navigate to the default
-    // This handles the case where user clicks a sidebar menu from one category,
-    // then clicks a different top menu - we should navigate to that category's default
-    if (!isOnCategoryRoute) {
+    // BUT: Only redirect if the current path doesn't belong to any category
+    // This prevents redirecting when user navigates to a valid route from Quick Actions
+    if (!isOnCategoryRoute && !belongsToAnyCategory) {
       const defaultRoute = getDefaultRouteForCategory(selectedCategoryId);
       if (defaultRoute) {
         // Reset manual selection flag after navigation is triggered

@@ -474,6 +474,34 @@ const userService = {
       throw error;
     }
   },
+
+  // --- User Approval Management API Calls ---
+  getPendingUsers: async () => {
+    try {
+      const response = await axiosInstance.get('/users/pending');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching pending users:', error);
+      throw error;
+    }
+  },
+
+  getApprovedUsersSummary: async (params = {}) => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params.approvedBy) queryParams.append('approvedBy', params.approvedBy);
+      if (params.startDate) queryParams.append('startDate', params.startDate);
+      if (params.endDate) queryParams.append('endDate', params.endDate);
+      
+      const queryString = queryParams.toString();
+      const url = `/users/approved/summary${queryString ? `?${queryString}` : ''}`;
+      const response = await axiosInstance.get(url);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching approved users summary:', error);
+      throw error;
+    }
+  },
 };
 
 export default userService;

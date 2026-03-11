@@ -1,5 +1,6 @@
 // src/api/axiosInstance.js
 import axios from 'axios';
+import { ROUTES } from '../configs/appConfig';
 
 /**
  * @file Centralized Axios instance for making API requests.
@@ -51,8 +52,10 @@ axiosInstance.interceptors.response.use(
             localStorage.removeItem('jwtToken');
             
             // If we're not already on the login page, redirect to login
-            if (window.location.pathname !== '/login') {
-                window.location.href = '/login';
+            // Use the full path with basename /impes
+            const loginPath = '/impes/login';
+            if (window.location.pathname !== loginPath && !window.location.pathname.endsWith('/login')) {
+                window.location.href = loginPath;
             }
         }
         

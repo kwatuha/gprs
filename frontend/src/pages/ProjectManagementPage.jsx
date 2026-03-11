@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Menu, MenuItem, ListItemIcon, Checkbox, ListItemText, Box, Typography, Button, CircularProgress, IconButton,
   Snackbar, Alert, Stack, useTheme, Tooltip, Grid, Card, CardContent, TextField, InputAdornment, Chip,
-  Dialog, DialogTitle, DialogContent, DialogActions, LinearProgress, ToggleButton, ToggleButtonGroup,
+  Dialog, DialogTitle, DialogContent, DialogActions, LinearProgress, ToggleButton, ToggleButtonGroup, Collapse,
 } from '@mui/material';
 import { DataGrid } from "@mui/x-data-grid";
 import { getThemedDataGridSx } from '../utils/dataGridTheme';
@@ -15,7 +15,8 @@ import {
   HourglassEmpty as HourglassIcon, AccountBalance as ContractedIcon, Payment as PaidIcon,
   Search as SearchIcon, Clear as ClearIcon, PlayArrow as PlayArrowIcon, Pause as PauseIcon,
   Warning as WarningIcon, Cancel as CancelIcon, Schedule as ScheduleIcon, CheckCircleOutline as CheckCircleOutlineIcon,
-  MoreVert as MoreVertIcon, LocationOn as LocationOnIcon
+  MoreVert as MoreVertIcon, LocationOn as LocationOnIcon, Refresh as RefreshIcon, Download as DownloadIcon,
+  ExpandMore as ExpandMoreIcon, ExpandLess as ExpandLessIcon
 } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
@@ -66,6 +67,30 @@ function ProjectManagementPage() {
     projects, loading, error, snackbar,
     setSnackbar, allMetadata, fetchProjects,
   } = useProjectData(user, authLoading, emptyFilterState);
+
+  // State to track if all projects are loaded (vs initial limited load)
+  const [allProjectsLoaded, setAllProjectsLoaded] = useState(false);
+  const [loadingAll, setLoadingAll] = useState(false);
+
+  // Handler to load all projects
+  const handleLoadAllProjects = async () => {
+    setLoadingAll(true);
+    try {
+      await fetchProjects(true); // Pass true to load all
+      setAllProjectsLoaded(true);
+      setSnackbar({ open: true, message: 'All projects loaded successfully', severity: 'success' });
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Failed to load all projects', severity: 'error' });
+    } finally {
+      setLoadingAll(false);
+    }
+  };
+
+  // Handler to refresh projects
+  const handleRefresh = async () => {
+    setAllProjectsLoaded(false);
+    await fetchProjects(false); // Reload with limit
+  };
 
   // Ensure column visibility model respects config defaults
   useEffect(() => {
@@ -227,6 +252,9 @@ function ProjectManagementPage() {
 
   // State for toggling between progress and status view
   const [distributionView, setDistributionView] = useState('status'); // 'progress' or 'status'
+
+  // State for Status Overview collapse
+  const [statusOverviewExpanded, setStatusOverviewExpanded] = useState(false);
 
   // State for action menu
   const [actionMenuAnchor, setActionMenuAnchor] = useState(null);
@@ -1588,31 +1616,105 @@ function ProjectManagementPage() {
 
   return (
     <Box m="8px">
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: '6px', flexWrap: 'wrap', gap: 0.75 }}>
-        <Header title="PROJECTS" subtitle="Registry of Projects" />
+      {/* Enhanced Header Row with Better Visual Grouping */}
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          mb: 1.5, 
+          flexWrap: 'wrap', 
+          gap: 1.25,
+          p: 1.5,
+          borderRadius: 2,
+          background: isLight 
+            ? 'linear-gradient(to right, rgba(33, 150, 243, 0.04), rgba(33, 150, 243, 0.02))'
+            : `linear-gradient(to right, ${colors.primary[500]}25, ${colors.primary[500]}15)`,
+          border: `1px solid ${isLight ? 'rgba(33, 150, 243, 0.1)' : colors.blueAccent[700]}`,
+          boxShadow: isLight 
+            ? '0 1px 6px rgba(0,0,0,0.05)'
+            : '0 1px 10px rgba(0,0,0,0.2)',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+          <Header title="PROJECTS" subtitle="Registry of Projects" />
+          {/* Compact Total Projects Badge - Integrated into header */}
+          {!loading && !error && projects && projects.length > 0 && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                px: 1,
+                py: 0.4,
+                borderRadius: 2,
+                background: isLight 
+                  ? 'linear-gradient(135deg, #2196f3 0%, #42a5f5 100%)'
+                  : `linear-gradient(135deg, ${colors.blueAccent[800]}, ${colors.blueAccent[700]})`,
+                color: 'white',
+                borderTop: `2px solid ${isLight ? '#1976d2' : colors.blueAccent[500]}`,
+                boxShadow: ui.elevatedShadow,
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  transform: 'translateY(-1px)',
+                  boxShadow: isLight ? '0 4px 12px rgba(33, 150, 243, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)',
+                }
+              }}
+            >
+              <Typography variant="h6" sx={{ color: '#fff', fontWeight: 'bold', fontSize: '1rem', lineHeight: 1 }}>
+                {summaryStats.totalProjects.toLocaleString()}
+              </Typography>
+            </Box>
+          )}
+        </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
           {/* Action Buttons */}
           <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-            {hasPrivilege('projectcategory.read_all') && (
-              <Button
-                variant="outlined"
+            <Tooltip title="Refresh projects" arrow>
+              <IconButton 
                 size="small"
-                startIcon={<CategoryIcon sx={{ fontSize: 16 }} />}
-                onClick={() => navigate('/settings/project-categories')}
-                sx={{ borderColor: ui.primaryOutline, color: ui.primaryOutline, '&:hover': { backgroundColor: ui.primaryOutlineHoverBg }, fontWeight: 'semibold', borderRadius: '6px', boxShadow: ui.elevatedShadow, fontSize: '0.75rem', py: 0.4, px: 1.25 }}
+                onClick={handleRefresh}
+                disabled={loading}
+                sx={{ 
+                  color: isLight ? colors.blueAccent[700] : colors.blueAccent[300],
+                  border: `1px solid ${isLight ? colors.blueAccent[300] : colors.blueAccent[600]}`,
+                  '&:hover': { 
+                    backgroundColor: isLight ? colors.blueAccent[50] : colors.blueAccent[700],
+                  },
+                  '&:disabled': {
+                    borderColor: isLight ? theme.palette.action.disabled : colors.grey[700],
+                    color: isLight ? theme.palette.action.disabled : colors.grey[500]
+                  },
+                  width: 32,
+                  height: 32,
+                }}
               >
-                Manage Categories
-              </Button>
+                {loading ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon sx={{ fontSize: 18 }} />}
+              </IconButton>
+            </Tooltip>
+            {!allProjectsLoaded && projects.length >= 100 && (
+              <Tooltip title="Load all projects" arrow>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={loadingAll ? <CircularProgress size={14} color="inherit" /> : <DownloadIcon sx={{ fontSize: 16 }} />}
+                  onClick={handleLoadAllProjects}
+                  disabled={loadingAll || loading}
+                  sx={{
+                    color: isLight ? colors.blueAccent[700] : colors.blueAccent[300],
+                    borderColor: isLight ? colors.blueAccent[300] : colors.blueAccent[600],
+                    '&:hover': {
+                      backgroundColor: isLight ? colors.blueAccent[50] : colors.blueAccent[700],
+                      borderColor: isLight ? colors.blueAccent[500] : colors.blueAccent[400]
+                    },
+                    fontSize: '0.7rem',
+                    py: 0.3,
+                    px: 1
+                  }}
+                >
+                  {loadingAll ? 'Loading...' : 'Load All'}
+                </Button>
+              </Tooltip>
             )}
-            <Button 
-              variant="outlined" 
-              size="small" 
-              startIcon={<SettingsIcon sx={{ fontSize: 16 }} />} 
-              onClick={handleResetColumns}
-              sx={{ color: isLight ? theme.palette.text.primary : colors.grey[100], borderColor: isLight ? theme.palette.divider : colors.grey[400], '&:hover': { backgroundColor: isLight ? theme.palette.action.hover : colors.primary[500], borderColor: isLight ? theme.palette.text.primary : colors.grey[100] }, fontSize: '0.75rem', py: 0.4, px: 1.25 }}
-            >
-              Reset to Defaults
-            </Button>
             {checkUserPrivilege(user, 'project.create') && (
               <Button 
                 variant="contained" 
@@ -1626,50 +1728,52 @@ function ProjectManagementPage() {
             )}
             {filteredProjects && filteredProjects.length > 0 && (
               <>
-                <Button 
-                  variant="outlined" 
-                  size="small"
-                  startIcon={exportingExcel ? <CircularProgress size={14} color="inherit" /> : <FileDownloadIcon sx={{ fontSize: 16 }} />}
-                  onClick={handleExportToExcel}
-                  disabled={exportingExcel || exportingPdf || loading}
-                  sx={{ 
-                    color: isLight ? '#276E4B' : colors.greenAccent[500], 
-                    borderColor: isLight ? '#276E4B' : colors.greenAccent[500], 
-                    '&:hover': { 
-                      backgroundColor: isLight ? '#E8F5E9' : colors.greenAccent[600], 
-                      borderColor: isLight ? '#276E4B' : colors.greenAccent[400] 
-                    },
-                    '&:disabled': {
-                      borderColor: isLight ? theme.palette.action.disabled : colors.grey[700],
-                      color: isLight ? theme.palette.action.disabled : colors.grey[500]
-                    },
-                    fontSize: '0.7rem', py: 0.3, px: 1
-                  }}
-                >
-                  {exportingExcel ? 'Exporting...' : 'Export to Excel'}
-                </Button>
-                <Button 
-                  variant="outlined" 
-                  size="small"
-                  startIcon={exportingPdf ? <CircularProgress size={14} color="inherit" /> : <PictureAsPdfIcon sx={{ fontSize: 16 }} />}
-                  onClick={handleExportToPDF}
-                  disabled={exportingExcel || exportingPdf || loading}
-                  sx={{ 
-                    color: isLight ? '#E11D48' : colors.redAccent[500], 
-                    borderColor: isLight ? '#E11D48' : colors.redAccent[500], 
-                    '&:hover': { 
-                      backgroundColor: isLight ? '#FFEBEE' : colors.redAccent[600], 
-                      borderColor: isLight ? '#E11D48' : colors.redAccent[400] 
-                    },
-                    '&:disabled': {
-                      borderColor: isLight ? theme.palette.action.disabled : colors.grey[700],
-                      color: isLight ? theme.palette.action.disabled : colors.grey[500]
-                    },
-                    fontSize: '0.7rem', py: 0.3, px: 1
-                  }}
-                >
-                  {exportingPdf ? 'Generating PDF...' : 'Export to PDF'}
-                </Button>
+                <Tooltip title={exportingExcel ? 'Exporting...' : 'Export to Excel'} arrow>
+                  <IconButton 
+                    size="small"
+                    onClick={handleExportToExcel}
+                    disabled={exportingExcel || exportingPdf || loading}
+                    sx={{ 
+                      color: isLight ? '#276E4B' : colors.greenAccent[500], 
+                      border: `1px solid ${isLight ? '#276E4B' : colors.greenAccent[500]}`,
+                      '&:hover': { 
+                        backgroundColor: isLight ? '#E8F5E9' : colors.greenAccent[600], 
+                        borderColor: isLight ? '#276E4B' : colors.greenAccent[400] 
+                      },
+                      '&:disabled': {
+                        borderColor: isLight ? theme.palette.action.disabled : colors.grey[700],
+                        color: isLight ? theme.palette.action.disabled : colors.grey[500]
+                      },
+                      width: 32,
+                      height: 32,
+                    }}
+                  >
+                    {exportingExcel ? <CircularProgress size={16} color="inherit" /> : <FileDownloadIcon sx={{ fontSize: 18 }} />}
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title={exportingPdf ? 'Generating PDF...' : 'Export to PDF'} arrow>
+                  <IconButton 
+                    size="small"
+                    onClick={handleExportToPDF}
+                    disabled={exportingExcel || exportingPdf || loading}
+                    sx={{ 
+                      color: isLight ? '#E11D48' : colors.redAccent[500], 
+                      border: `1px solid ${isLight ? '#E11D48' : colors.redAccent[500]}`,
+                      '&:hover': { 
+                        backgroundColor: isLight ? '#FFEBEE' : colors.redAccent[600], 
+                        borderColor: isLight ? '#E11D48' : colors.redAccent[400] 
+                      },
+                      '&:disabled': {
+                        borderColor: isLight ? theme.palette.action.disabled : colors.grey[700],
+                        color: isLight ? theme.palette.action.disabled : colors.grey[500]
+                      },
+                      width: 32,
+                      height: 32,
+                    }}
+                  >
+                    {exportingPdf ? <CircularProgress size={16} color="inherit" /> : <PictureAsPdfIcon sx={{ fontSize: 18 }} />}
+                  </IconButton>
+                </Tooltip>
               </>
             )}
           </Stack>
@@ -1749,195 +1853,128 @@ function ProjectManagementPage() {
         </Box>
       </Box>
 
-      {/* Summary Statistics Cards - Show stats for filtered projects (respects search and column filters) */}
+      {/* Enhanced Quick Filters and Status Overview Section */}
       {!loading && !error && projects && projects.length > 0 && (
-        <Grid container spacing={0.5} sx={{ mb: 0.75, mt: 0.5 }}>
-          <Grid item xs={12} sm={6} md={4} lg={2}>
-            <Card 
+        <Box 
+          sx={{ 
+            mb: statusOverviewExpanded ? 1.5 : 0.5, 
+            mt: 1.5,
+            p: statusOverviewExpanded ? 2 : 0.75,
+            borderRadius: 3,
+            background: isLight 
+              ? 'linear-gradient(to bottom, rgba(33, 150, 243, 0.03), rgba(33, 150, 243, 0.06))'
+              : `linear-gradient(to bottom, ${colors.primary[500]}20, ${colors.primary[600]}25)`,
+            border: `1px solid ${isLight ? 'rgba(33, 150, 243, 0.12)' : colors.blueAccent[700]}`,
+            boxShadow: isLight 
+              ? '0 2px 12px rgba(0,0,0,0.06)'
+              : '0 2px 16px rgba(0,0,0,0.25)',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          {/* Status Overview Section with Collapsible Header */}
+          <Box>
+            <Box 
               sx={{ 
-                height: '100%',
-                background: isLight 
-                  ? 'linear-gradient(135deg, #2196f3 0%, #42a5f5 100%)'
-                  : `linear-gradient(135deg, ${colors.blueAccent[800]}, ${colors.blueAccent[700]})`,
-                color: isLight ? 'white' : 'inherit',
-                borderTop: `2px solid ${isLight ? '#1976d2' : colors.blueAccent[500]}`,
-                border: 'none',
-                boxShadow: ui.elevatedShadow,
-                transition: 'transform 0.2s ease-in-out',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                p: 0.5,
+                borderRadius: 1.5,
+                transition: 'all 0.2s ease',
                 '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: isLight ? '0 4px 12px rgba(33, 150, 243, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)',
+                  backgroundColor: isLight ? colors.grey[50] : colors.primary[600],
                 }
               }}
+              onClick={() => setStatusOverviewExpanded(!statusOverviewExpanded)}
             >
-              <CardContent sx={{ p: 0.75, '&:last-child': { pb: 0.75 } }}>
-                <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.375}>
-                  <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem' }}>
-                    Total Projects
-                  </Typography>
-                  <AssignmentIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.blueAccent[500], fontSize: 14 }} />
-                </Box>
-                <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 'bold', fontSize: '1rem', mb: 0.125, lineHeight: 1.15 }}>
-                  {summaryStats.totalProjects.toLocaleString()}
-                </Typography>
-                <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.8)' : colors.grey[300], fontWeight: 400, fontSize: '0.6rem' }}>
-                  {summaryStats.completionRate}% completed
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={4} lg={2}>
-            <Card 
-              sx={{ 
-                height: '100%',
-                background: isLight 
-                  ? 'linear-gradient(135deg, #4caf50 0%, #81c784 100%)'
-                  : `linear-gradient(135deg, ${colors.greenAccent[800]}, ${colors.greenAccent[700]})`,
-                color: isLight ? 'white' : 'inherit',
-                borderTop: `2px solid ${isLight ? '#388e3c' : colors.greenAccent[500]}`,
-                border: 'none',
-                boxShadow: ui.elevatedShadow,
-                transition: 'transform 0.2s ease-in-out',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: isLight ? '0 4px 12px rgba(76, 175, 80, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)',
-                }
-              }}
-            >
-              <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
-                  <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.7rem' }}>
-                    Total Budget
-                  </Typography>
-                  <MoneyIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.greenAccent[500], fontSize: 16 }} />
-                </Box>
-                <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 'bold', fontSize: '1.1rem', mb: 0.25, lineHeight: 1.2 }}>
-                  {formatCurrencyInMillions(summaryStats.totalBudget)}
-                </Typography>
-                <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.8)' : colors.grey[300], fontWeight: 400, fontSize: '0.65rem' }}>
-                  Allocated funds
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Sites Summary */}
-          <Grid item xs={12} sm={6} md={4} lg={2}>
-            <Card 
-              sx={{ 
-                height: '100%',
-                background: isLight 
-                  ? 'linear-gradient(135deg, #3949ab 0%, #5c6bc0 100%)'
-                  : `linear-gradient(135deg, ${colors.blueAccent[800]}, ${colors.blueAccent[700]})`,
-                color: isLight ? 'white' : 'inherit',
-                borderTop: `2px solid ${isLight ? '#283593' : colors.blueAccent[500]}`,
-                border: 'none',
-                boxShadow: ui.elevatedShadow,
-                transition: 'transform 0.2s ease-in-out',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: isLight ? '0 4px 12px rgba(57, 73, 171, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)',
-                }
-              }}
-            >
-              <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
-                  <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.7rem' }}>
-                    Sites
-                  </Typography>
-                  <LocationOnIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontSize: 16 }} />
-                </Box>
-                <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 'bold', fontSize: '1.1rem', mb: 0.25, lineHeight: 1.2 }}>
-                  {summaryStats.totalSites.toLocaleString()}
-                </Typography>
-                <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.8)' : colors.grey[300], fontWeight: 400, fontSize: '0.65rem' }}>
-                  Total project sites
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Disbursed Summary */}
-          <Grid item xs={12} sm={6} md={4} lg={2}>
-            <Card 
-              sx={{ 
-                height: '100%',
-                background: isLight 
-                  ? 'linear-gradient(135deg, #26a69a 0%, #4db6ac 100%)'
-                  : `linear-gradient(135deg, ${colors.greenAccent[800]}, ${colors.greenAccent[700]})`,
-                color: isLight ? 'white' : 'inherit',
-                borderTop: `2px solid ${isLight ? '#00897b' : colors.greenAccent[400]}`,
-                border: 'none',
-                boxShadow: ui.elevatedShadow,
-                transition: 'transform 0.2s ease-in-out',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: isLight ? '0 4px 12px rgba(38, 166, 154, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)',
-                }
-              }}
-            >
-              <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
-                  <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.7rem' }}>
-                    Disbursed
-                  </Typography>
-                  <PaidIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.greenAccent[400], fontSize: 16 }} />
-                </Box>
-                <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 'bold', fontSize: '1.1rem', mb: 0.25, lineHeight: 1.2 }}>
-                  {formatCurrencyInMillions(summaryStats.totalPaidOut)}
-                </Typography>
-                <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.8)' : colors.grey[300], fontWeight: 400, fontSize: '0.65rem' }}>
-                  {summaryStats.totalBudget > 0 
-                    ? Math.round((summaryStats.totalPaidOut / summaryStats.totalBudget) * 100) 
-                    : 0}% of budget
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Jobs Summary */}
-          <Grid item xs={12} sm={6} md={4} lg={2}>
-            <Card 
-              sx={{ 
-                height: '100%',
-                background: isLight 
-                  ? 'linear-gradient(135deg, #2e7d32 0%, #43a047 100%)'
-                  : `linear-gradient(135deg, ${colors.greenAccent[700]}, ${colors.greenAccent[500]})`,
-                color: isLight ? 'white' : 'inherit',
-                borderTop: `2px solid ${isLight ? '#1b5e20' : colors.greenAccent[400]}`,
-                border: 'none',
-                boxShadow: ui.elevatedShadow,
-                transition: 'transform 0.2s ease-in-out',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: isLight ? '0 4px 12px rgba(46, 125, 50, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)',
-                }
-              }}
-            >
-              <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
-                  <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.7rem' }}>
-                    Jobs Created
-                  </Typography>
-                  <GroupAddIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontSize: 16 }} />
-                </Box>
-                <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 'bold', fontSize: '1.1rem', mb: 0.25, lineHeight: 1.2 }}>
-                  {summaryStats.totalJobs.toLocaleString()}
-                </Typography>
-                <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.8)' : colors.grey[300], fontWeight: 400, fontSize: '0.65rem' }}>
-                  Total jobs across projects
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
-
-      {/* Distribution Cards - Toggle between Progress and Status */}
-      {!loading && !error && projects && projects.length > 0 && (
-        <Box sx={{ mb: 0.75, mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-            <Grid container spacing={0.375} sx={{ display: 'flex', flexWrap: 'nowrap', overflowX: 'auto', flex: 1, '&::-webkit-scrollbar': { display: 'none' }, scrollbarWidth: 'none' }}>
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  color: isLight ? colors.grey[600] : colors.grey[400],
+                  fontWeight: 700,
+                  fontSize: '0.7rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                }}
+              >
+                Status Overview
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {statusOverviewExpanded && (
+                  <ToggleButtonGroup
+                    value={distributionView}
+                    exclusive
+                    onChange={(e, newView) => {
+                      if (newView !== null) {
+                        setDistributionView(newView);
+                        setFilterModel({ items: [] });
+                      }
+                    }}
+                    size="small"
+                    onClick={(e) => e.stopPropagation()}
+                    sx={{
+                      '& .MuiToggleButton-root': {
+                        px: 2,
+                        py: 0.75,
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        border: `1px solid ${isLight ? colors.grey[300] : colors.grey[600]}`,
+                        color: isLight ? colors.grey[700] : colors.grey[300],
+                        transition: 'all 0.2s ease',
+                        '&.Mui-selected': {
+                          backgroundColor: colors.blueAccent[500],
+                          color: '#fff',
+                          borderColor: colors.blueAccent[500],
+                          boxShadow: `0 2px 8px ${colors.blueAccent[500]}40`,
+                          '&:hover': {
+                            backgroundColor: colors.blueAccent[600],
+                          },
+                        },
+                        '&:hover': {
+                          backgroundColor: isLight ? colors.grey[100] : colors.grey[700],
+                          transform: 'translateY(-1px)',
+                        },
+                      },
+                    }}
+                  >
+                    <ToggleButton value="progress">Progress</ToggleButton>
+                    <ToggleButton value="status">Status</ToggleButton>
+                  </ToggleButtonGroup>
+                )}
+                {statusOverviewExpanded ? (
+                  <ExpandLessIcon sx={{ fontSize: 20, color: isLight ? colors.grey[600] : colors.grey[400] }} />
+                ) : (
+                  <ExpandMoreIcon sx={{ fontSize: 20, color: isLight ? colors.grey[600] : colors.grey[400] }} />
+                )}
+              </Box>
+            </Box>
+            <Collapse in={statusOverviewExpanded}>
+              {/* Distribution Cards - Enhanced Scrollable Container */}
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 0.75, 
+            overflowX: 'auto', 
+            pb: 1,
+            px: 0.5,
+            '&::-webkit-scrollbar': { 
+              height: '8px',
+            }, 
+            '&::-webkit-scrollbar-track': { 
+              background: isLight ? colors.grey[100] : colors.primary[600], 
+              borderRadius: '4px',
+              margin: '0 8px',
+            }, 
+            '&::-webkit-scrollbar-thumb': { 
+              background: isLight ? colors.grey[400] : colors.grey[600], 
+              borderRadius: '4px',
+              '&:hover': { 
+                background: isLight ? colors.grey[500] : colors.grey[500] 
+              } 
+            } 
+          }}>
+            <Grid container spacing={0.5} sx={{ display: 'flex', flexWrap: 'nowrap', flex: 1 }}>
 
           {/* Progress View */}
           {distributionView === 'progress' && (
@@ -2455,46 +2492,9 @@ function ProjectManagementPage() {
             </>
           )}
             </Grid>
-            <ToggleButtonGroup
-              value={distributionView}
-              exclusive
-              onChange={(e, newView) => {
-                if (newView !== null) {
-                  setDistributionView(newView);
-                  // Clear any active filters when switching views
-                  setFilterModel({ items: [] });
-                }
-              }}
-              size="small"
-              sx={{
-                flexShrink: 0,
-                '& .MuiToggleButton-root': {
-                  px: 1.5,
-                  py: 0.5,
-                  fontSize: '0.75rem',
-                  textTransform: 'none',
-                  borderColor: isLight ? colors.grey[400] : colors.grey[600],
-                  color: isLight ? colors.grey[700] : colors.grey[300],
-                  '&.Mui-selected': {
-                    backgroundColor: isLight ? colors.blueAccent[500] : colors.blueAccent[600],
-                    color: '#fff',
-                    '&:hover': {
-                      backgroundColor: isLight ? colors.blueAccent[600] : colors.blueAccent[700],
-                    }
-                  },
-                  '&:hover': {
-                    backgroundColor: isLight ? colors.grey[100] : colors.grey[700],
-                  }
-                }
-              }}
-            >
-              <ToggleButton value="progress" aria-label="progress view">
-                Progress
-              </ToggleButton>
-              <ToggleButton value="status" aria-label="status view">
-                Status
-              </ToggleButton>
-            </ToggleButtonGroup>
+          </Box>
+            </Collapse>
+          </Box>
         </Box>
       )}
 

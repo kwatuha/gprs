@@ -37,8 +37,8 @@ import SettingsPage from './pages/SettingsPage';
 import ProjectCategoryPage from './pages/ProjectCategoryPage';
 // NEW: Import the ProjectPhotoManager component
 import ProjectPhotoManager from './pages/ProjectPhotoManager';
-// NEW: Import the ContractorDashboard component
-import ContractorDashboard from './pages/ContractorDashboard';
+// NEW: Import the PersonalDashboard component (formerly ContractorDashboard)
+import PersonalDashboard from './pages/ContractorDashboard';
 // NEW: Import the ContractorManagementPage component
 import ContractorManagementPage from './pages/ContractorManagementPage';
 // NEW: Import the HrModulePage component
@@ -76,12 +76,19 @@ import KenyaWardsPage from './pages/KenyaWardsPage';
 import AgenciesPage from './pages/AgenciesPage';
 // ✨ NEW: Import the Sectors page
 import SectorsPage from './pages/SectorsPage';
+// ✨ NEW: Import specialized dashboards
+import OperationsDashboardPage from './pages/OperationsDashboardPage';
+import JobsImpactDashboardPage from './pages/JobsImpactDashboardPage';
+import FinanceDashboardPage from './pages/FinanceDashboardPage';
+import ProjectByStatusDashboardPage from './pages/ProjectByStatusDashboardPage';
+import ReportingDashboardPage from './pages/ReportingDashboardPage';
  
 import ReportingView from './components/ReportingView';
 import RegionalReportsView from './components/RegionalReportsView';
 import RegionalDashboard from './components/RegionalDashboard';
 
 import ProjectDashboardPage from './pages/ProjectsDashboardPage';
+import SystemDashboardPage from './pages/SystemDashboardPage';
 import DashboardConfigManager from './components/DashboardConfigManager';
 // NEW: Import the simplified modern theme
 import { modernTheme } from './theme/modernTheme';
@@ -103,6 +110,30 @@ const router = createBrowserRouter([
         element: <DashboardLandingPage />,
       },
       {
+        path: 'system-dashboard',
+        element: <SystemDashboardPage />,
+      },
+      {
+        path: 'operations-dashboard',
+        element: <OperationsDashboardPage />,
+      },
+      {
+        path: 'project-by-status-dashboard',
+        element: <ProjectByStatusDashboardPage />,
+      },
+      {
+        path: 'reporting-dashboard',
+        element: <ReportingDashboardPage />,
+      },
+      {
+        path: 'jobs-dashboard',
+        element: <JobsImpactDashboardPage />,
+      },
+      {
+        path: 'finance-dashboard',
+        element: <FinanceDashboardPage />,
+      },
+      {
         path: 'dashboard-config',
         element: <DashboardConfigManager />,
       },
@@ -112,7 +143,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'contractor-dashboard',
-        element: <ContractorDashboard />,
+        element: <PersonalDashboard />,
       },
       {
         path: 'contractor-management',

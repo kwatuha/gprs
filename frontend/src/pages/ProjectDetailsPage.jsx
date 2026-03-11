@@ -75,6 +75,17 @@ const getMilestoneStatusColors = (status) => {
     };
 };
 
+// Helper function to normalize status for filtering (handle "In Progress" vs "Ongoing" variations)
+const normalizeStatusForFilter = (status) => {
+    if (!status) return '';
+    const s = status.toLowerCase().trim();
+    // Map variations to standard values
+    if (s === 'in progress' || s === 'ongoing' || s === 'on-going') return 'in progress';
+    if (s === 'not started' || s === 'notstarted') return 'not started';
+    if (s === 'completed' || s === 'complete') return 'completed';
+    return s;
+};
+
 // Helper function to get public approval status
 const getPublicApprovalStatus = (project) => {
     if (!project) return null;
@@ -102,6 +113,7 @@ const getPublicApprovalStatus = (project) => {
         icon: <PendingIcon sx={{ fontSize: 14 }} />
     };
 };
+
 import { tokens } from "./dashboard/theme"; // Import tokens for color styling
 import MilestoneAttachments from '../components/MilestoneAttachments.jsx';
 import ProjectMonitoringComponent from '../components/ProjectMonitoringComponent.jsx';
@@ -4027,8 +4039,10 @@ function ProjectDetailsPage() {
                                                 </MenuItem>
                                                 <MenuItem value="Not Started">Not Started</MenuItem>
                                                 <MenuItem value="In Progress">In Progress</MenuItem>
+                                                <MenuItem value="Ongoing">Ongoing</MenuItem>
                                                 <MenuItem value="Completed">Completed</MenuItem>
                                                 <MenuItem value="Stalled">Stalled</MenuItem>
+                                                <MenuItem value="Suspended">Suspended</MenuItem>
                                             </Select>
                                         </FormControl>
                                         <Button
@@ -4082,14 +4096,15 @@ function ProjectDetailsPage() {
                                                 .join(' ')
                                                 .toLowerCase();
 
-                                            const statusText = (site.status_norm || site.status_raw || '').toString();
+                                            const statusText = (site.status_norm || site.status_raw || '').toString().toLowerCase();
 
                                             const matchesLocation =
                                                 !locationFilter ||
-                                                locationText.includes(locationFilter);
+                                                locationText.includes(locationFilter.toLowerCase());
 
                                             const matchesStatus =
-                                                !statusFilter || statusText === statusFilter;
+                                                !statusFilter || 
+                                                normalizeStatusForFilter(statusText) === normalizeStatusForFilter(statusFilter);
 
                                             return matchesLocation && matchesStatus;
                                         })
@@ -4186,14 +4201,15 @@ function ProjectDetailsPage() {
                                                 </Box>
                                                 <Stack spacing={0.5}>
                                                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5 }}>
-                                                    {site.status_norm && (
+                                                    {(site.status_norm || site.status_raw) && (
                                                             <Chip
-                                                                label={site.status_norm}
+                                                                label={site.status_norm || site.status_raw}
                                                                 size="small"
                                                                 color={
-                                                                    site.status_norm === 'Completed'
+                                                                    (site.status_norm || site.status_raw || '').toLowerCase() === 'completed'
                                                                         ? 'success'
-                                                                        : site.status_norm === 'In Progress'
+                                                                        : (site.status_norm || site.status_raw || '').toLowerCase().includes('progress') || 
+                                                                          (site.status_norm || site.status_raw || '').toLowerCase() === 'ongoing'
                                                                             ? 'primary'
                                                                             : 'default'
                                                                 }
@@ -4284,8 +4300,10 @@ function ProjectDetailsPage() {
                                 >
                                     <MenuItem value="Not Started">Not Started</MenuItem>
                                     <MenuItem value="In Progress">In Progress</MenuItem>
+                                    <MenuItem value="Ongoing">Ongoing</MenuItem>
                                     <MenuItem value="Completed">Completed</MenuItem>
                                     <MenuItem value="Stalled">Stalled</MenuItem>
+                                    <MenuItem value="Suspended">Suspended</MenuItem>
                                 </Select>
                             </FormControl>
                             <TextField

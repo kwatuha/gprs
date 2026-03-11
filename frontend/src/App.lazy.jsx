@@ -31,7 +31,7 @@ const MapDataImportPage = lazy(() => import('./pages/MapDataImportPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ProjectCategoryPage = lazy(() => import('./pages/ProjectCategoryPage'));
 const ProjectPhotoManager = lazy(() => import('./pages/ProjectPhotoManager'));
-const ContractorDashboard = lazy(() => import('./pages/ContractorDashboard'));
+const PersonalDashboard = lazy(() => import('./pages/ContractorDashboard'));
 const ContractorManagementPage = lazy(() => import('./pages/ContractorManagementPage'));
 const DashboardConfigManager = lazy(() => import('./pages/DashboardConfigManager'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
@@ -87,7 +87,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'contractor-dashboard',
-        element: <LazyRoute component={ContractorDashboard} />,
+        element: <LazyRoute component={PersonalDashboard} />,
       },
       {
         path: 'contractor-management',

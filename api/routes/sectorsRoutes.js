@@ -11,33 +11,90 @@ router.get('/', async (req, res) => {
     const DB_TYPE = process.env.DB_TYPE || 'postgresql';
     
     try {
+        // Check if alias column exists
+        let aliasColumnExists = false;
+        try {
+            if (DB_TYPE === 'postgresql') {
+                const checkResult = await pool.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'sectors' AND column_name = 'alias'
+                `);
+                aliasColumnExists = checkResult.rows.length > 0;
+            } else {
+                const checkResult = await pool.query(`
+                    SELECT COLUMN_NAME 
+                    FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = 'sectors' AND COLUMN_NAME = 'alias'
+                `);
+                aliasColumnExists = Array.isArray(checkResult) ? checkResult[0]?.length > 0 : checkResult.length > 0;
+            }
+        } catch (checkError) {
+            console.warn('Could not check for alias column, assuming it does not exist:', checkError.message);
+            aliasColumnExists = false;
+        }
+        
         let query;
         if (DB_TYPE === 'postgresql') {
-            query = `
-                SELECT 
-                    id,
-                    name AS "sectorName",
-                    description,
-                    created_at AS "createdAt",
-                    updated_at AS "updatedAt",
-                    voided
-                FROM sectors
-                WHERE voided = false
-                ORDER BY name
-            `;
+            if (aliasColumnExists) {
+                query = `
+                    SELECT 
+                        id,
+                        name AS "sectorName",
+                        COALESCE(alias, '') AS alias,
+                        description,
+                        created_at AS "createdAt",
+                        updated_at AS "updatedAt",
+                        voided
+                    FROM sectors
+                    WHERE voided = false
+                    ORDER BY name
+                `;
+            } else {
+                query = `
+                    SELECT 
+                        id,
+                        name AS "sectorName",
+                        '' AS alias,
+                        description,
+                        created_at AS "createdAt",
+                        updated_at AS "updatedAt",
+                        voided
+                    FROM sectors
+                    WHERE voided = false
+                    ORDER BY name
+                `;
+            }
         } else {
-            query = `
-                SELECT 
-                    id,
-                    name AS sectorName,
-                    description,
-                    createdAt,
-                    updatedAt,
-                    voided
-                FROM sectors
-                WHERE voided = 0
-                ORDER BY name
-            `;
+            if (aliasColumnExists) {
+                query = `
+                    SELECT 
+                        id,
+                        name AS sectorName,
+                        COALESCE(alias, '') AS alias,
+                        description,
+                        createdAt,
+                        updatedAt,
+                        voided
+                    FROM sectors
+                    WHERE voided = 0
+                    ORDER BY name
+                `;
+            } else {
+                query = `
+                    SELECT 
+                        id,
+                        name AS sectorName,
+                        '' AS alias,
+                        description,
+                        createdAt,
+                        updatedAt,
+                        voided
+                    FROM sectors
+                    WHERE voided = 0
+                    ORDER BY name
+                `;
+            }
         }
         
         const result = await pool.query(query);
@@ -60,31 +117,85 @@ router.get('/:id', async (req, res) => {
     const DB_TYPE = process.env.DB_TYPE || 'postgresql';
     
     try {
+        // Check if alias column exists
+        let aliasColumnExists = false;
+        try {
+            if (DB_TYPE === 'postgresql') {
+                const checkResult = await pool.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'sectors' AND column_name = 'alias'
+                `);
+                aliasColumnExists = checkResult.rows.length > 0;
+            } else {
+                const checkResult = await pool.query(`
+                    SELECT COLUMN_NAME 
+                    FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = 'sectors' AND COLUMN_NAME = 'alias'
+                `);
+                aliasColumnExists = Array.isArray(checkResult) ? checkResult[0]?.length > 0 : checkResult.length > 0;
+            }
+        } catch (checkError) {
+            aliasColumnExists = false;
+        }
+        
         let query;
         if (DB_TYPE === 'postgresql') {
-            query = `
-                SELECT 
-                    id,
-                    name AS "sectorName",
-                    description,
-                    created_at AS "createdAt",
-                    updated_at AS "updatedAt",
-                    voided
-                FROM sectors
-                WHERE id = $1 AND voided = false
-            `;
+            if (aliasColumnExists) {
+                query = `
+                    SELECT 
+                        id,
+                        name AS "sectorName",
+                        COALESCE(alias, '') AS alias,
+                        description,
+                        created_at AS "createdAt",
+                        updated_at AS "updatedAt",
+                        voided
+                    FROM sectors
+                    WHERE id = $1 AND voided = false
+                `;
+            } else {
+                query = `
+                    SELECT 
+                        id,
+                        name AS "sectorName",
+                        '' AS alias,
+                        description,
+                        created_at AS "createdAt",
+                        updated_at AS "updatedAt",
+                        voided
+                    FROM sectors
+                    WHERE id = $1 AND voided = false
+                `;
+            }
         } else {
-            query = `
-                SELECT 
-                    id,
-                    name AS sectorName,
-                    description,
-                    createdAt,
-                    updatedAt,
-                    voided
-                FROM sectors
-                WHERE id = ? AND voided = 0
-            `;
+            if (aliasColumnExists) {
+                query = `
+                    SELECT 
+                        id,
+                        name AS sectorName,
+                        COALESCE(alias, '') AS alias,
+                        description,
+                        createdAt,
+                        updatedAt,
+                        voided
+                    FROM sectors
+                    WHERE id = ? AND voided = 0
+                `;
+            } else {
+                query = `
+                    SELECT 
+                        id,
+                        name AS sectorName,
+                        '' AS alias,
+                        description,
+                        createdAt,
+                        updatedAt,
+                        voided
+                    FROM sectors
+                    WHERE id = ? AND voided = 0
+                `;
+            }
         }
         
         const result = await pool.query(query, [id]);
@@ -110,27 +221,66 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
     const DB_TYPE = process.env.DB_TYPE || 'postgresql';
-    const { sectorName, description } = req.body;
+    const { sectorName, alias, description } = req.body;
     
     if (!sectorName || !sectorName.trim()) {
         return res.status(400).json({ message: 'Sector name is required' });
     }
     
     try {
+        // Check if alias column exists
+        let aliasColumnExists = false;
+        try {
+            if (DB_TYPE === 'postgresql') {
+                const checkResult = await pool.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'sectors' AND column_name = 'alias'
+                `);
+                aliasColumnExists = checkResult.rows.length > 0;
+            } else {
+                const checkResult = await pool.query(`
+                    SELECT COLUMN_NAME 
+                    FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = 'sectors' AND COLUMN_NAME = 'alias'
+                `);
+                aliasColumnExists = Array.isArray(checkResult) ? checkResult[0]?.length > 0 : checkResult.length > 0;
+            }
+        } catch (checkError) {
+            aliasColumnExists = false;
+        }
+        
         let query, params;
         if (DB_TYPE === 'postgresql') {
-            query = `
-                INSERT INTO sectors (name, description, voided)
-                VALUES ($1, $2, false)
-                RETURNING id, name AS "sectorName", description, created_at AS "createdAt", updated_at AS "updatedAt", voided
-            `;
-            params = [sectorName.trim(), description?.trim() || null];
+            if (aliasColumnExists) {
+                query = `
+                    INSERT INTO sectors (name, alias, description, voided)
+                    VALUES ($1, $2, $3, false)
+                    RETURNING id, name AS "sectorName", COALESCE(alias, '') AS alias, description, created_at AS "createdAt", updated_at AS "updatedAt", voided
+                `;
+                params = [sectorName.trim(), alias?.trim() || null, description?.trim() || null];
+            } else {
+                query = `
+                    INSERT INTO sectors (name, description, voided)
+                    VALUES ($1, $2, false)
+                    RETURNING id, name AS "sectorName", '' AS alias, description, created_at AS "createdAt", updated_at AS "updatedAt", voided
+                `;
+                params = [sectorName.trim(), description?.trim() || null];
+            }
         } else {
-            query = `
-                INSERT INTO sectors (name, description, voided)
-                VALUES (?, ?, 0)
-            `;
-            params = [sectorName.trim(), description?.trim() || null];
+            if (aliasColumnExists) {
+                query = `
+                    INSERT INTO sectors (name, alias, description, voided)
+                    VALUES (?, ?, ?, 0)
+                `;
+                params = [sectorName.trim(), alias?.trim() || null, description?.trim() || null];
+            } else {
+                query = `
+                    INSERT INTO sectors (name, description, voided)
+                    VALUES (?, ?, 0)
+                `;
+                params = [sectorName.trim(), description?.trim() || null];
+            }
         }
         
         const result = await pool.query(query, params);
@@ -144,6 +294,7 @@ router.post('/', async (req, res) => {
             const newSector = {
                 id: result.insertId,
                 sectorName: sectorName.trim(),
+                alias: aliasColumnExists ? (alias?.trim() || '') : '',
                 description: description?.trim() || null,
                 voided: false
             };
@@ -172,32 +323,79 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const DB_TYPE = process.env.DB_TYPE || 'postgresql';
-    const { sectorName, description } = req.body;
+    const { sectorName, alias, description } = req.body;
     
     if (!sectorName || !sectorName.trim()) {
         return res.status(400).json({ message: 'Sector name is required' });
     }
     
     try {
-        let query, params;
-        if (DB_TYPE === 'postgresql') {
-            query = `
-                UPDATE sectors
-                SET name = $1, description = $2, updated_at = CURRENT_TIMESTAMP
-                WHERE id = $3 AND voided = false
-                RETURNING id, name AS "sectorName", description, created_at AS "createdAt", updated_at AS "updatedAt", voided
-            `;
-            params = [sectorName.trim(), description?.trim() || null, id];
-        } else {
-            query = `
-                UPDATE sectors
-                SET name = ?, description = ?, updatedAt = CURRENT_TIMESTAMP
-                WHERE id = ? AND voided = 0
-            `;
-            params = [sectorName.trim(), description?.trim() || null, id];
+        // Check if alias column exists
+        let aliasColumnExists = false;
+        try {
+            if (DB_TYPE === 'postgresql') {
+                const checkResult = await pool.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'sectors' AND column_name = 'alias'
+                `);
+                aliasColumnExists = checkResult.rows.length > 0;
+            } else {
+                const checkResult = await pool.query(`
+                    SELECT COLUMN_NAME 
+                    FROM INFORMATION_SCHEMA.COLUMNS 
+                    WHERE TABLE_NAME = 'sectors' AND COLUMN_NAME = 'alias'
+                `);
+                aliasColumnExists = Array.isArray(checkResult) ? checkResult[0]?.length > 0 : checkResult.length > 0;
+            }
+        } catch (checkError) {
+            aliasColumnExists = false;
         }
         
+        console.log(`[Sectors Update] Alias column exists: ${aliasColumnExists}, Alias value: "${alias}"`);
+        
+        let query, params;
+        if (DB_TYPE === 'postgresql') {
+            if (aliasColumnExists) {
+                query = `
+                    UPDATE sectors
+                    SET name = $1, alias = $2, description = $3, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = $4 AND voided = false
+                    RETURNING id, name AS "sectorName", COALESCE(alias, '') AS alias, description, created_at AS "createdAt", updated_at AS "updatedAt", voided
+                `;
+                params = [sectorName.trim(), alias?.trim() || null, description?.trim() || null, id];
+            } else {
+                console.warn('[Sectors Update] Alias column does not exist, alias value will not be saved. Please run migration script.');
+                query = `
+                    UPDATE sectors
+                    SET name = $1, description = $2, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = $3 AND voided = false
+                    RETURNING id, name AS "sectorName", '' AS alias, description, created_at AS "createdAt", updated_at AS "updatedAt", voided
+                `;
+                params = [sectorName.trim(), description?.trim() || null, id];
+            }
+        } else {
+            if (aliasColumnExists) {
+                query = `
+                    UPDATE sectors
+                    SET name = ?, alias = ?, description = ?, updatedAt = CURRENT_TIMESTAMP
+                    WHERE id = ? AND voided = 0
+                `;
+                params = [sectorName.trim(), alias?.trim() || null, description?.trim() || null, id];
+            } else {
+                console.warn('[Sectors Update] Alias column does not exist, alias value will not be saved. Please run migration script.');
+                query = `
+                    UPDATE sectors
+                    SET name = ?, description = ?, updatedAt = CURRENT_TIMESTAMP
+                    WHERE id = ? AND voided = 0
+                `;
+                params = [sectorName.trim(), description?.trim() || null, id];
+            }
+        }
+        
+        console.log(`[Sectors Update] Executing query with params:`, params);
         const result = await pool.query(query, params);
+        console.log(`[Sectors Update] Update result:`, result.rows?.[0] || result);
         
         if (DB_TYPE === 'postgresql') {
             if (result.rows.length === 0) {
@@ -212,10 +410,13 @@ router.put('/:id', async (req, res) => {
                 return res.status(404).json({ message: 'Sector not found' });
             }
             // Fetch updated sector
-            const [updated] = await pool.query(
-                'SELECT id, name AS sectorName, description, createdAt, updatedAt, voided FROM sectors WHERE id = ?',
-                [id]
-            );
+            let fetchQuery;
+            if (aliasColumnExists) {
+                fetchQuery = 'SELECT id, name AS sectorName, COALESCE(alias, \'\') AS alias, description, createdAt, updatedAt, voided FROM sectors WHERE id = ?';
+            } else {
+                fetchQuery = 'SELECT id, name AS sectorName, \'\' AS alias, description, createdAt, updatedAt, voided FROM sectors WHERE id = ?';
+            }
+            const [updated] = await pool.query(fetchQuery, [id]);
             res.status(200).json({
                 message: 'Sector updated successfully',
                 sector: updated[0]

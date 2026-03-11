@@ -51,6 +51,7 @@ function AgenciesPage() {
     ministry: '',
     state_department: '',
     agency_name: '',
+    alias: '',
   });
   const [formErrors, setFormErrors] = useState({});
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -66,6 +67,7 @@ function AgenciesPage() {
   const [exportingExcel, setExportingExcel] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [exportAll, setExportAll] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Fetch agencies with pagination
   const fetchAgencies = async (page = pagination.page, limit = pagination.limit, search = searchQuery) => {
@@ -167,15 +169,18 @@ function AgenciesPage() {
     if (!validateForm()) return;
 
     try {
+      let response;
       if (currentAgency) {
-        await axiosInstance.put(`/agencies/${currentAgency.id}`, formData);
+        response = await axiosInstance.put(`/agencies/${currentAgency.id}`, formData);
+        console.log('Update response:', response.data);
         setSnackbar({
           open: true,
           message: 'Agency updated successfully',
           severity: 'success'
         });
       } else {
-        await axiosInstance.post('/agencies', formData);
+        response = await axiosInstance.post('/agencies', formData);
+        console.log('Create response:', response.data);
         setSnackbar({
           open: true,
           message: 'Agency created successfully',
@@ -184,7 +189,12 @@ function AgenciesPage() {
       }
       setOpenDialog(false);
       resetForm();
-      fetchAgencies(pagination.page, pagination.limit, searchQuery);
+      // Force refresh by updating key and fetching
+      setRefreshKey(prev => prev + 1);
+      // Small delay to ensure database commit
+      setTimeout(() => {
+        fetchAgencies(pagination.page, pagination.limit, searchQuery);
+      }, 100);
     } catch (err) {
       console.error('Error saving agency:', err);
       const errorMessage = err?.response?.data?.message || err.message || 'Failed to save agency';
@@ -314,6 +324,7 @@ function AgenciesPage() {
       ministry: agency.ministry || '',
       state_department: agency.state_department || '',
       agency_name: agency.agency_name || '',
+      alias: agency.alias || '',
     });
     setFormErrors({});
     setOpenDialog(true);
@@ -324,6 +335,7 @@ function AgenciesPage() {
       ministry: '',
       state_department: '',
       agency_name: '',
+      alias: '',
     });
     setFormErrors({});
     setCurrentAgency(null);
@@ -505,7 +517,21 @@ function AgenciesPage() {
       field: 'agency_name',
       headerName: 'Agency / Institution',
       flex: 1,
-      minWidth: 250,
+      minWidth: 200,
+    },
+    {
+      field: 'alias',
+      headerName: 'Alias',
+      flex: 1,
+      minWidth: 150,
+      renderCell: (params) => (
+        <Typography variant="body2" sx={{ 
+          fontStyle: params.value ? 'normal' : 'italic',
+          color: params.value ? 'text.primary' : 'text.secondary'
+        }}>
+          {params.value || '-'}
+        </Typography>
+      ),
     },
     {
       field: 'actions',
@@ -686,6 +712,7 @@ function AgenciesPage() {
 
       <Paper sx={{ height: 600, width: '100%' }}>
         <DataGrid
+          key={refreshKey}
           rows={agencies}
           columns={columns}
           loading={loading}
@@ -743,6 +770,15 @@ function AgenciesPage() {
                   onChange={(e) => handleInputChange('agency_name', e.target.value)}
                   error={!!formErrors.agency_name}
                   helperText={formErrors.agency_name}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="Alias (Short Name)"
+                  fullWidth
+                  value={formData.alias}
+                  onChange={(e) => handleInputChange('alias', e.target.value)}
+                  helperText="Optional: A shorter name or abbreviation for use in dashboards and reports"
                 />
               </Grid>
               <Grid item xs={12}>

@@ -23,12 +23,72 @@ const upload = multer({ storage: storage });
 router.get('/:contractorId/projects', async (req, res) => {
     const { contractorId } = req.params;
     try {
-        const [rows] = await pool.query(
-            `SELECT p.* FROM projects p
-            JOIN project_contractor_assignments pca ON p.id = pca.projectId
-            WHERE pca.contractorId = ? AND pca.voided = 0 AND p.voided = 0`,
-            [contractorId]
-        );
+        const DB_TYPE = process.env.DB_TYPE || 'mysql';
+        
+        let query;
+        let queryParams = [contractorId];
+        
+        if (DB_TYPE === 'postgresql') {
+            // PostgreSQL: Extract approval fields from JSONB
+            query = `
+                SELECT 
+                    p.project_id AS id,
+                    p.name AS "projectName",
+                    p.description AS "projectDescription",
+                    p.implementing_agency AS directorate,
+                    (p.timeline->>'start_date')::date AS "startDate",
+                    (p.timeline->>'expected_completion_date')::date AS "endDate",
+                    (p.budget->>'allocated_amount_kes')::numeric AS "costOfProject",
+                    (p.budget->>'disbursed_amount_kes')::numeric AS "paidOut",
+                    p.progress->>'status' AS status,
+                    p.created_at AS "createdAt",
+                    p.updated_at AS "updatedAt",
+                    (p.is_public->>'approved')::boolean AS approved_for_public,
+                    (p.is_public->>'approved_by')::integer AS approved_by,
+                    (p.is_public->>'approved_at')::timestamp AS approved_at,
+                    p.is_public->>'approval_notes' AS approval_notes,
+                    (p.is_public->>'revision_requested')::boolean AS revision_requested,
+                    p.is_public->>'revision_notes' AS revision_notes,
+                    (p.is_public->>'revision_requested_by')::integer AS revision_requested_by,
+                    (p.is_public->>'revision_requested_at')::timestamp AS revision_requested_at,
+                    (p.is_public->>'revision_submitted_at')::timestamp AS revision_submitted_at
+                FROM projects p
+                JOIN project_contractor_assignments pca ON p.project_id = pca."projectId"
+                WHERE pca."contractorId" = $1 AND (pca.voided IS NULL OR pca.voided = false) AND p.voided = false
+            `;
+        } else {
+            // MySQL: Direct column access
+            query = `
+                SELECT 
+                    p.id,
+                    p.projectName,
+                    p.projectDescription,
+                    p.directorate,
+                    p.startDate,
+                    p.endDate,
+                    p.costOfProject,
+                    p.paidOut,
+                    p.status,
+                    p.createdAt,
+                    p.updatedAt,
+                    p.approved_for_public,
+                    p.approved_by,
+                    p.approved_at,
+                    p.approval_notes,
+                    p.revision_requested,
+                    p.revision_notes,
+                    p.revision_requested_by,
+                    p.revision_requested_at,
+                    p.revision_submitted_at
+                FROM projects p
+                JOIN project_contractor_assignments pca ON p.id = pca.projectId
+                WHERE pca.contractorId = ? AND (pca.voided IS NULL OR pca.voided = 0) AND p.voided = 0
+            `;
+        }
+        
+        const result = await pool.query(query, queryParams);
+        const rows = DB_TYPE === 'postgresql' ? (result.rows || result) : (Array.isArray(result) ? result[0] : result);
+        
         res.status(200).json(rows);
     } catch (error) {
         console.error('Error fetching contractor projects:', error);

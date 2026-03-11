@@ -1023,7 +1023,7 @@ const ProjectByStatusDashboardPage = () => {
       {/* Charts Row — explicit flex with calc widths to avoid MUI Grid constraints */}
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 1, mb: 1, width: '100%' }}>
         {/* Status Distribution Pie Chart — ~16% */}
-        <Box sx={{ width: { xs: '100%', md: 'calc(16.66% - 8px)' }, flexShrink: 0 }}>
+        <Box sx={{ width: { xs: '100%', md: 'calc(25% - 8px)' }, flexShrink: 0 }}>
           <Card
             sx={{
               borderRadius: 4,
@@ -1130,7 +1130,7 @@ const ProjectByStatusDashboardPage = () => {
         </Box>
 
         {/* Status Comparison Bar Chart — ~66% */}
-        <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ flex: 1, minWidth: 0, maxWidth: { md: '50%' } }}>
           <Card
             sx={{
               borderRadius: 4,
@@ -1227,7 +1227,7 @@ const ProjectByStatusDashboardPage = () => {
         </Box>
 
         {/* Status by Sector — ~16% */}
-        <Box sx={{ width: { xs: '100%', md: 'calc(16.66% - 8px)' }, flexShrink: 0 }}>
+        <Box sx={{ width: { xs: '100%', md: 'calc(25% - 8px)' }, flexShrink: 0 }}>
           <Card
             sx={{
               borderRadius: 4,

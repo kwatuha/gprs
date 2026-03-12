@@ -1117,11 +1117,8 @@ const HomePage = () => {
             </Card>
           </Grid>
 
-          {/* Recent Projects and Quick Actions - Side by Side */}
-          <Grid item xs={12} md={8}>
-            <Grid container spacing={2}>
-              {/* Recent Projects */}
-              <Grid item xs={12} md={6}>
+          {/* Recent Projects */}
+          <Grid item xs={12} md={4}>
             <Card 
               elevation={0} 
               sx={{ 
@@ -1231,10 +1228,10 @@ const HomePage = () => {
                 )}
               </CardContent>
             </Card>
-              </Grid>
+          </Grid>
 
-              {/* Quick Actions */}
-              <Grid item xs={12} md={6}>
+          {/* Quick Actions */}
+          <Grid item xs={12} md={4}>
                 <Card 
                   elevation={0} 
                   sx={{ 
@@ -1262,11 +1259,11 @@ const HomePage = () => {
                     }
                   }}
                 >
-                  <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
+                  <CardContent sx={{ p: 1.5, position: 'relative', zIndex: 1 }}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                       <Box display="flex" alignItems="center" gap={1}>
                         <Box sx={{ 
-                          p: 0.75, 
+                          p: 0.5, 
                           borderRadius: 1, 
                           background: `linear-gradient(135deg, ${colors.greenAccent[500]}, ${colors.blueAccent[500]})`,
                           color: 'white', 
@@ -1274,14 +1271,14 @@ const HomePage = () => {
                           alignItems: 'center',
                           boxShadow: `0 2px 8px ${colors.greenAccent[500]}40`,
                         }}>
-                          <AnalyticsIcon sx={{ fontSize: 18 }} />
+                          <AnalyticsIcon sx={{ fontSize: 16 }} />
                         </Box>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1rem', color: 'text.primary' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'text.primary' }}>
                           Quick Actions
                         </Typography>
                       </Box>
                     </Box>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                       {/* Approve Users */}
                       {canApproveUsers && (
                         <Button
@@ -1291,17 +1288,17 @@ const HomePage = () => {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            // Use navigate with replace to prevent history issues
                             navigate(ROUTES.USER_MANAGEMENT, { replace: false });
                           }}
                           sx={{
                             textTransform: 'none',
                             justifyContent: 'flex-start',
-                            p: 1.5,
+                            p: 1,
                             borderRadius: 1.5,
                             borderColor: colors.greenAccent[500],
                             color: colors.greenAccent[600],
                             bgcolor: theme.palette.mode === 'dark' ? colors.greenAccent[900] + '20' : colors.greenAccent[50],
+                            minHeight: 40,
                             '&:hover': {
                               background: `linear-gradient(135deg, ${colors.greenAccent[500]}, ${colors.greenAccent[400]})`,
                               color: 'white',
@@ -1311,14 +1308,9 @@ const HomePage = () => {
                             },
                           }}
                         >
-                          <Box sx={{ textAlign: 'left', flex: 1, pointerEvents: 'none' }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                              Approve Users
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem', display: 'block' }}>
-                              Review and approve pending user requests
-                            </Typography>
-                          </Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                            Approve Users
+                          </Typography>
                         </Button>
                       )}
 
@@ -1336,11 +1328,12 @@ const HomePage = () => {
                           sx={{
                             textTransform: 'none',
                             justifyContent: 'flex-start',
-                            p: 1.5,
+                            p: 1,
                             borderRadius: 1.5,
                             borderColor: colors.blueAccent[500],
                             color: colors.blueAccent[600],
                             bgcolor: theme.palette.mode === 'dark' ? colors.blueAccent[900] + '20' : colors.blueAccent[50],
+                            minHeight: 40,
                             '&:hover': {
                               background: `linear-gradient(135deg, ${colors.blueAccent[500]}, ${colors.blueAccent[400]})`,
                               color: 'white',
@@ -1350,14 +1343,9 @@ const HomePage = () => {
                             },
                           }}
                         >
-                          <Box sx={{ textAlign: 'left', flex: 1, pointerEvents: 'none' }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                              Approve Projects
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem', display: 'block' }}>
-                              Review and approve pending projects
-                            </Typography>
-                          </Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                            Approve Projects
+                          </Typography>
                         </Button>
                       )}
 
@@ -1374,11 +1362,12 @@ const HomePage = () => {
                         sx={{
                           textTransform: 'none',
                           justifyContent: 'flex-start',
-                          p: 1.5,
+                          p: 1,
                           borderRadius: 1.5,
                           borderColor: colors.greenAccent[500],
                           color: colors.greenAccent[600],
                           bgcolor: theme.palette.mode === 'dark' ? colors.greenAccent[900] + '20' : colors.greenAccent[50],
+                          minHeight: 40,
                           '&:hover': {
                             background: `linear-gradient(135deg, ${colors.greenAccent[500]}, ${colors.greenAccent[400]})`,
                             color: 'white',
@@ -1388,14 +1377,9 @@ const HomePage = () => {
                           },
                         }}
                       >
-                        <Box sx={{ textAlign: 'left', flex: 1, pointerEvents: 'none' }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                            Project Registry
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem', display: 'block' }}>
-                            View and manage all projects
-                          </Typography>
-                        </Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                          Project Registry
+                        </Typography>
                       </Button>
 
                       {/* Upload Projects */}
@@ -1412,11 +1396,12 @@ const HomePage = () => {
                           sx={{
                             textTransform: 'none',
                             justifyContent: 'flex-start',
-                            p: 1.5,
+                            p: 1,
                             borderRadius: 1.5,
                             borderColor: colors.purple[500],
                             color: colors.purple[600],
                             bgcolor: theme.palette.mode === 'dark' ? colors.purple[900] + '20' : colors.purple[50],
+                            minHeight: 40,
                             '&:hover': {
                               background: `linear-gradient(135deg, ${colors.purple[500]}, ${colors.purple[400]})`,
                               color: 'white',
@@ -1426,21 +1411,14 @@ const HomePage = () => {
                             },
                           }}
                         >
-                          <Box sx={{ textAlign: 'left', flex: 1, pointerEvents: 'none' }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                              Upload Projects
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem', display: 'block' }}>
-                              Import projects from Excel or CSV
-                            </Typography>
-                          </Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                            Upload Projects
+                          </Typography>
                         </Button>
                       )}
                     </Box>
                   </CardContent>
                 </Card>
-              </Grid>
-            </Grid>
           </Grid>
         </Grid>
 

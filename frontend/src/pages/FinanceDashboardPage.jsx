@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Box,
   Grid,
@@ -9,6 +9,12 @@ import {
   LinearProgress,
   useTheme,
   Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Collapse,
+  IconButton,
 } from '@mui/material';
 import {
   AttachMoney as AttachMoneyIcon,
@@ -18,6 +24,9 @@ import {
   Refresh as RefreshIcon,
   Business as BusinessIcon,
   Assessment as AssessmentIcon,
+  FilterList as FilterIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
 import {
   ResponsiveContainer,
@@ -36,6 +45,7 @@ import {
 } from 'recharts';
 import { tokens } from './dashboard/theme';
 import { useNavigate } from 'react-router-dom';
+import sectorsService from '../api/sectorsService';
 
 // Sample financial data
 const SAMPLE_PROJECTS = [
@@ -45,6 +55,7 @@ const SAMPLE_PROJECTS = [
     Disbursed: 72_000_000,
     financialYear: '2024/2025',
     department: 'Health',
+    sector: 'Health',
     budgetSource: 'County Revenue',
     absorptionRate: 60,
   },
@@ -54,6 +65,7 @@ const SAMPLE_PROJECTS = [
     Disbursed: 0,
     financialYear: '2024/2025',
     department: 'Trade',
+    sector: 'Trade',
     budgetSource: 'CDF',
     absorptionRate: 0,
   },
@@ -63,6 +75,7 @@ const SAMPLE_PROJECTS = [
     Disbursed: 40_000_000,
     financialYear: '2023/2024',
     department: 'Water',
+    sector: 'Water',
     budgetSource: 'National Government',
     absorptionRate: 73,
   },
@@ -72,6 +85,7 @@ const SAMPLE_PROJECTS = [
     Disbursed: 18_000_000,
     financialYear: '2022/2023',
     department: 'Education',
+    sector: 'Education',
     budgetSource: 'County Revenue',
     absorptionRate: 100,
   },
@@ -81,6 +95,7 @@ const SAMPLE_PROJECTS = [
     Disbursed: 45_000_000,
     financialYear: '2024/2025',
     department: 'Infrastructure',
+    sector: 'Infrastructure',
     budgetSource: 'National Government',
     absorptionRate: 53,
   },
@@ -90,6 +105,7 @@ const SAMPLE_PROJECTS = [
     Disbursed: 15_000_000,
     financialYear: '2024/2025',
     department: 'Agriculture',
+    sector: 'Agriculture',
     budgetSource: 'County Revenue',
     absorptionRate: 60,
   },
@@ -107,31 +123,77 @@ const FinanceDashboardPage = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
+  const [filters, setFilters] = useState({
+    department: '',
+    directorate: '',
+    financialYear: '',
+    budgetSource: '',
+  });
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [sectors, setSectors] = useState([]);
+
+  useEffect(() => {
+    const fetchSectors = async () => {
+      try {
+        const data = await sectorsService.getAllSectors();
+        setSectors(data || []);
+      } catch (error) {
+        console.error('Error fetching sectors:', error);
+      }
+    };
+    fetchSectors();
+  }, []);
+
+  const filteredProjects = useMemo(() => {
+    return SAMPLE_PROJECTS.filter((p) => {
+      if (filters.department && p.department !== filters.department) return false;
+      if (filters.directorate && p.directorate !== filters.directorate) return false;
+      if (filters.financialYear && p.financialYear !== filters.financialYear) return false;
+      if (filters.budgetSource && p.budgetSource !== filters.budgetSource) return false;
+      return true;
+    });
+  }, [filters]);
 
   const financialData = useMemo(() => {
-    const totalBudget = SAMPLE_PROJECTS.reduce((sum, p) => sum + (p.budget || 0), 0);
-    const totalDisbursed = SAMPLE_PROJECTS.reduce((sum, p) => sum + (p.Disbursed || 0), 0);
+    const totalBudget = filteredProjects.reduce((sum, p) => sum + (p.budget || 0), 0);
+    const totalDisbursed = filteredProjects.reduce((sum, p) => sum + (p.Disbursed || 0), 0);
     const overallAbsorption = totalBudget > 0 ? Math.round((totalDisbursed / totalBudget) * 100) : 0;
 
-    // Absorption by Department
-    const deptMap = new Map();
-    SAMPLE_PROJECTS.forEach((p) => {
-      if (!p.department) return;
-      const current = deptMap.get(p.department) || { department: p.department, budget: 0, disbursed: 0 };
+    // Create a map of sector names to aliases
+    const sectorAliasMap = new Map();
+    sectors.forEach((sector) => {
+      const sectorName = sector.sectorName || sector.name;
+      const alias = sector.alias || sectorName;
+      if (sectorName) {
+        sectorAliasMap.set(sectorName, alias);
+      }
+    });
+
+    // Absorption by Sector
+    const sectorMap = new Map();
+    filteredProjects.forEach((p) => {
+      // Try to get sector from various possible fields
+      const sectorName = p.sector || p.categoryName || p.department || 'Unknown';
+      const current = sectorMap.get(sectorName) || { sector: sectorName, budget: 0, disbursed: 0 };
       current.budget += p.budget || 0;
       current.disbursed += p.Disbursed || 0;
-      deptMap.set(p.department, current);
+      sectorMap.set(sectorName, current);
     });
-    const deptChart = Array.from(deptMap.values()).map((row) => ({
-      name: row.department,
-      budget: row.budget,
-      disbursed: row.disbursed,
-      absorption: row.budget > 0 ? Math.round((row.disbursed / row.budget) * 100) : 0,
-    }));
+    const sectorChart = Array.from(sectorMap.values()).map((row) => {
+      // Use alias if available, otherwise use sector name
+      const displayName = sectorAliasMap.get(row.sector) || row.sector;
+      return {
+        name: displayName,
+        sector: row.sector,
+        budget: row.budget,
+        disbursed: row.disbursed,
+        absorption: row.budget > 0 ? Math.round((row.disbursed / row.budget) * 100) : 0,
+      };
+    });
 
     // Absorption by Financial Year
     const fyMap = new Map();
-    SAMPLE_PROJECTS.forEach((p) => {
+    filteredProjects.forEach((p) => {
       const key = p.financialYear || 'Unknown';
       const current = fyMap.get(key) || { fy: key, budget: 0, disbursed: 0 };
       current.budget += p.budget || 0;
@@ -149,7 +211,7 @@ const FinanceDashboardPage = () => {
 
     // Budget Source Analysis
     const sourceMap = new Map();
-    SAMPLE_PROJECTS.forEach((p) => {
+    filteredProjects.forEach((p) => {
       const key = p.budgetSource || 'Unknown';
       const current = sourceMap.get(key) || { source: key, budget: 0, disbursed: 0 };
       current.budget += p.budget || 0;
@@ -165,7 +227,7 @@ const FinanceDashboardPage = () => {
     }));
 
     // Top Under-Absorbing Projects
-    const underAbsorbing = SAMPLE_PROJECTS.filter((p) => {
+    const underAbsorbing = filteredProjects.filter((p) => {
       const rate = p.budget > 0 ? (p.Disbursed / p.budget) * 100 : 0;
       return rate < 70;
     })
@@ -186,12 +248,17 @@ const FinanceDashboardPage = () => {
       totalBudget,
       totalDisbursed,
       overallAbsorption,
-      deptChart,
+      sectorChart,
       fyChart,
       sourceChart,
       underAbsorbing,
     };
-  }, []);
+  }, [filteredProjects, sectors]);
+
+  const uniqueDepartments = Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.department))).filter(Boolean);
+  const uniqueDirectorates = Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.directorate))).filter(Boolean);
+  const uniqueFinancialYears = Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.financialYear))).filter(Boolean);
+  const uniqueBudgetSources = Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.budgetSource))).filter(Boolean);
 
   return (
     <Box
@@ -203,19 +270,20 @@ const FinanceDashboardPage = () => {
         minHeight: '100vh',
       }}
     >
-      <Box mb={4}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+      <Box mb={1.5}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.5 }}>
           <Box
             sx={{
-              width: 4,
-              height: 40,
+              width: 3,
+              height: 28,
               background: `linear-gradient(180deg, ${colors.yellowAccent[500]}, ${colors.greenAccent[500]})`,
-              borderRadius: 2,
+              borderRadius: 1.5,
+              mt: 0.25,
             }}
           />
           <Box sx={{ flex: 1 }}>
             <Typography
-              variant="h4"
+              variant="h5"
               sx={{
                 fontWeight: 800,
                 background: `linear-gradient(135deg, ${colors.yellowAccent[500]}, ${colors.greenAccent[500]})`,
@@ -223,7 +291,8 @@ const FinanceDashboardPage = () => {
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 letterSpacing: '-0.02em',
-                fontSize: { xs: '1.75rem', md: '2.25rem' },
+                fontSize: { xs: '1.1rem', md: '1.35rem' },
+                lineHeight: 1.2,
               }}
             >
               Finance Dashboard
@@ -231,11 +300,11 @@ const FinanceDashboardPage = () => {
             <Typography
               variant="body2"
               sx={{
-                mt: 0.5,
+                mt: 0.25,
                 color: colors.grey[300],
                 maxWidth: 720,
-                fontSize: '0.95rem',
-                lineHeight: 1.6,
+                fontSize: '0.8rem',
+                lineHeight: 1.4,
               }}
             >
               Financial performance analysis: Track budget allocation, absorption rates, funding sources, and identify under-performing projects.
@@ -243,41 +312,173 @@ const FinanceDashboardPage = () => {
           </Box>
           <Button
             variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={() => navigate('/impes/system-dashboard')}
+            size="small"
+            startIcon={<RefreshIcon sx={{ fontSize: 16 }} />}
+            onClick={() => navigate('/system-dashboard')}
             sx={{
               borderColor: colors.yellowAccent[500],
               color: colors.yellowAccent[500],
+              fontSize: '0.8rem',
+              py: 0.5,
+              px: 1.5,
+              minWidth: 'auto',
               '&:hover': {
                 borderColor: colors.yellowAccent[400],
                 bgcolor: colors.yellowAccent[600] + '20',
               },
             }}
           >
-            System Dashboard
+            Executive Dashboard
           </Button>
         </Box>
+
+        {/* Filters - Collapsible at Top */}
+        <Card
+          sx={{
+            borderRadius: 2,
+            bgcolor: theme.palette.mode === 'dark' ? colors.primary[400] : '#ffffff',
+            mb: 1,
+            border: `1px solid ${theme.palette.mode === 'dark' ? colors.yellowAccent[700] : 'rgba(0,0,0,0.08)'}`,
+            boxShadow: `0 1px 4px ${colors.yellowAccent[500]}10`,
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              p: 0.75,
+              minHeight: 32,
+              cursor: 'pointer',
+              '&:hover': {
+                bgcolor: theme.palette.mode === 'dark' ? colors.primary[500] : 'rgba(0,0,0,0.02)',
+              },
+            }}
+            onClick={() => setFiltersExpanded(!filtersExpanded)}
+          >
+            <Box display="flex" alignItems="center" gap={0.5}>
+              <FilterIcon sx={{ color: colors.yellowAccent[500], fontSize: 14 }} />
+              <Typography variant="caption" sx={{ color: colors.grey[100], fontWeight: 600, fontSize: '0.7rem' }}>
+                Filters
+              </Typography>
+              {Object.values(filters).some((f) => f) && (
+                <Chip
+                  label={`${Object.values(filters).filter((f) => f).length} active`}
+                  size="small"
+                  sx={{
+                    height: 16,
+                    fontSize: '0.6rem',
+                    bgcolor: colors.yellowAccent[600],
+                    color: 'white',
+                    '& .MuiChip-label': {
+                      px: 0.5,
+                    },
+                  }}
+                />
+              )}
+            </Box>
+            <IconButton size="small" sx={{ p: 0.25, width: 20, height: 20 }}>
+              {filtersExpanded ? (
+                <ExpandLessIcon sx={{ color: colors.grey[300], fontSize: 16 }} />
+              ) : (
+                <ExpandMoreIcon sx={{ color: colors.grey[300], fontSize: 16 }} />
+              )}
+            </IconButton>
+          </Box>
+          <Collapse in={filtersExpanded}>
+            <CardContent sx={{ p: 1.5, pt: 0, '&:last-child': { pb: 1.5 } }}>
+              <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel sx={{ fontSize: '0.75rem' }}>Department</InputLabel>
+                  <Select
+                    value={filters.department}
+                    label="Department"
+                    onChange={(e) => setFilters({ ...filters, department: e.target.value })}
+                    sx={{ fontSize: '0.8rem', height: '32px' }}
+                  >
+                    <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Departments</MenuItem>
+                    {uniqueDepartments.map((dept) => (
+                      <MenuItem key={dept} value={dept} sx={{ fontSize: '0.8rem' }}>
+                        {dept}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                {uniqueDirectorates.length > 0 && (
+                  <FormControl size="small" sx={{ minWidth: 120 }}>
+                    <InputLabel sx={{ fontSize: '0.75rem' }}>Directorate</InputLabel>
+                    <Select
+                      value={filters.directorate}
+                      label="Directorate"
+                      onChange={(e) => setFilters({ ...filters, directorate: e.target.value })}
+                      sx={{ fontSize: '0.8rem', height: '32px' }}
+                    >
+                      <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Directorates</MenuItem>
+                      {uniqueDirectorates.map((dir) => (
+                        <MenuItem key={dir} value={dir} sx={{ fontSize: '0.8rem' }}>
+                          {dir}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel sx={{ fontSize: '0.75rem' }}>Financial Year</InputLabel>
+                  <Select
+                    value={filters.financialYear}
+                    label="Financial Year"
+                    onChange={(e) => setFilters({ ...filters, financialYear: e.target.value })}
+                    sx={{ fontSize: '0.8rem', height: '32px' }}
+                  >
+                    <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Years</MenuItem>
+                    {uniqueFinancialYears.map((fy) => (
+                      <MenuItem key={fy} value={fy} sx={{ fontSize: '0.8rem' }}>
+                        {fy}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+                  <InputLabel sx={{ fontSize: '0.75rem' }}>Budget Source</InputLabel>
+                  <Select
+                    value={filters.budgetSource}
+                    label="Budget Source"
+                    onChange={(e) => setFilters({ ...filters, budgetSource: e.target.value })}
+                    sx={{ fontSize: '0.8rem', height: '32px' }}
+                  >
+                    <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Sources</MenuItem>
+                    {uniqueBudgetSources.map((source) => (
+                      <MenuItem key={source} value={source} sx={{ fontSize: '0.8rem' }}>
+                        {source}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            </CardContent>
+          </Collapse>
+        </Card>
       </Box>
 
       {/* Financial KPIs */}
-      <Grid container spacing={2.5} mb={3}>
+      <Grid container spacing={1.5} mb={2}>
         <Grid item xs={12} sm={6} md={3}>
           <Card
             sx={{
-              borderRadius: 4,
+              borderRadius: 2,
               background: theme.palette.mode === 'dark'
                 ? `linear-gradient(135deg, ${colors.primary[400]} 0%, ${colors.primary[500]} 100%)`
                 : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
               border: `1px solid ${theme.palette.mode === 'dark' ? colors.greenAccent[700] : 'rgba(0,0,0,0.08)'}`,
               boxShadow: theme.palette.mode === 'dark'
-                ? '0 8px 32px rgba(0,0,0,0.4)'
-                : '0 4px 20px rgba(0,0,0,0.08)',
+                ? '0 4px 16px rgba(0,0,0,0.3)'
+                : '0 2px 12px rgba(0,0,0,0.06)',
               transition: 'all 0.3s ease',
               '&:hover': {
-                transform: 'translateY(-4px)',
+                transform: 'translateY(-2px)',
                 boxShadow: theme.palette.mode === 'dark'
-                  ? '0 12px 40px rgba(76, 206, 172, 0.3)'
-                  : '0 8px 30px rgba(0,0,0,0.12)',
+                  ? '0 8px 24px rgba(76, 206, 172, 0.25)'
+                  : '0 4px 20px rgba(0,0,0,0.1)',
               },
               '&::before': {
                 content: '""',
@@ -291,15 +492,15 @@ const FinanceDashboardPage = () => {
               position: 'relative',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 1.5 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
                 <Typography
                   variant="subtitle2"
                   sx={{
                     color: colors.grey[300],
                     fontWeight: 600,
                     textTransform: 'uppercase',
-                    fontSize: '0.7rem',
+                    fontSize: '0.65rem',
                     letterSpacing: '0.5px',
                   }}
                 >
@@ -307,13 +508,13 @@ const FinanceDashboardPage = () => {
                 </Typography>
                 <Box
                   sx={{
-                    p: 1.2,
-                    borderRadius: 2,
+                    p: 0.75,
+                    borderRadius: 1.5,
                     background: `linear-gradient(135deg, ${colors.greenAccent[600]}, ${colors.greenAccent[400]})`,
-                    boxShadow: `0 4px 12px ${colors.greenAccent[700]}40`,
+                    boxShadow: `0 2px 8px ${colors.greenAccent[700]}40`,
                   }}
                 >
-                  <AccountBalanceIcon sx={{ color: 'white', fontSize: 22 }} />
+                  <AccountBalanceIcon sx={{ color: 'white', fontSize: 18 }} />
                 </Box>
               </Box>
               <Typography
@@ -321,8 +522,9 @@ const FinanceDashboardPage = () => {
                 sx={{
                   color: colors.grey[100],
                   fontWeight: 800,
-                  mb: 0.5,
-                  fontSize: { xs: '1.25rem', md: '1.5rem' },
+                  mb: 0.25,
+                  fontSize: { xs: '1rem', md: '1.25rem' },
+                  lineHeight: 1.2,
                 }}
               >
                 {formatCurrency(financialData.totalBudget)}
@@ -331,7 +533,7 @@ const FinanceDashboardPage = () => {
                 variant="caption"
                 sx={{
                   color: colors.grey[400],
-                  fontSize: '0.8rem',
+                  fontSize: '0.7rem',
                 }}
               >
                 Across all projects
@@ -370,15 +572,15 @@ const FinanceDashboardPage = () => {
               position: 'relative',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 1.5 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
                 <Typography
                   variant="subtitle2"
                   sx={{
                     color: colors.grey[300],
                     fontWeight: 600,
                     textTransform: 'uppercase',
-                    fontSize: '0.7rem',
+                    fontSize: '0.65rem',
                     letterSpacing: '0.5px',
                   }}
                 >
@@ -386,13 +588,13 @@ const FinanceDashboardPage = () => {
                 </Typography>
                 <Box
                   sx={{
-                    p: 1.2,
-                    borderRadius: 2,
+                    p: 0.75,
+                    borderRadius: 1.5,
                     background: `linear-gradient(135deg, ${colors.blueAccent[600]}, ${colors.blueAccent[400]})`,
-                    boxShadow: `0 4px 12px ${colors.blueAccent[700]}40`,
+                    boxShadow: `0 2px 8px ${colors.blueAccent[700]}40`,
                   }}
                 >
-                  <AttachMoneyIcon sx={{ color: 'white', fontSize: 22 }} />
+                  <AttachMoneyIcon sx={{ color: 'white', fontSize: 18 }} />
                 </Box>
               </Box>
               <Typography
@@ -400,8 +602,9 @@ const FinanceDashboardPage = () => {
                 sx={{
                   color: colors.grey[100],
                   fontWeight: 800,
-                  mb: 0.5,
-                  fontSize: { xs: '1.25rem', md: '1.5rem' },
+                  mb: 0.25,
+                  fontSize: { xs: '1rem', md: '1.25rem' },
+                  lineHeight: 1.2,
                 }}
               >
                 {formatCurrency(financialData.totalDisbursed)}
@@ -410,7 +613,7 @@ const FinanceDashboardPage = () => {
                 variant="caption"
                 sx={{
                   color: colors.grey[400],
-                  fontSize: '0.8rem',
+                  fontSize: '0.7rem',
                 }}
               >
                 Amount paid out
@@ -449,15 +652,15 @@ const FinanceDashboardPage = () => {
               position: 'relative',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 1.5 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
                 <Typography
                   variant="subtitle2"
                   sx={{
                     color: colors.grey[300],
                     fontWeight: 600,
                     textTransform: 'uppercase',
-                    fontSize: '0.7rem',
+                    fontSize: '0.65rem',
                     letterSpacing: '0.5px',
                   }}
                 >
@@ -465,22 +668,23 @@ const FinanceDashboardPage = () => {
                 </Typography>
                 <Box
                   sx={{
-                    p: 1.2,
-                    borderRadius: 2,
+                    p: 0.75,
+                    borderRadius: 1.5,
                     background: `linear-gradient(135deg, ${colors.yellowAccent[600]}, ${colors.yellowAccent[400]})`,
-                    boxShadow: `0 4px 12px ${colors.yellowAccent[700]}40`,
+                    boxShadow: `0 2px 8px ${colors.yellowAccent[700]}40`,
                   }}
                 >
-                  <TrendingUpIcon sx={{ color: 'white', fontSize: 22 }} />
+                  <TrendingUpIcon sx={{ color: 'white', fontSize: 18 }} />
                 </Box>
               </Box>
               <Typography
-                variant="h4"
+                variant="h5"
                 sx={{
                   color: colors.grey[100],
                   fontWeight: 800,
-                  mb: 1.5,
-                  fontSize: { xs: '1.75rem', md: '2rem' },
+                  mb: 0.75,
+                  fontSize: { xs: '1.25rem', md: '1.5rem' },
+                  lineHeight: 1.2,
                 }}
               >
                 {financialData.overallAbsorption}%
@@ -489,19 +693,19 @@ const FinanceDashboardPage = () => {
                 variant="determinate"
                 value={financialData.overallAbsorption}
                 sx={{
-                  height: 8,
-                  borderRadius: 10,
+                  height: 6,
+                  borderRadius: 8,
                   bgcolor: colors.primary[300],
-                  mb: 1,
+                  mb: 0.5,
                   '& .MuiLinearProgress-bar': {
-                    borderRadius: 10,
+                    borderRadius: 8,
                     background:
                       financialData.overallAbsorption >= 80
                         ? `linear-gradient(90deg, ${colors.greenAccent[500]}, ${colors.greenAccent[300]})`
                         : financialData.overallAbsorption >= 50
                         ? `linear-gradient(90deg, ${colors.yellowAccent[500]}, ${colors.yellowAccent[300]})`
                         : `linear-gradient(90deg, ${colors.redAccent[500]}, ${colors.redAccent[300]})`,
-                    boxShadow: `0 2px 8px ${financialData.overallAbsorption >= 80 ? colors.greenAccent[600] : financialData.overallAbsorption >= 50 ? colors.yellowAccent[600] : colors.redAccent[600]}40`,
+                    boxShadow: `0 2px 6px ${financialData.overallAbsorption >= 80 ? colors.greenAccent[600] : financialData.overallAbsorption >= 50 ? colors.yellowAccent[600] : colors.redAccent[600]}40`,
                   },
                 }}
               />
@@ -509,7 +713,7 @@ const FinanceDashboardPage = () => {
                 variant="caption"
                 sx={{
                   color: colors.grey[400],
-                  fontSize: '0.8rem',
+                  fontSize: '0.7rem',
                 }}
               >
                 Disbursed vs. budgeted
@@ -548,15 +752,15 @@ const FinanceDashboardPage = () => {
               position: 'relative',
             }}
           >
-            <CardContent sx={{ p: 2.5 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <CardContent sx={{ p: 1.5 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
                 <Typography
                   variant="subtitle2"
                   sx={{
                     color: colors.grey[300],
                     fontWeight: 600,
                     textTransform: 'uppercase',
-                    fontSize: '0.7rem',
+                    fontSize: '0.65rem',
                     letterSpacing: '0.5px',
                   }}
                 >
@@ -564,22 +768,23 @@ const FinanceDashboardPage = () => {
                 </Typography>
                 <Box
                   sx={{
-                    p: 1.2,
-                    borderRadius: 2,
+                    p: 0.75,
+                    borderRadius: 1.5,
                     background: `linear-gradient(135deg, ${colors.redAccent[600]}, ${colors.redAccent[400]})`,
-                    boxShadow: `0 4px 12px ${colors.redAccent[700]}40`,
+                    boxShadow: `0 2px 8px ${colors.redAccent[700]}40`,
                   }}
                 >
-                  <TrendingDownIcon sx={{ color: 'white', fontSize: 22 }} />
+                  <TrendingDownIcon sx={{ color: 'white', fontSize: 18 }} />
                 </Box>
               </Box>
               <Typography
-                variant="h4"
+                variant="h5"
                 sx={{
                   color: colors.grey[100],
                   fontWeight: 800,
-                  mb: 0.5,
-                  fontSize: { xs: '1.75rem', md: '2rem' },
+                  mb: 0.25,
+                  fontSize: { xs: '1.25rem', md: '1.5rem' },
+                  lineHeight: 1.2,
                 }}
               >
                 {financialData.underAbsorbing.length}
@@ -588,7 +793,7 @@ const FinanceDashboardPage = () => {
                 variant="caption"
                 sx={{
                   color: colors.grey[400],
-                  fontSize: '0.8rem',
+                  fontSize: '0.7rem',
                 }}
               >
                 Projects below 70% absorption
@@ -600,7 +805,7 @@ const FinanceDashboardPage = () => {
 
       {/* Charts Grid */}
       <Grid container spacing={2.5}>
-        {/* Absorption by Department */}
+        {/* Absorption by Sector */}
         <Grid item xs={12} md={6}>
           <Card
             sx={{
@@ -641,7 +846,7 @@ const FinanceDashboardPage = () => {
                       fontSize: '1.1rem',
                     }}
                   >
-                    Absorption by Department
+                    Absorption by Sector
                   </Typography>
                   <Typography
                     variant="caption"
@@ -650,13 +855,13 @@ const FinanceDashboardPage = () => {
                       fontSize: '0.75rem',
                     }}
                   >
-                    Budget vs. disbursed by department
+                    Budget vs. disbursed by sector
                   </Typography>
                 </Box>
               </Box>
               <Box sx={{ height: 320, mt: 1 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={financialData.deptChart} margin={{ top: 10, right: 10, left: -20, bottom: 50 }}>
+                  <BarChart data={financialData.sectorChart} margin={{ top: 10, right: 10, left: -20, bottom: 50 }}>
                     <CartesianGrid
                       strokeDasharray="3 3"
                       stroke={theme.palette.mode === 'dark' ? colors.grey[700] : colors.grey[300]}

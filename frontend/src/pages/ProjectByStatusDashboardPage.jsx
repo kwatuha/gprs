@@ -1366,21 +1366,76 @@ const ProjectByStatusDashboardPage = () => {
                   </Typography>
                 </Box>
               </Box>
-              <TableContainer component={Paper} sx={{ bgcolor: 'transparent', boxShadow: 'none' }}>
-                <Table>
+              <TableContainer 
+                component={Paper} 
+                sx={{ 
+                  bgcolor: 'transparent', 
+                  boxShadow: 'none',
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  border: `1px solid ${theme.palette.mode === 'dark' ? colors.grey[700] : colors.grey[200]}`,
+                }}
+              >
+                <Table sx={{ minWidth: 650 }}>
                   <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ color: colors.grey[300], fontWeight: 700 }}>Status</TableCell>
-                      <TableCell align="right" sx={{ color: colors.grey[300], fontWeight: 700 }}>Projects</TableCell>
-                      <TableCell align="right" sx={{ color: colors.grey[300], fontWeight: 700 }}>Percentage</TableCell>
-                      <TableCell align="right" sx={{ color: colors.grey[300], fontWeight: 700 }}>Budget</TableCell>
-                      <TableCell align="right" sx={{ color: colors.grey[300], fontWeight: 700 }}>Disbursed</TableCell>
-                      <TableCell align="right" sx={{ color: colors.grey[300], fontWeight: 700 }}>Absorption</TableCell>
+                    <TableRow
+                      sx={{
+                        background: theme.palette.mode === 'dark'
+                          ? `linear-gradient(135deg, ${colors.blueAccent[800]} 0%, ${colors.blueAccent[700]} 100%)`
+                          : `linear-gradient(135deg, ${colors.blueAccent[50]} 0%, ${colors.greenAccent[50]} 100%)`,
+                        '& th': {
+                          borderBottom: `2px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[200]}`,
+                          py: 1.5,
+                          px: 2,
+                        },
+                      }}
+                    >
+                      <TableCell sx={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[800], fontWeight: 700, fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Status
+                      </TableCell>
+                      <TableCell align="right" sx={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[800], fontWeight: 700, fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Projects
+                      </TableCell>
+                      <TableCell align="right" sx={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[800], fontWeight: 700, fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Percentage
+                      </TableCell>
+                      <TableCell align="right" sx={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[800], fontWeight: 700, fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Budget
+                      </TableCell>
+                      <TableCell align="right" sx={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[800], fontWeight: 700, fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Disbursed
+                      </TableCell>
+                      <TableCell align="right" sx={{ color: theme.palette.mode === 'dark' ? colors.grey[100] : colors.grey[800], fontWeight: 700, fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Absorption
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {statusData.statusChart.map((status) => (
-                      <TableRow key={status.name} hover>
+                    {statusData.statusChart.map((status, index) => (
+                      <TableRow 
+                        key={status.name} 
+                        hover
+                        sx={{
+                          backgroundColor: index % 2 === 0
+                            ? (theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)')
+                            : 'transparent',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            backgroundColor: theme.palette.mode === 'dark'
+                              ? 'rgba(255, 255, 255, 0.08)'
+                              : 'rgba(0, 0, 0, 0.05)',
+                            transform: 'translateX(4px)',
+                            boxShadow: theme.palette.mode === 'dark'
+                              ? '0 2px 8px rgba(0,0,0,0.3)'
+                              : '0 2px 8px rgba(0,0,0,0.1)',
+                          },
+                          '& td': {
+                            borderBottom: `1px solid ${theme.palette.mode === 'dark' ? colors.grey[700] : colors.grey[200]}`,
+                            py: 1.5,
+                            px: 2,
+                          },
+                        }}
+                      >
                         <TableCell>
                           <Chip
                             label={status.name}
@@ -1389,23 +1444,87 @@ const ProjectByStatusDashboardPage = () => {
                               bgcolor: status.color,
                               color: 'white',
                               fontWeight: 600,
+                              fontSize: '0.75rem',
+                              height: 24,
+                              boxShadow: `0 2px 4px rgba(0,0,0,0.2)`,
+                              '&:hover': {
+                                boxShadow: `0 4px 8px rgba(0,0,0,0.3)`,
+                                transform: 'scale(1.05)',
+                              },
+                              transition: 'all 0.2s ease',
                             }}
                           />
                         </TableCell>
-                        <TableCell align="right" sx={{ color: colors.grey[100], fontWeight: 600 }}>
+                        <TableCell align="right" sx={{ 
+                          color: theme.palette.text.primary, 
+                          fontWeight: 700, 
+                          fontSize: '0.9rem' 
+                        }}>
                           {status.count}
                         </TableCell>
-                        <TableCell align="right" sx={{ color: colors.grey[300] }}>
-                          {status.percentage}%
+                        <TableCell align="right">
+                          <Box
+                            component="span"
+                            sx={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 0.5,
+                              px: 1.5,
+                              py: 0.5,
+                              borderRadius: 1,
+                              bgcolor: theme.palette.mode === 'dark' 
+                                ? 'rgba(255,255,255,0.25)' 
+                                : 'rgba(0,0,0,0.15)',
+                              color: theme.palette.text.primary,
+                              fontWeight: 700,
+                              fontSize: '0.875rem',
+                              border: theme.palette.mode === 'dark'
+                                ? `1px solid rgba(255,255,255,0.15)`
+                                : `1px solid rgba(0,0,0,0.15)`,
+                            }}
+                          >
+                            {status.percentage}%
+                          </Box>
                         </TableCell>
-                        <TableCell align="right" sx={{ color: colors.grey[300] }}>
+                        <TableCell align="right" sx={{ 
+                          color: theme.palette.text.primary, 
+                          fontSize: '0.875rem', 
+                          fontFamily: 'monospace', 
+                          fontWeight: 700 
+                        }}>
                           {formatCurrency(status.budget)}
                         </TableCell>
-                        <TableCell align="right" sx={{ color: colors.grey[300] }}>
+                        <TableCell align="right" sx={{ 
+                          color: theme.palette.text.primary, 
+                          fontSize: '0.875rem', 
+                          fontFamily: 'monospace', 
+                          fontWeight: 700 
+                        }}>
                           {formatCurrency(status.disbursed)}
                         </TableCell>
-                        <TableCell align="right" sx={{ color: colors.grey[300] }}>
-                          {status.absorptionRate}%
+                        <TableCell align="right">
+                          <Box
+                            component="span"
+                            sx={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 0.5,
+                              px: 1.5,
+                              py: 0.5,
+                              borderRadius: 1.5,
+                              fontWeight: 700,
+                              fontSize: '0.875rem',
+                              bgcolor: status.absorptionRate >= 80
+                                ? (theme.palette.mode === 'dark' ? colors.greenAccent[700] : colors.greenAccent[500])
+                                : status.absorptionRate >= 50
+                                ? (theme.palette.mode === 'dark' ? colors.blueAccent[700] : colors.blueAccent[500])
+                                : (theme.palette.mode === 'dark' ? colors.redAccent[700] : colors.redAccent[500]),
+                              color: 'white',
+                              boxShadow: `0 2px 4px rgba(0,0,0,0.2)`,
+                            }}
+                          >
+                            {status.absorptionRate}%
+                          </Box>
                         </TableCell>
                       </TableRow>
                     ))}

@@ -6,30 +6,14 @@
       "icon": "DashboardIcon",
       "submenus": [
         {
-          "title": "Personal Dashboard",
-          "icon": "DashboardIcon",
-          "route": "DASHBOARD"
-        },
-        {
-          "title": "System Dashboard",
-          "icon": "AnalyticsIcon",
-          "route": "SYSTEM_DASHBOARD"
-        },
-        {
-          "title": "Operations Dashboard",
-          "icon": "AssessmentIcon",
-          "route": "OPERATIONS_DASHBOARD"
-        },
-        {
           "title": "Project By Status",
           "icon": "AssessmentIcon",
           "route": "PROJECT_BY_STATUS_DASHBOARD"
         },
         {
-          "title": "Reporting Dashboard",
-          "icon": "AssessmentIcon",
-          "route": "REPORTING_DASHBOARD",
-          "hidden": true
+          "title": "Finance Dashboard",
+          "icon": "AttachMoneyIcon",
+          "route": "FINANCE_DASHBOARD"
         },
         {
           "title": "Jobs & Impact",
@@ -37,9 +21,25 @@
           "route": "JOBS_DASHBOARD"
         },
         {
-          "title": "Finance Dashboard",
-          "icon": "AttachMoneyIcon",
-          "route": "FINANCE_DASHBOARD"
+          "title": "Operations Dashboard",
+          "icon": "AssessmentIcon",
+          "route": "OPERATIONS_DASHBOARD"
+        },
+        {
+          "title": "Executive Dashboard",
+          "icon": "AnalyticsIcon",
+          "route": "SYSTEM_DASHBOARD"
+        },
+        {
+          "title": "Personal Dashboard",
+          "icon": "DashboardIcon",
+          "route": "DASHBOARD"
+        },
+        {
+          "title": "Reporting Dashboard",
+          "icon": "AssessmentIcon",
+          "route": "REPORTING_DASHBOARD",
+          "hidden": true
         },
         {
           "title": "Personal Dashboard",
@@ -80,7 +80,8 @@
         {
           "title": "Project Dashboards",
           "icon": "AssessmentIcon",
-          "route": "REPORTING_OVERVIEW"
+          "route": "REPORTING_OVERVIEW",
+          "hidden": true
         },
         {
           "title": "Regional Rpts",
@@ -206,7 +207,8 @@
         {
           "title": "Metadata mgmt",
           "icon": "StorageIcon",
-          "route": "METADATA_MANAGEMENT"
+          "route": "METADATA_MANAGEMENT",
+          "hidden": true
         },
         {
           "title": "Contractor mgmt",

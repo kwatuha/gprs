@@ -12,14 +12,17 @@ import {
   Select,
   MenuItem,
   Button,
+  Collapse,
+  IconButton,
 } from '@mui/material';
 import {
   Assessment as AssessmentIcon,
-  LocationOn as LocationOnIcon,
   AccountTree as AccountTreeIcon,
   CalendarToday as CalendarIcon,
   FilterList as FilterIcon,
   Refresh as RefreshIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
 import {
   ResponsiveContainer,
@@ -158,6 +161,7 @@ const OperationsDashboardPage = () => {
     financialYear: '',
     status: '',
   });
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   const filteredProjects = useMemo(() => {
     return SAMPLE_PROJECTS.filter((p) => {
@@ -170,50 +174,31 @@ const OperationsDashboardPage = () => {
   }, [filters]);
 
   const chartData = useMemo(() => {
-    // Projects by Directorate
-    const directorateMap = new Map();
+    // Projects by Sector (using department as sector for sample data)
+    const sectorMap = new Map();
     filteredProjects.forEach((p) => {
-      const key = p.directorate || 'Unknown';
-      directorateMap.set(key, (directorateMap.get(key) || 0) + 1);
+      const key = p.department || 'Unknown';
+      sectorMap.set(key, (sectorMap.get(key) || 0) + 1);
     });
-    const directorateChart = Array.from(directorateMap.entries())
+    const sectorChart = Array.from(sectorMap.entries())
       .sort((a, b) => b[1] - a[1])
       .map(([name, value]) => ({ name, value }));
 
-    // Projects by Sub-county
-    const subcountyMap = new Map();
-    filteredProjects.forEach((p) => {
-      const key = p['sub-county'] || 'Unknown';
-      subcountyMap.set(key, (subcountyMap.get(key) || 0) + 1);
-    });
-    const subcountyChart = Array.from(subcountyMap.entries())
-      .sort((a, b) => b[1] - a[1])
-      .map(([name, value]) => ({ name, value }));
-
-    // Projects by Status
-    const statusMap = new Map();
-    filteredProjects.forEach((p) => {
-      const key = (p.Status || '').trim() || 'Unknown';
-      statusMap.set(key, (statusMap.get(key) || 0) + 1);
-    });
-    const statusChart = Array.from(statusMap.entries()).map(([name, value]) => ({
-      name,
-      value,
-      color: STATUS_COLORS[name] || '#64748b',
-    }));
-
-    // Progress distribution
+    // Progress distribution - convert to pie chart format with colors
     const progressBands = [
-      { name: '0-25%', min: 0, max: 25, count: 0 },
-      { name: '26-50%', min: 26, max: 50, count: 0 },
-      { name: '51-75%', min: 51, max: 75, count: 0 },
-      { name: '76-100%', min: 76, max: 100, count: 0 },
+      { name: '0-25%', min: 0, max: 25, count: 0, color: '#dc2626' },
+      { name: '26-50%', min: 26, max: 50, count: 0, color: '#f97316' },
+      { name: '51-75%', min: 51, max: 75, count: 0, color: '#2563eb' },
+      { name: '76-100%', min: 76, max: 100, count: 0, color: '#16a34a' },
     ];
     filteredProjects.forEach((p) => {
       const progress = p.percentageComplete || 0;
       const band = progressBands.find((b) => progress >= b.min && progress <= b.max);
       if (band) band.count++;
     });
+    const progressChart = progressBands
+      .filter((b) => b.count > 0)
+      .map((b) => ({ name: b.name, value: b.count, color: b.color }));
 
     // Timeline by Financial Year
     const fyMap = new Map();
@@ -226,10 +211,8 @@ const OperationsDashboardPage = () => {
       .map(([name, value]) => ({ name, value }));
 
     return {
-      directorateChart,
-      subcountyChart,
-      statusChart,
-      progressBands,
+      sectorChart,
+      progressChart,
       fyChart,
     };
   }, [filteredProjects]);
@@ -249,19 +232,20 @@ const OperationsDashboardPage = () => {
         minHeight: '100vh',
       }}
     >
-      <Box mb={4}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+      <Box mb={1.5}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.5 }}>
           <Box
             sx={{
-              width: 4,
-              height: 40,
+              width: 3,
+              height: 28,
               background: `linear-gradient(180deg, ${colors.blueAccent[500]}, ${colors.blueAccent[300]})`,
-              borderRadius: 2,
+              borderRadius: 1.5,
+              mt: 0.25,
             }}
           />
           <Box sx={{ flex: 1 }}>
             <Typography
-              variant="h4"
+              variant="h5"
               sx={{
                 fontWeight: 800,
                 background: `linear-gradient(135deg, ${colors.blueAccent[500]}, ${colors.blueAccent[300]})`,
@@ -269,7 +253,8 @@ const OperationsDashboardPage = () => {
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 letterSpacing: '-0.02em',
-                fontSize: { xs: '1.75rem', md: '2.25rem' },
+                fontSize: { xs: '1.1rem', md: '1.35rem' },
+                lineHeight: 1.2,
               }}
             >
               Operations Dashboard
@@ -277,11 +262,11 @@ const OperationsDashboardPage = () => {
             <Typography
               variant="body2"
               sx={{
-                mt: 0.5,
+                mt: 0.25,
                 color: colors.grey[300],
                 maxWidth: 720,
-                fontSize: '0.95rem',
-                lineHeight: 1.6,
+                fontSize: '0.8rem',
+                lineHeight: 1.4,
               }}
             >
               Detailed project management view: Monitor status breakdown, organizational structure, geographic distribution, and implementation timelines.
@@ -289,155 +274,185 @@ const OperationsDashboardPage = () => {
           </Box>
           <Button
             variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={() => navigate('/impes/system-dashboard')}
+            size="small"
+            startIcon={<RefreshIcon sx={{ fontSize: 16 }} />}
+            onClick={() => navigate('/system-dashboard')}
             sx={{
               borderColor: colors.blueAccent[500],
               color: colors.blueAccent[500],
+              fontSize: '0.8rem',
+              py: 0.5,
+              px: 1.5,
+              minWidth: 'auto',
               '&:hover': {
                 borderColor: colors.blueAccent[400],
                 bgcolor: colors.blueAccent[600] + '20',
               },
             }}
           >
-            System Dashboard
+            Executive Dashboard
           </Button>
         </Box>
 
-        {/* Filters */}
+        {/* Filters - Collapsible at Top */}
         <Card
           sx={{
-            borderRadius: 3,
+            borderRadius: 2,
             bgcolor: theme.palette.mode === 'dark' ? colors.primary[400] : '#ffffff',
-            mb: 3,
+            mb: 1,
             border: `1px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[700] : 'rgba(0,0,0,0.08)'}`,
+            boxShadow: `0 1px 4px ${colors.blueAccent[500]}10`,
           }}
         >
-          <CardContent>
-            <Box display="flex" alignItems="center" gap={1} mb={2}>
-              <FilterIcon sx={{ color: colors.blueAccent[500] }} />
-              <Typography variant="subtitle1" sx={{ color: colors.grey[100], fontWeight: 600 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              p: 0.75,
+              minHeight: 32,
+              cursor: 'pointer',
+              '&:hover': {
+                bgcolor: theme.palette.mode === 'dark' ? colors.primary[500] : 'rgba(0,0,0,0.02)',
+              },
+            }}
+            onClick={() => setFiltersExpanded(!filtersExpanded)}
+          >
+            <Box display="flex" alignItems="center" gap={0.5}>
+              <FilterIcon sx={{ color: colors.blueAccent[500], fontSize: 14 }} />
+              <Typography variant="caption" sx={{ color: colors.grey[100], fontWeight: 600, fontSize: '0.7rem' }}>
                 Filters
               </Typography>
+              {Object.values(filters).some((f) => f) && (
+                <Chip
+                  label={`${Object.values(filters).filter((f) => f).length} active`}
+                  size="small"
+                  sx={{
+                    height: 16,
+                    fontSize: '0.6rem',
+                    bgcolor: colors.blueAccent[600],
+                    color: 'white',
+                    '& .MuiChip-label': {
+                      px: 0.5,
+                    },
+                  }}
+                />
+              )}
             </Box>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Department</InputLabel>
+            <IconButton size="small" sx={{ p: 0.25, width: 20, height: 20 }}>
+              {filtersExpanded ? (
+                <ExpandLessIcon sx={{ color: colors.grey[300], fontSize: 16 }} />
+              ) : (
+                <ExpandMoreIcon sx={{ color: colors.grey[300], fontSize: 16 }} />
+              )}
+            </IconButton>
+          </Box>
+          <Collapse in={filtersExpanded}>
+            <CardContent sx={{ p: 1.5, pt: 0, '&:last-child': { pb: 1.5 } }}>
+              <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel sx={{ fontSize: '0.75rem' }}>Department</InputLabel>
                   <Select
                     value={filters.department}
                     label="Department"
                     onChange={(e) => setFilters({ ...filters, department: e.target.value })}
-                    sx={{ minWidth: 150 }}
+                    sx={{ fontSize: '0.8rem', height: '32px' }}
                   >
-                    <MenuItem value="">All Departments</MenuItem>
+                    <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Departments</MenuItem>
                     {uniqueDepartments.map((dept) => (
-                      <MenuItem key={dept} value={dept}>
+                      <MenuItem key={dept} value={dept} sx={{ fontSize: '0.8rem' }}>
                         {dept}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Directorate</InputLabel>
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel sx={{ fontSize: '0.75rem' }}>Directorate</InputLabel>
                   <Select
                     value={filters.directorate}
                     label="Directorate"
                     onChange={(e) => setFilters({ ...filters, directorate: e.target.value })}
-                    sx={{ minWidth: 150 }}
+                    sx={{ fontSize: '0.8rem', height: '32px' }}
                   >
-                    <MenuItem value="">All Directorates</MenuItem>
+                    <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Directorates</MenuItem>
                     {uniqueDirectorates.map((dir) => (
-                      <MenuItem key={dir} value={dir}>
+                      <MenuItem key={dir} value={dir} sx={{ fontSize: '0.8rem' }}>
                         {dir}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Financial Year</InputLabel>
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel sx={{ fontSize: '0.75rem' }}>Financial Year</InputLabel>
                   <Select
                     value={filters.financialYear}
                     label="Financial Year"
                     onChange={(e) => setFilters({ ...filters, financialYear: e.target.value })}
-                    sx={{ minWidth: 150 }}
+                    sx={{ fontSize: '0.8rem', height: '32px' }}
                   >
-                    <MenuItem value="">All Years</MenuItem>
+                    <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Years</MenuItem>
                     {uniqueFinancialYears.map((fy) => (
-                      <MenuItem key={fy} value={fy}>
+                      <MenuItem key={fy} value={fy} sx={{ fontSize: '0.8rem' }}>
                         {fy}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Status</InputLabel>
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel sx={{ fontSize: '0.75rem' }}>Status</InputLabel>
                   <Select
                     value={filters.status}
                     label="Status"
                     onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                    sx={{ minWidth: 150 }}
+                    sx={{ fontSize: '0.8rem', height: '32px' }}
                   >
-                    <MenuItem value="">All Statuses</MenuItem>
+                    <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Statuses</MenuItem>
                     {uniqueStatuses.map((status) => (
-                      <MenuItem key={status} value={status}>
+                      <MenuItem key={status} value={status} sx={{ fontSize: '0.8rem' }}>
                         {status}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
-              </Grid>
-            </Grid>
-            <Box mt={2} display="flex" gap={1}>
-              <Chip
-                label={`${filteredProjects.length} projects`}
-                size="small"
-                sx={{ bgcolor: colors.blueAccent[600], color: 'white' }}
-              />
-            </Box>
-          </CardContent>
+              </Box>
+            </CardContent>
+          </Collapse>
         </Card>
       </Box>
 
       {/* Charts Grid */}
-      <Grid container spacing={2.5}>
-        {/* Projects by Directorate */}
+      <Grid container spacing={1.5}>
+        {/* Projects by Sector */}
         <Grid item xs={12} md={6}>
           <Card
             sx={{
-              borderRadius: 4,
+              borderRadius: 2,
               background: theme.palette.mode === 'dark'
                 ? `linear-gradient(135deg, ${colors.primary[400]} 0%, ${colors.primary[500]} 100%)`
                 : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
               border: `1px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[700] : 'rgba(0,0,0,0.08)'}`,
               boxShadow: theme.palette.mode === 'dark'
-                ? '0 8px 32px rgba(0,0,0,0.4)'
-                : '0 4px 20px rgba(0,0,0,0.08)',
+                ? '0 4px 16px rgba(0,0,0,0.3)'
+                : '0 2px 12px rgba(0,0,0,0.06)',
               transition: 'all 0.3s ease',
               '&:hover': {
                 boxShadow: theme.palette.mode === 'dark'
-                  ? '0 12px 48px rgba(0,0,0,0.5)'
-                  : '0 8px 32px rgba(0,0,0,0.12)',
+                  ? '0 8px 24px rgba(0,0,0,0.4)'
+                  : '0 4px 20px rgba(0,0,0,0.1)',
                 transform: 'translateY(-2px)',
               },
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={2}>
+            <CardContent sx={{ p: 2 }}>
+              <Box display="flex" alignItems="center" gap={1} mb={1.5}>
                 <Box
                   sx={{
-                    p: 1,
+                    p: 0.75,
                     borderRadius: 1.5,
                     background: `linear-gradient(135deg, ${colors.blueAccent[600]}, ${colors.blueAccent[400]})`,
                   }}
                 >
-                  <AccountTreeIcon sx={{ color: 'white', fontSize: 20 }} />
+                  <AccountTreeIcon sx={{ color: 'white', fontSize: 18 }} />
                 </Box>
                 <Box>
                   <Typography
@@ -445,25 +460,25 @@ const OperationsDashboardPage = () => {
                     sx={{
                       color: colors.grey[100],
                       fontWeight: 700,
-                      fontSize: '1.1rem',
+                      fontSize: '1rem',
                     }}
                   >
-                    Projects by Directorate
+                    Projects by Sector
                   </Typography>
                   <Typography
                     variant="caption"
                     sx={{
                       color: colors.grey[400],
-                      fontSize: '0.75rem',
+                      fontSize: '0.7rem',
                     }}
                   >
-                    Organizational structure breakdown
+                    Sector distribution breakdown
                   </Typography>
                 </Box>
               </Box>
-              <Box sx={{ height: 320, mt: 1 }}>
+              <Box sx={{ height: 280, mt: 0.5 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData.directorateChart} margin={{ top: 10, right: 10, left: -20, bottom: 70 }}>
+                  <BarChart data={chartData.sectorChart} margin={{ top: 10, right: 10, left: -20, bottom: 70 }}>
                     <CartesianGrid
                       strokeDasharray="3 3"
                       stroke={theme.palette.mode === 'dark' ? colors.grey[700] : colors.grey[300]}
@@ -493,205 +508,23 @@ const OperationsDashboardPage = () => {
           </Card>
         </Grid>
 
-        {/* Projects by Sub-county */}
-        <Grid item xs={12} md={6}>
-          <Card
-            sx={{
-              borderRadius: 4,
-              background: theme.palette.mode === 'dark'
-                ? `linear-gradient(135deg, ${colors.primary[400]} 0%, ${colors.primary[500]} 100%)`
-                : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-              border: `1px solid ${theme.palette.mode === 'dark' ? colors.greenAccent[700] : 'rgba(0,0,0,0.08)'}`,
-              boxShadow: theme.palette.mode === 'dark'
-                ? '0 8px 32px rgba(0,0,0,0.4)'
-                : '0 4px 20px rgba(0,0,0,0.08)',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                boxShadow: theme.palette.mode === 'dark'
-                  ? '0 12px 48px rgba(0,0,0,0.5)'
-                  : '0 8px 32px rgba(0,0,0,0.12)',
-                transform: 'translateY(-2px)',
-              },
-            }}
-          >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={2}>
-                <Box
-                  sx={{
-                    p: 1,
-                    borderRadius: 1.5,
-                    background: `linear-gradient(135deg, ${colors.greenAccent[600]}, ${colors.greenAccent[400]})`,
-                  }}
-                >
-                  <LocationOnIcon sx={{ color: 'white', fontSize: 20 }} />
-                </Box>
-                <Box>
-                  <Typography
-                    variant="subtitle1"
-                    sx={{
-                      color: colors.grey[100],
-                      fontWeight: 700,
-                      fontSize: '1.1rem',
-                    }}
-                  >
-                    Projects by Sub-county
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: colors.grey[400],
-                      fontSize: '0.75rem',
-                    }}
-                  >
-                    Administrative unit distribution
-                  </Typography>
-                </Box>
-              </Box>
-              <Box sx={{ height: 320, mt: 1 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData.subcountyChart} margin={{ top: 10, right: 10, left: -20, bottom: 50 }}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke={theme.palette.mode === 'dark' ? colors.grey[700] : colors.grey[300]}
-                    />
-                    <XAxis
-                      dataKey="name"
-                      angle={-30}
-                      textAnchor="end"
-                      interval={0}
-                      height={70}
-                      tick={{ fill: colors.grey[300], fontSize: 11 }}
-                    />
-                    <YAxis tick={{ fill: colors.grey[300], fontSize: 11 }} />
-                    <RechartsTooltip
-                      contentStyle={{
-                        background: theme.palette.mode === 'dark' ? colors.primary[500] : '#ffffff',
-                        border: `1px solid ${colors.greenAccent[700]}`,
-                        borderRadius: 8,
-                        padding: '8px 12px',
-                      }}
-                    />
-                    <Bar dataKey="value" fill={colors.greenAccent[500]} radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Projects by Status */}
-        <Grid item xs={12} md={6}>
-          <Card
-            sx={{
-              borderRadius: 4,
-              background: theme.palette.mode === 'dark'
-                ? `linear-gradient(135deg, ${colors.primary[400]} 0%, ${colors.primary[500]} 100%)`
-                : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-              border: `1px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[700] : 'rgba(0,0,0,0.08)'}`,
-              boxShadow: theme.palette.mode === 'dark'
-                ? '0 8px 32px rgba(0,0,0,0.4)'
-                : '0 4px 20px rgba(0,0,0,0.08)',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                boxShadow: theme.palette.mode === 'dark'
-                  ? '0 12px 48px rgba(0,0,0,0.5)'
-                  : '0 8px 32px rgba(0,0,0,0.12)',
-                transform: 'translateY(-2px)',
-              },
-            }}
-          >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={2}>
-                <Box
-                  sx={{
-                    p: 1,
-                    borderRadius: 1.5,
-                    background: `linear-gradient(135deg, ${colors.blueAccent[600]}, ${colors.blueAccent[400]})`,
-                  }}
-                >
-                  <AssessmentIcon sx={{ color: 'white', fontSize: 20 }} />
-                </Box>
-                <Box>
-                  <Typography
-                    variant="subtitle1"
-                    sx={{
-                      color: colors.grey[100],
-                      fontWeight: 700,
-                      fontSize: '1.1rem',
-                    }}
-                  >
-                    Projects by Status
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: colors.grey[400],
-                      fontSize: '0.75rem',
-                    }}
-                  >
-                    Current implementation status
-                  </Typography>
-                </Box>
-              </Box>
-              <Box sx={{ height: 320, mt: 1 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={chartData.statusChart}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={100}
-                      innerRadius={40}
-                      paddingAngle={3}
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      labelLine={false}
-                    >
-                      {chartData.statusChart.map((entry, index) => (
-                        <Cell
-                          key={`status-${index}`}
-                          fill={entry.color}
-                          stroke={theme.palette.mode === 'dark' ? colors.primary[500] : '#ffffff'}
-                          strokeWidth={2}
-                        />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip
-                      contentStyle={{
-                        background: theme.palette.mode === 'dark' ? colors.primary[500] : '#ffffff',
-                        border: `1px solid ${colors.blueAccent[700]}`,
-                        borderRadius: 8,
-                        padding: '8px 12px',
-                      }}
-                    />
-                    <Legend
-                      wrapperStyle={{ paddingTop: '20px' }}
-                      iconType="circle"
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
         {/* Progress Distribution */}
         <Grid item xs={12} md={6}>
           <Card
             sx={{
-              borderRadius: 4,
+              borderRadius: 2,
               background: theme.palette.mode === 'dark'
                 ? `linear-gradient(135deg, ${colors.primary[400]} 0%, ${colors.primary[500]} 100%)`
                 : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
               border: `1px solid ${theme.palette.mode === 'dark' ? colors.greenAccent[700] : 'rgba(0,0,0,0.08)'}`,
               boxShadow: theme.palette.mode === 'dark'
-                ? '0 8px 32px rgba(0,0,0,0.4)'
-                : '0 4px 20px rgba(0,0,0,0.08)',
+                ? '0 4px 16px rgba(0,0,0,0.3)'
+                : '0 2px 12px rgba(0,0,0,0.06)',
               transition: 'all 0.3s ease',
               '&:hover': {
                 boxShadow: theme.palette.mode === 'dark'
-                  ? '0 12px 48px rgba(0,0,0,0.5)'
-                  : '0 8px 32px rgba(0,0,0,0.12)',
+                  ? '0 8px 24px rgba(0,0,0,0.4)'
+                  : '0 4px 20px rgba(0,0,0,0.1)',
                 transform: 'translateY(-2px)',
               },
             }}
@@ -731,16 +564,27 @@ const OperationsDashboardPage = () => {
               </Box>
               <Box sx={{ height: 320, mt: 1 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData.progressBands} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke={theme.palette.mode === 'dark' ? colors.grey[700] : colors.grey[300]}
-                    />
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fill: colors.grey[300], fontSize: 11 }}
-                    />
-                    <YAxis tick={{ fill: colors.grey[300], fontSize: 11 }} />
+                  <PieChart>
+                    <Pie
+                      data={chartData.progressChart}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      innerRadius={40}
+                      paddingAngle={3}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      labelLine={false}
+                    >
+                      {chartData.progressChart.map((entry, index) => (
+                        <Cell
+                          key={`progress-${index}`}
+                          fill={entry.color}
+                          stroke={theme.palette.mode === 'dark' ? colors.primary[500] : '#ffffff'}
+                          strokeWidth={2}
+                        />
+                      ))}
+                    </Pie>
                     <RechartsTooltip
                       contentStyle={{
                         background: theme.palette.mode === 'dark' ? colors.primary[500] : '#ffffff',
@@ -749,8 +593,11 @@ const OperationsDashboardPage = () => {
                         padding: '8px 12px',
                       }}
                     />
-                    <Bar dataKey="count" fill={colors.greenAccent[500]} radius={[4, 4, 0, 0]} />
-                  </BarChart>
+                    <Legend
+                      wrapperStyle={{ paddingTop: '20px' }}
+                      iconType="circle"
+                    />
+                  </PieChart>
                 </ResponsiveContainer>
               </Box>
             </CardContent>
@@ -761,19 +608,19 @@ const OperationsDashboardPage = () => {
         <Grid item xs={12}>
           <Card
             sx={{
-              borderRadius: 4,
+              borderRadius: 2,
               background: theme.palette.mode === 'dark'
                 ? `linear-gradient(135deg, ${colors.primary[400]} 0%, ${colors.primary[500]} 100%)`
                 : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
               border: `1px solid ${theme.palette.mode === 'dark' ? colors.yellowAccent[700] : 'rgba(0,0,0,0.08)'}`,
               boxShadow: theme.palette.mode === 'dark'
-                ? '0 8px 32px rgba(0,0,0,0.4)'
-                : '0 4px 20px rgba(0,0,0,0.08)',
+                ? '0 4px 16px rgba(0,0,0,0.3)'
+                : '0 2px 12px rgba(0,0,0,0.06)',
               transition: 'all 0.3s ease',
               '&:hover': {
                 boxShadow: theme.palette.mode === 'dark'
-                  ? '0 12px 48px rgba(0,0,0,0.5)'
-                  : '0 8px 32px rgba(0,0,0,0.12)',
+                  ? '0 8px 24px rgba(0,0,0,0.4)'
+                  : '0 4px 20px rgba(0,0,0,0.1)',
                 transform: 'translateY(-2px)',
               },
             }}
@@ -811,7 +658,7 @@ const OperationsDashboardPage = () => {
                   </Typography>
                 </Box>
               </Box>
-              <Box sx={{ height: 300, mt: 1 }}>
+              <Box sx={{ height: 280, mt: 0.5 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData.fyChart} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                     <CartesianGrid

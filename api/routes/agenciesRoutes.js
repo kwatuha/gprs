@@ -61,12 +61,27 @@ router.get('/', async (req, res) => {
         const offset = (page - 1) * limit;
         const search = req.query.search || '';
 
+        // Check if alias column exists
+        let aliasColumnExists = false;
+        try {
+            const aliasCheck = await pool.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'agencies' AND column_name = 'alias'
+            `);
+            aliasColumnExists = aliasCheck.rows.length > 0;
+        } catch (checkError) {
+            console.warn('Could not check for alias column in agencies:', checkError.message);
+            aliasColumnExists = false;
+        }
+
         let query = `
             SELECT 
                 id,
                 ministry,
                 state_department,
                 agency_name,
+                ${aliasColumnExists ? "COALESCE(alias, '') AS alias," : "'' AS alias,"}
                 created_at,
                 updated_at
             FROM agencies
@@ -75,11 +90,15 @@ router.get('/', async (req, res) => {
         const params = [];
 
         if (search) {
-            query += ` AND (
-                agency_name ILIKE $${params.length + 1} OR
-                ministry ILIKE $${params.length + 1} OR
-                state_department ILIKE $${params.length + 1}
-            )`;
+            const searchConditions = [
+                `agency_name ILIKE $${params.length + 1}`,
+                `ministry ILIKE $${params.length + 1}`,
+                `state_department ILIKE $${params.length + 1}`
+            ];
+            if (aliasColumnExists) {
+                searchConditions.push(`alias ILIKE $${params.length + 1}`);
+            }
+            query += ` AND (${searchConditions.join(' OR ')})`;
             params.push(`%${search}%`);
         }
 
@@ -90,11 +109,15 @@ router.get('/', async (req, res) => {
         let countQuery = 'SELECT COUNT(*) as total FROM agencies WHERE voided = false';
         const countParams = [];
         if (search) {
-            countQuery += ` AND (
-                agency_name ILIKE $1 OR
-                ministry ILIKE $1 OR
-                state_department ILIKE $1
-            )`;
+            const searchConditions = [
+                'agency_name ILIKE $1',
+                'ministry ILIKE $1',
+                'state_department ILIKE $1'
+            ];
+            if (aliasColumnExists) {
+                searchConditions.push('alias ILIKE $1');
+            }
+            countQuery += ` AND (${searchConditions.join(' OR ')})`;
             countParams.push(`%${search}%`);
         }
 

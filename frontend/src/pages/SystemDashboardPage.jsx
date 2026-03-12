@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Box,
   Grid,
@@ -9,8 +9,20 @@ import {
   LinearProgress,
   useTheme,
   Divider,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Collapse,
+  IconButton,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import {
+  FilterList as FilterIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+} from '@mui/icons-material';
+import sectorsService from '../api/sectorsService';
 import {
   Assessment as AssessmentIcon,
   Work as WorkIcon,
@@ -239,11 +251,41 @@ const SystemDashboardPage = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
+  const [filters, setFilters] = useState({
+    department: '',
+    directorate: '',
+    financialYear: '',
+    status: '',
+  });
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [sectors, setSectors] = useState([]);
+
+  useEffect(() => {
+    const fetchSectors = async () => {
+      try {
+        const data = await sectorsService.getAllSectors();
+        setSectors(data || []);
+      } catch (error) {
+        console.error('Error fetching sectors:', error);
+      }
+    };
+    fetchSectors();
+  }, []);
+
+  const filteredProjects = useMemo(() => {
+    return SAMPLE_PROJECTS.filter((p) => {
+      if (filters.department && p.department !== filters.department) return false;
+      if (filters.directorate && p.directorate !== filters.directorate) return false;
+      if (filters.financialYear && p.financialYear !== filters.financialYear) return false;
+      if (filters.status && p.Status !== filters.status) return false;
+      return true;
+    });
+  }, [filters]);
 
   const {
     kpis,
     statusChartData,
-    absorptionByDepartment,
+    absorptionBySector,
     jobsByCategoryChartData,
     sitesByStatusChartData,
     projectsByFinancialYear,
@@ -254,13 +296,13 @@ const SystemDashboardPage = () => {
     overallProgress,
     projectsByTimeline,
   } = useMemo(() => {
-    const totalProjects = SAMPLE_PROJECTS.length;
-    const totalBudget = SAMPLE_PROJECTS.reduce((sum, p) => sum + (p.budget || 0), 0);
-    const totalDisbursed = SAMPLE_PROJECTS.reduce((sum, p) => sum + (p.Disbursed || 0), 0);
+    const totalProjects = filteredProjects.length;
+    const totalBudget = filteredProjects.reduce((sum, p) => sum + (p.budget || 0), 0);
+    const totalDisbursed = filteredProjects.reduce((sum, p) => sum + (p.Disbursed || 0), 0);
     const absorptionRate = totalBudget > 0 ? Math.round((totalDisbursed / totalBudget) * 100) : 0;
 
-    const distinctDepartments = new Set(SAMPLE_PROJECTS.map((p) => p.department));
-    const distinctWards = new Set(SAMPLE_PROJECTS.map((p) => p.ward));
+    const distinctDepartments = new Set(filteredProjects.map((p) => p.department));
+    const distinctWards = new Set(filteredProjects.map((p) => p.ward));
 
     const kpiValues = {
       totalProjects,
@@ -275,7 +317,7 @@ const SystemDashboardPage = () => {
 
     // Projects by status
     const statusMap = new Map();
-    SAMPLE_PROJECTS.forEach((p) => {
+    filteredProjects.forEach((p) => {
       const key = (p.Status || '').trim() || 'Unknown';
       statusMap.set(key, (statusMap.get(key) || 0) + 1);
     });
@@ -285,20 +327,32 @@ const SystemDashboardPage = () => {
       color: STATUS_COLORS[name] || '#64748b',
     }));
 
-    // Absorption by department
-    const deptMap = new Map();
-    SAMPLE_PROJECTS.forEach((p) => {
-      if (!p.department) return;
-      const current = deptMap.get(p.department) || { department: p.department, budget: 0, disbursed: 0 };
+    // Absorption by sector (using sector field, fallback to department)
+    const sectorMap = new Map();
+    const sectorAliasMap = new Map();
+    sectors.forEach((sector) => {
+      const sectorName = sector.sectorName || sector.name;
+      const alias = sector.alias || sectorName;
+      if (sectorName) {
+        sectorAliasMap.set(sectorName, alias);
+      }
+    });
+
+    filteredProjects.forEach((p) => {
+      const sectorKey = p.sector || p.department || 'Unknown';
+      const current = sectorMap.get(sectorKey) || { sector: sectorKey, budget: 0, disbursed: 0 };
       current.budget += p.budget || 0;
       current.disbursed += p.Disbursed || 0;
-      deptMap.set(p.department, current);
+      sectorMap.set(sectorKey, current);
     });
-    const deptChart = Array.from(deptMap.values()).map((row) => ({
-      name: row.department,
-      contracted: row.budget,
-      paid: row.disbursed,
-    }));
+    const sectorChart = Array.from(sectorMap.values()).map((row) => {
+      const displayName = sectorAliasMap.get(row.sector) || row.sector;
+      return {
+        name: displayName,
+        contracted: row.budget,
+        paid: row.disbursed,
+      };
+    });
 
     // Jobs by category
     const jobsChart = SAMPLE_JOBS_BY_CATEGORY.map((j, index) => ({
@@ -321,7 +375,7 @@ const SystemDashboardPage = () => {
 
     // Projects by Financial Year
     const fyMap = new Map();
-    SAMPLE_PROJECTS.forEach((p) => {
+    filteredProjects.forEach((p) => {
       const key = p.financialYear || 'Unknown';
       fyMap.set(key, (fyMap.get(key) || 0) + 1);
     });
@@ -331,7 +385,7 @@ const SystemDashboardPage = () => {
 
     // Projects by Constituency
     const constituencyMap = new Map();
-    SAMPLE_PROJECTS.forEach((p) => {
+    filteredProjects.forEach((p) => {
       const key = p.Constituency || 'Unknown';
       constituencyMap.set(key, (constituencyMap.get(key) || 0) + 1);
     });
@@ -341,7 +395,7 @@ const SystemDashboardPage = () => {
 
     // Projects by Sub-county
     const subcountyMap = new Map();
-    SAMPLE_PROJECTS.forEach((p) => {
+    filteredProjects.forEach((p) => {
       const key = p['sub-county'] || 'Unknown';
       subcountyMap.set(key, (subcountyMap.get(key) || 0) + 1);
     });
@@ -351,7 +405,7 @@ const SystemDashboardPage = () => {
 
     // Projects by Directorate
     const directorateMap = new Map();
-    SAMPLE_PROJECTS.forEach((p) => {
+    filteredProjects.forEach((p) => {
       const key = p.directorate || 'Unknown';
       directorateMap.set(key, (directorateMap.get(key) || 0) + 1);
     });
@@ -361,7 +415,7 @@ const SystemDashboardPage = () => {
 
     // Projects by Budget Source
     const budgetSourceMap = new Map();
-    SAMPLE_PROJECTS.forEach((p) => {
+    filteredProjects.forEach((p) => {
       const key = p.budgetSource || 'Unknown';
       budgetSourceMap.set(key, (budgetSourceMap.get(key) || 0) + 1);
     });
@@ -372,12 +426,12 @@ const SystemDashboardPage = () => {
     }));
 
     // Overall Progress (average percentage complete)
-    const totalProgress = SAMPLE_PROJECTS.reduce((sum, p) => sum + (p.percentageComplete || 0), 0);
-    const avgProgress = SAMPLE_PROJECTS.length > 0 ? Math.round(totalProgress / SAMPLE_PROJECTS.length) : 0;
+    const totalProgress = filteredProjects.reduce((sum, p) => sum + (p.percentageComplete || 0), 0);
+    const avgProgress = filteredProjects.length > 0 ? Math.round(totalProgress / filteredProjects.length) : 0;
 
     // Projects by Timeline (grouped by start year)
     const timelineMap = new Map();
-    SAMPLE_PROJECTS.forEach((p) => {
+    filteredProjects.forEach((p) => {
       if (p.StartDate) {
         const year = p.StartDate.split('-')[0];
         timelineMap.set(year, (timelineMap.get(year) || 0) + 1);
@@ -390,7 +444,7 @@ const SystemDashboardPage = () => {
     return {
       kpis: { ...kpiValues, overallProgress: avgProgress },
       statusChartData: statusChart,
-      absorptionByDepartment: deptChart,
+      absorptionBySector: sectorChart,
       jobsByCategoryChartData: jobsChart,
       sitesByStatusChartData: sitesChart,
       projectsByFinancialYear: fyChart,
@@ -401,7 +455,7 @@ const SystemDashboardPage = () => {
       overallProgress: avgProgress,
       projectsByTimeline: timelineChart,
     };
-  }, []);
+  }, [filteredProjects, sectors]);
 
   return (
     <Box
@@ -413,26 +467,20 @@ const SystemDashboardPage = () => {
         minHeight: '100vh',
       }}
     >
-      <Box mb={4}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            mb: 1,
-          }}
-        >
+      <Box mb={1.5}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.5 }}>
           <Box
             sx={{
-              width: 4,
-              height: 40,
+              width: 3,
+              height: 28,
               background: `linear-gradient(180deg, ${colors.blueAccent[500]}, ${colors.greenAccent[500]})`,
-              borderRadius: 2,
+              borderRadius: 1.5,
+              mt: 0.25,
             }}
           />
-          <Box>
+          <Box sx={{ flex: 1 }}>
             <Typography
-              variant="h4"
+              variant="h5"
               sx={{
                 fontWeight: 800,
                 background: `linear-gradient(135deg, ${colors.blueAccent[500]}, ${colors.greenAccent[500]})`,
@@ -440,66 +488,213 @@ const SystemDashboardPage = () => {
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 letterSpacing: '-0.02em',
-                fontSize: { xs: '1.75rem', md: '2.25rem' },
+                fontSize: { xs: '1.1rem', md: '1.35rem' },
+                lineHeight: 1.2,
               }}
             >
-              System Dashboard
+              Executive Dashboard
             </Typography>
             <Typography
               variant="body2"
               sx={{
-                mt: 0.5,
+                mt: 0.25,
                 color: colors.grey[300],
                 maxWidth: 720,
-                fontSize: '0.95rem',
-                lineHeight: 1.6,
+                fontSize: '0.8rem',
+                lineHeight: 1.4,
               }}
             >
               Executive overview: Track how projects, budgets, jobs, and geographic coverage are performing across the county in real-time.
             </Typography>
-            <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Chip
-                label="Operations Dashboard"
-                size="small"
-                sx={{
-                  bgcolor: colors.blueAccent[600],
-                  color: 'white',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  '&:hover': { bgcolor: colors.blueAccent[700], transform: 'scale(1.05)' },
-                  transition: 'all 0.2s ease',
-                }}
-                onClick={() => navigate('/operations-dashboard')}
-              />
-              <Chip
-                label="Jobs & Impact"
-                size="small"
-                sx={{
-                  bgcolor: colors.greenAccent[600],
-                  color: 'white',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  '&:hover': { bgcolor: colors.greenAccent[700], transform: 'scale(1.05)' },
-                  transition: 'all 0.2s ease',
-                }}
-                onClick={() => navigate('/jobs-dashboard')}
-              />
-              <Chip
-                label="Finance Dashboard"
-                size="small"
-                sx={{
-                  bgcolor: colors.yellowAccent[600],
-                  color: 'white',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  '&:hover': { bgcolor: colors.yellowAccent[700], transform: 'scale(1.05)' },
-                  transition: 'all 0.2s ease',
-                }}
-                onClick={() => navigate('/finance-dashboard')}
-              />
-            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Chip
+              label="Project By Status"
+              size="small"
+              sx={{
+                bgcolor: colors.orange[600],
+                color: 'white',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                height: 24,
+                '&:hover': { bgcolor: colors.orange[700], transform: 'scale(1.05)' },
+                transition: 'all 0.2s ease',
+              }}
+              onClick={() => navigate('/project-by-status-dashboard')}
+            />
+            <Chip
+              label="Finance"
+              size="small"
+              sx={{
+                bgcolor: colors.yellowAccent[600],
+                color: 'white',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                height: 24,
+                '&:hover': { bgcolor: colors.yellowAccent[700], transform: 'scale(1.05)' },
+                transition: 'all 0.2s ease',
+              }}
+              onClick={() => navigate('/finance-dashboard')}
+            />
+            <Chip
+              label="Jobs & Impact"
+              size="small"
+              sx={{
+                bgcolor: colors.greenAccent[600],
+                color: 'white',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                height: 24,
+                '&:hover': { bgcolor: colors.greenAccent[700], transform: 'scale(1.05)' },
+                transition: 'all 0.2s ease',
+              }}
+              onClick={() => navigate('/jobs-dashboard')}
+            />
+            <Chip
+              label="Operations"
+              size="small"
+              sx={{
+                bgcolor: colors.blueAccent[600],
+                color: 'white',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                height: 24,
+                '&:hover': { bgcolor: colors.blueAccent[700], transform: 'scale(1.05)' },
+                transition: 'all 0.2s ease',
+              }}
+              onClick={() => navigate('/operations-dashboard')}
+            />
           </Box>
         </Box>
+
+        {/* Filters - Collapsible at Top */}
+        <Card
+          sx={{
+            borderRadius: 2,
+            bgcolor: theme.palette.mode === 'dark' ? colors.primary[400] : '#ffffff',
+            mb: 1,
+            border: `1px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[700] : 'rgba(0,0,0,0.08)'}`,
+            boxShadow: `0 1px 4px ${colors.blueAccent[500]}10`,
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              p: 0.75,
+              minHeight: 32,
+              cursor: 'pointer',
+              '&:hover': {
+                bgcolor: theme.palette.mode === 'dark' ? colors.primary[500] : 'rgba(0,0,0,0.02)',
+              },
+            }}
+            onClick={() => setFiltersExpanded(!filtersExpanded)}
+          >
+            <Box display="flex" alignItems="center" gap={0.5}>
+              <FilterIcon sx={{ color: colors.blueAccent[500], fontSize: 14 }} />
+              <Typography variant="caption" sx={{ color: colors.grey[100], fontWeight: 600, fontSize: '0.7rem' }}>
+                Filters
+              </Typography>
+              {Object.values(filters).some((f) => f) && (
+                <Chip
+                  label={`${Object.values(filters).filter((f) => f).length} active`}
+                  size="small"
+                  sx={{
+                    height: 16,
+                    fontSize: '0.6rem',
+                    bgcolor: colors.blueAccent[600],
+                    color: 'white',
+                    '& .MuiChip-label': {
+                      px: 0.5,
+                    },
+                  }}
+                />
+              )}
+            </Box>
+            <IconButton size="small" sx={{ p: 0.25, width: 20, height: 20 }}>
+              {filtersExpanded ? (
+                <ExpandLessIcon sx={{ color: colors.grey[300], fontSize: 16 }} />
+              ) : (
+                <ExpandMoreIcon sx={{ color: colors.grey[300], fontSize: 16 }} />
+              )}
+            </IconButton>
+          </Box>
+          <Collapse in={filtersExpanded}>
+            <CardContent sx={{ p: 1.5, pt: 0, '&:last-child': { pb: 1.5 } }}>
+              <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel sx={{ fontSize: '0.75rem' }}>Department</InputLabel>
+                  <Select
+                    value={filters.department}
+                    label="Department"
+                    onChange={(e) => setFilters({ ...filters, department: e.target.value })}
+                    sx={{ fontSize: '0.8rem', height: '32px' }}
+                  >
+                    <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Departments</MenuItem>
+                    {Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.department))).filter(Boolean).map((dept) => (
+                      <MenuItem key={dept} value={dept} sx={{ fontSize: '0.8rem' }}>
+                        {dept}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel sx={{ fontSize: '0.75rem' }}>Directorate</InputLabel>
+                  <Select
+                    value={filters.directorate}
+                    label="Directorate"
+                    onChange={(e) => setFilters({ ...filters, directorate: e.target.value })}
+                    sx={{ fontSize: '0.8rem', height: '32px' }}
+                  >
+                    <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Directorates</MenuItem>
+                    {Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.directorate))).filter(Boolean).map((dir) => (
+                      <MenuItem key={dir} value={dir} sx={{ fontSize: '0.8rem' }}>
+                        {dir}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel sx={{ fontSize: '0.75rem' }}>Financial Year</InputLabel>
+                  <Select
+                    value={filters.financialYear}
+                    label="Financial Year"
+                    onChange={(e) => setFilters({ ...filters, financialYear: e.target.value })}
+                    sx={{ fontSize: '0.8rem', height: '32px' }}
+                  >
+                    <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Years</MenuItem>
+                    {Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.financialYear))).filter(Boolean).map((fy) => (
+                      <MenuItem key={fy} value={fy} sx={{ fontSize: '0.8rem' }}>
+                        {fy}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel sx={{ fontSize: '0.75rem' }}>Status</InputLabel>
+                  <Select
+                    value={filters.status}
+                    label="Status"
+                    onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                    sx={{ fontSize: '0.8rem', height: '32px' }}
+                  >
+                    <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Statuses</MenuItem>
+                    {Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.Status))).filter(Boolean).map((status) => (
+                      <MenuItem key={status} value={status} sx={{ fontSize: '0.8rem' }}>
+                        {status}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            </CardContent>
+          </Collapse>
+        </Card>
       </Box>
 
       {/* KPI strip */}
@@ -1004,7 +1199,7 @@ const SystemDashboardPage = () => {
                       fontSize: '1.1rem',
                     }}
                   >
-                    Absorption by Department
+                    Absorption by Sector
                   </Typography>
                   <Typography
                     variant="caption"
@@ -1020,7 +1215,7 @@ const SystemDashboardPage = () => {
               <Box sx={{ height: 280, mt: 1 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    data={absorptionByDepartment}
+                    data={absorptionBySector}
                     margin={{ top: 10, right: 10, left: -20, bottom: 50 }}
                   >
                     <CartesianGrid
@@ -1246,95 +1441,9 @@ const SystemDashboardPage = () => {
         </Grid>
       </Grid>
 
-      {/* Executive Summary - Geographic & Funding Overview */}
+      {/* Executive Summary - Funding Overview */}
       <Grid container spacing={2.5} sx={{ mt: 3 }}>
-        <Grid item xs={12} md={6}>
-          <Card
-            sx={{
-              borderRadius: 4,
-              background: theme.palette.mode === 'dark'
-                ? `linear-gradient(135deg, ${colors.primary[400]} 0%, ${colors.primary[500]} 100%)`
-                : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-              border: `1px solid ${theme.palette.mode === 'dark' ? colors.greenAccent[700] : 'rgba(0,0,0,0.08)'}`,
-              boxShadow: theme.palette.mode === 'dark'
-                ? '0 8px 32px rgba(0,0,0,0.4)'
-                : '0 4px 20px rgba(0,0,0,0.08)',
-              transition: 'all 0.3s ease',
-              height: '100%',
-              '&:hover': {
-                boxShadow: theme.palette.mode === 'dark'
-                  ? '0 12px 48px rgba(0,0,0,0.5)'
-                  : '0 8px 32px rgba(0,0,0,0.12)',
-                transform: 'translateY(-2px)',
-              },
-            }}
-          >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={2}>
-                <Box
-                  sx={{
-                    p: 1,
-                    borderRadius: 1.5,
-                    background: `linear-gradient(135deg, ${colors.greenAccent[600]}, ${colors.greenAccent[400]})`,
-                  }}
-                >
-                  <PublicIcon sx={{ color: 'white', fontSize: 20 }} />
-                </Box>
-                <Box>
-                  <Typography
-                    variant="subtitle1"
-                    sx={{
-                      color: colors.grey[100],
-                      fontWeight: 700,
-                      fontSize: '1.1rem',
-                    }}
-                  >
-                    Geographic Distribution
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: colors.grey[400],
-                      fontSize: '0.75rem',
-                    }}
-                  >
-                    Projects across constituencies
-                  </Typography>
-                </Box>
-              </Box>
-              <Box sx={{ height: 300, mt: 1 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={projectsByConstituency} margin={{ top: 10, right: 10, left: -20, bottom: 50 }}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke={theme.palette.mode === 'dark' ? colors.grey[700] : colors.grey[300]}
-                    />
-                    <XAxis
-                      dataKey="name"
-                      angle={-30}
-                      textAnchor="end"
-                      interval={0}
-                      height={70}
-                      tick={{ fill: colors.grey[300], fontSize: 11 }}
-                    />
-                    <YAxis tick={{ fill: colors.grey[300], fontSize: 11 }} />
-                    <RechartsTooltip
-                      contentStyle={{
-                        background: theme.palette.mode === 'dark' ? colors.primary[500] : '#ffffff',
-                        border: `1px solid ${colors.greenAccent[700]}`,
-                        borderRadius: 8,
-                        padding: '8px 12px',
-                      }}
-                    />
-                    <Bar dataKey="value" fill={colors.greenAccent[500]} radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={12}>
           <Card
             sx={{
               borderRadius: 4,

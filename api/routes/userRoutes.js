@@ -330,11 +330,12 @@ router.put('/users/:id', async (req, res) => {
                 stateDepartment: 'state_department',
                 state_department: 'state_department',
                 agencyId: 'agency_id',
-                agency_id: 'agency_id'
+                agency_id: 'agency_id',
+                phoneNumber: 'phone_number'
             };
-            
+
             for (const [key, value] of Object.entries(otherFieldsToUpdate)) {
-                const dbField = fieldMap[key] || key.toLowerCase();
+                const dbField = fieldMap[key] || key.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');
                 updateFields.push(`${dbField} = $${paramIndex}`);
                 values.push(value);
                 paramIndex++;

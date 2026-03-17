@@ -81,6 +81,11 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 
+// Public health check (no auth) - use for deployment verification e.g. GET /api/health
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ ok: true, message: 'API is running' });
+});
+
 // PUBLIC ROUTES - No authentication required (must be before authenticate middleware)
 app.use('/api/public', publicRoutes);
 

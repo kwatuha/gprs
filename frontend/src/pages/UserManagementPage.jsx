@@ -7,7 +7,7 @@ import {
   DialogContentText, InputAdornment, Grid, Autocomplete,
 } from '@mui/material';
 import { DataGrid } from "@mui/x-data-grid";
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, PersonAdd as PersonAddIcon, Settings as SettingsIcon, Lock as LockIcon, LockReset as LockResetIcon, Block as BlockIcon, CheckCircle as CheckCircleIcon, Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, PersonAdd as PersonAddIcon, Settings as SettingsIcon, Lock as LockIcon, LockReset as LockResetIcon, Block as BlockIcon, CheckCircle as CheckCircleIcon, Search as SearchIcon, Clear as ClearIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
 import { useSearchParams } from 'react-router-dom';
 import apiService from '../api/userService';
 import apiServiceMain from '../api';
@@ -75,6 +75,10 @@ function UserManagementPage() {
   const [filteredStateDepartments, setFilteredStateDepartments] = useState([]);
   const [ministries, setMinistries] = useState([]);
   const [loadingAgencies, setLoadingAgencies] = useState(false);
+
+  // View User Details Dialog State
+  const [openViewDetailsDialog, setOpenViewDetailsDialog] = useState(false);
+  const [viewDetailsUser, setViewDetailsUser] = useState(null);
 
   // Delete Confirmation Dialog States
   const [openDeleteConfirmDialog, setOpenDeleteConfirmDialog] = useState(false);
@@ -393,6 +397,16 @@ function UserManagementPage() {
     setOpenUserDialog(false);
     setCurrentUserToEdit(null);
     setUserFormErrors({});
+  };
+
+  const handleOpenViewDetails = (userRow) => {
+    setViewDetailsUser(userRow);
+    setOpenViewDetailsDialog(true);
+  };
+
+  const handleCloseViewDetails = () => {
+    setOpenViewDetailsDialog(false);
+    setViewDetailsUser(null);
   };
 
   const handleUserFormChange = (e) => {
@@ -1020,32 +1034,14 @@ function UserManagementPage() {
     });
   }, [users, globalSearch]);
 
+  // Key columns only: avoid horizontal scroll; full details in View details dialog
   const userColumns = [
-    { 
-      field: "userId", 
-      headerName: "ID",
-      width: 80,
-      headerAlign: 'center',
-      align: 'center',
-    },
     {
       field: "username",
       headerName: "Username",
       flex: 1,
       minWidth: 120,
       cellClassName: "username-column--cell",
-    },
-    {
-      field: "email",
-      headerName: "Email",
-      flex: 1.5,
-      minWidth: 180,
-    },
-    {
-      field: "phoneNumber",
-      headerName: "Phone Number",
-      flex: 1,
-      minWidth: 140,
     },
     {
       field: "fullName",
@@ -1063,22 +1059,16 @@ function UserManagementPage() {
       },
     },
     {
-      field: "idNumber",
-      headerName: "ID Number",
-      flex: 1,
-      minWidth: 120,
-    },
-    {
-      field: "employeeNumber",
-      headerName: "Employee Number",
-      flex: 1,
-      minWidth: 140,
+      field: "email",
+      headerName: "Email",
+      flex: 1.5,
+      minWidth: 160,
     },
     {
       field: "role",
       headerName: "Role",
       flex: 1,
-      minWidth: 120,
+      minWidth: 110,
       renderCell: ({ row: { role } }) => {
         const roleColors = {
           'admin': colors.redAccent[600],
@@ -1097,18 +1087,9 @@ function UserManagementPage() {
             alignItems="center"
             backgroundColor={roleColors[role?.toLowerCase()] || colors.grey[600]}
             borderRadius="6px"
-            sx={{
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            }}
+            sx={{ boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
           >
-            <Typography 
-              color={colors.grey[100]} 
-              sx={{ 
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                textTransform: 'capitalize'
-              }}
-            >
+            <Typography color={colors.grey[100]} sx={{ fontSize: '0.875rem', fontWeight: 600, textTransform: 'capitalize' }}>
               {role || 'N/A'}
             </Typography>
           </Box>
@@ -1116,27 +1097,9 @@ function UserManagementPage() {
       },
     },
     {
-      field: "ministry",
-      headerName: "Ministry",
-      flex: 1,
-      minWidth: 150,
-    },
-    {
-      field: "stateDepartment",
-      headerName: "State Department",
-      flex: 1,
-      minWidth: 150,
-    },
-    {
-      field: "agencyName",
-      headerName: "Agency",
-      flex: 1,
-      minWidth: 150,
-    },
-    {
       field: "isActive",
       headerName: "Status",
-      flex: 1,
+      width: 130,
       minWidth: 130,
       headerAlign: 'center',
       align: 'center',
@@ -1145,45 +1108,30 @@ function UserManagementPage() {
         const canToggle = hasPrivilege('user.update') && userId !== user.id;
         return (
           <Box
-            width="85%"
             m="0 auto"
             p="6px 12px"
-            display="flex"
+            display="inline-flex"
             justifyContent="center"
             alignItems="center"
             gap={0.5}
-            backgroundColor={
-              isActive
-                ? colors.greenAccent[600]
-                : colors.redAccent[600]
-            }
+            backgroundColor={isActive ? colors.greenAccent[600] : colors.redAccent[600]}
             borderRadius="6px"
             sx={{
               cursor: canToggle ? 'pointer' : 'default',
               transition: 'all 0.2s ease',
               boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              minWidth: 'fit-content',
+              whiteSpace: 'nowrap',
               '&:hover': canToggle ? {
                 transform: 'scale(1.08)',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
                 backgroundColor: isActive ? colors.redAccent[500] : colors.greenAccent[500]
               } : {}
             }}
-            onClick={() => {
-              if (canToggle) {
-                handleToggleUserStatus(userId, username, isActive);
-              }
-            }}
-            title={
-              canToggle
-                ? `Click to ${isActive ? 'disable' : 'enable'} user`
-                : isActive ? 'Active' : 'Disabled'
-            }
+            onClick={() => { if (canToggle) handleToggleUserStatus(userId, username, isActive); }}
+            title={canToggle ? `Click to ${isActive ? 'disable' : 'enable'} user` : isActive ? 'Active' : 'Disabled'}
           >
-            {isActive ? (
-              <CheckCircleIcon sx={{ color: colors.grey[100], fontSize: '18px' }} />
-            ) : (
-              <BlockIcon sx={{ color: colors.grey[100], fontSize: '18px' }} />
-            )}
+            {isActive ? <CheckCircleIcon sx={{ color: colors.grey[100], fontSize: '18px' }} /> : <BlockIcon sx={{ color: colors.grey[100], fontSize: '18px' }} />}
             <Typography color={colors.grey[100]} sx={{ fontSize: '0.875rem', fontWeight: 600 }}>
               {isActive ? 'Active' : 'Disabled'}
             </Typography>
@@ -1194,69 +1142,80 @@ function UserManagementPage() {
     {
       field: "actions",
       headerName: "Actions",
-      width: 150,
+      width: 160,
       sortable: false,
       filterable: false,
       headerAlign: 'center',
       align: 'center',
-      renderCell: (params) => (
-        <Stack direction="row" spacing={0.5} justifyContent="center" alignItems="center">
-          {hasPrivilege('user.update') && (
-            <IconButton 
+      renderCell: (params) => {
+        const isCurrentUser = params.row.userId === user.id;
+        return (
+          <Stack direction="row" spacing={0.5} justifyContent="center" alignItems="center" flexWrap="wrap">
+            <IconButton
               size="small"
-              sx={{ 
+              sx={{
                 color: colors.grey[100],
-                backgroundColor: colors.blueAccent[700],
-                '&:hover': {
-                  backgroundColor: colors.blueAccent[600],
-                  transform: 'scale(1.1)'
-                },
+                backgroundColor: colors.greenAccent[700],
+                '&:hover': { backgroundColor: colors.greenAccent[600], transform: 'scale(1.1)' },
                 transition: 'all 0.2s ease'
-              }} 
-              onClick={() => handleOpenEditUserDialog(params.row)}
-              title="Edit User"
+              }}
+              onClick={() => handleOpenViewDetails(params.row)}
+              title="View details"
             >
-              <EditIcon fontSize="small" />
+              <VisibilityIcon fontSize="small" />
             </IconButton>
-          )}
-          {hasPrivilege('user.update') && params.row.userId !== user.id && (
-            <IconButton 
-              size="small"
-              sx={{ 
-                color: colors.grey[100],
-                backgroundColor: colors.blueAccent[700],
-                '&:hover': {
-                  backgroundColor: colors.blueAccent[600],
-                  transform: 'scale(1.1)'
-                },
-                transition: 'all 0.2s ease'
-              }} 
-              onClick={() => handleOpenResetPasswordDialog(params.row.userId, params.row.username)}
-              title="Reset Password to reset123"
-            >
-              <LockResetIcon fontSize="small" />
-            </IconButton>
-          )}
-          {hasPrivilege('user.delete') && params.row.userId !== user.id && (
-            <IconButton 
-              size="small"
-              sx={{ 
-                color: colors.grey[100],
-                backgroundColor: colors.redAccent[700],
-                '&:hover': {
-                  backgroundColor: colors.redAccent[600],
-                  transform: 'scale(1.1)'
-                },
-                transition: 'all 0.2s ease'
-              }} 
-              onClick={() => handleOpenDeleteConfirmDialog(params.row.userId, params.row.username)}
-              title="Delete User"
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          )}
-        </Stack>
-      ),
+            {hasPrivilege('user.update') && (
+              <IconButton
+                size="small"
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.blueAccent[700],
+                  '&:hover': { backgroundColor: colors.blueAccent[600], transform: 'scale(1.1)' },
+                  transition: 'all 0.2s ease'
+                }}
+                onClick={() => handleOpenEditUserDialog(params.row)}
+                title="Edit User"
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            )}
+            {hasPrivilege('user.update') && (
+              <IconButton
+                size="small"
+                disabled={isCurrentUser}
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.blueAccent[700],
+                  '&:hover': !isCurrentUser ? { backgroundColor: colors.blueAccent[600], transform: 'scale(1.1)' } : {},
+                  transition: 'all 0.2s ease',
+                  opacity: isCurrentUser ? 0.5 : 1,
+                }}
+                onClick={() => !isCurrentUser && handleOpenResetPasswordDialog(params.row.userId, params.row.username)}
+                title={isCurrentUser ? 'Use profile to change your password' : 'Reset Password to reset123'}
+              >
+                <LockResetIcon fontSize="small" />
+              </IconButton>
+            )}
+            {hasPrivilege('user.delete') && (
+              <IconButton
+                size="small"
+                disabled={isCurrentUser}
+                sx={{
+                  color: colors.grey[100],
+                  backgroundColor: colors.redAccent[700],
+                  '&:hover': !isCurrentUser ? { backgroundColor: colors.redAccent[600], transform: 'scale(1.1)' } : {},
+                  transition: 'all 0.2s ease',
+                  opacity: isCurrentUser ? 0.5 : 1,
+                }}
+                onClick={() => !isCurrentUser && handleOpenDeleteConfirmDialog(params.row.userId, params.row.username)}
+                title={isCurrentUser ? 'You cannot delete your own account' : 'Delete User'}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            )}
+          </Stack>
+        );
+      },
     },
   ];
 
@@ -1343,11 +1302,11 @@ function UserManagementPage() {
 
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 2 }}>
       {/* Compact Header with Search and Actions */}
-      <Box sx={{ mb: 2.5 }}>
+      <Box sx={{ mb: 1.5 }}>
         {/* Title Row */}
-        <Typography variant="h4" component="h1" sx={{ color: colors.grey[100], fontWeight: 'bold', mb: 2 }}>
+        <Typography variant="h5" component="h1" sx={{ color: colors.grey[100], fontWeight: 700, mb: 1, fontSize: '1.35rem' }}>
           User Management
         </Typography>
 
@@ -1355,12 +1314,12 @@ function UserManagementPage() {
         <Paper 
           elevation={1} 
           sx={{ 
-            p: 1.5, 
+            p: 1, 
             backgroundColor: theme.palette.mode === 'dark' ? colors.primary[400] : colors.grey[50],
-            borderRadius: 2
+            borderRadius: 1.5
           }}
         >
-          <Grid container spacing={2} alignItems="center">
+          <Grid container spacing={1.5} alignItems="center">
             <Grid item xs={12} md={globalSearch ? 6 : 8}>
               <TextField
                 fullWidth
@@ -1370,44 +1329,39 @@ function UserManagementPage() {
                 onChange={(e) => setGlobalSearch(e.target.value)}
                 InputProps={{
                   startAdornment: (
-                    <InputAdornment position="start">
+                    <InputAdornment position="start" sx={{ '& .MuiSvgIcon-root': { fontSize: '1.1rem' } }}>
                       <SearchIcon />
                     </InputAdornment>
                   ),
                   endAdornment: globalSearch && (
                     <InputAdornment position="end">
-                      <IconButton
-                        size="small"
-                        onClick={() => setGlobalSearch('')}
-                        edge="end"
-                      >
+                      <IconButton size="small" onClick={() => setGlobalSearch('')} edge="end">
                         <ClearIcon fontSize="small" />
                       </IconButton>
                     </InputAdornment>
                   ),
+                  sx: { '& input': { py: 0.75 } },
                 }}
                 sx={{
                   backgroundColor: theme.palette.mode === 'dark' ? colors.primary[500] : 'white',
                   '& .MuiOutlinedInput-root': {
-                    '&:hover fieldset': {
-                      borderColor: colors.blueAccent[500],
-                    },
+                    '&:hover fieldset': { borderColor: colors.blueAccent[500] },
                   },
                 }}
               />
             </Grid>
             {globalSearch && (
               <Grid item xs={12} md={3}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: { xs: 'flex-start', md: 'center' } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, justifyContent: { xs: 'flex-start', md: 'center' } }}>
                   <Chip
                     label={`${filteredUsers.length} result${filteredUsers.length !== 1 ? 's' : ''} found`}
                     color="primary"
                     size="small"
-                    icon={<SearchIcon />}
-                    sx={{ fontWeight: 600 }}
+                    icon={<SearchIcon sx={{ fontSize: '0.9rem !important' }} />}
+                    sx={{ fontWeight: 600, height: 24, '& .MuiChip-label': { px: 1, fontSize: '0.75rem' } }}
                   />
                   {filteredUsers.length < users.length && (
-                    <Typography variant="caption" sx={{ color: colors.grey[300], fontWeight: 500 }}>
+                    <Typography variant="caption" sx={{ color: colors.grey[300], fontWeight: 500, fontSize: '0.75rem' }}>
                       (of {users.length})
                     </Typography>
                   )}
@@ -1415,12 +1369,12 @@ function UserManagementPage() {
               </Grid>
             )}
             <Grid item xs={12} md={globalSearch ? 3 : 4}>
-              <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-start', md: 'flex-end' }} flexWrap="wrap" useFlexGap>
+              <Stack direction="row" spacing={0.75} justifyContent={{ xs: 'flex-start', md: 'flex-end' }} flexWrap="wrap" useFlexGap>
                 {hasPrivilege('user.create') && (
                   <Button
                     variant="contained"
                     size="small"
-                    startIcon={<PersonAddIcon />}
+                    startIcon={<PersonAddIcon sx={{ fontSize: '1rem' }} />}
                     onClick={handleOpenCreateUserDialog}
                     sx={{ 
                       backgroundColor: colors.greenAccent[600], 
@@ -1429,9 +1383,9 @@ function UserManagementPage() {
                       fontWeight: 600, 
                       borderRadius: '8px', 
                       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                      px: 1.5,
-                      py: 0.75,
-                      fontSize: '0.875rem'
+                      px: 1.25,
+                      py: 0.5,
+                      fontSize: '0.8125rem'
                     }}
                   >
                     Add User
@@ -1441,7 +1395,7 @@ function UserManagementPage() {
                   <Button
                     variant="outlined"
                     size="small"
-                    startIcon={<SettingsIcon />}
+                    startIcon={<SettingsIcon sx={{ fontSize: '1rem' }} />}
                     onClick={handleOpenRoleManagementDialog}
                     sx={{ 
                       borderColor: colors.blueAccent[500], 
@@ -1450,9 +1404,9 @@ function UserManagementPage() {
                       fontWeight: 600, 
                       borderRadius: '8px', 
                       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                      px: 1.5,
-                      py: 0.75,
-                      fontSize: '0.875rem'
+                      px: 1.25,
+                      py: 0.5,
+                      fontSize: '0.8125rem'
                     }}
                   >
                     Roles
@@ -1462,7 +1416,7 @@ function UserManagementPage() {
                   <Button
                     variant="outlined"
                     size="small"
-                    startIcon={<LockIcon />}
+                    startIcon={<LockIcon sx={{ fontSize: '1rem' }} />}
                     onClick={handleOpenPrivilegeManagementDialog}
                     sx={{ 
                       borderColor: colors.blueAccent[500], 
@@ -1471,9 +1425,9 @@ function UserManagementPage() {
                       fontWeight: 600, 
                       borderRadius: '8px', 
                       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                      px: 1.5,
-                      py: 0.75,
-                      fontSize: '0.875rem'
+                      px: 1.25,
+                      py: 0.5,
+                      fontSize: '0.8125rem'
                     }}
                   >
                     Privileges
@@ -1493,9 +1447,10 @@ function UserManagementPage() {
         </Alert>
       ) : (
         <Box
-          m="40px 0 0 0"
-          height="75vh"
+          mt={1.5}
           sx={{
+            height: 'calc(100vh - 200px)',
+            minHeight: 320,
             "& .MuiDataGrid-root": {
               border: "none",
               borderRadius: '8px',
@@ -1503,15 +1458,13 @@ function UserManagementPage() {
             },
             "& .MuiDataGrid-cell": {
               borderBottom: `1px solid ${colors.grey[700]}`,
-              padding: '12px 16px',
-              '&:focus': {
-                outline: 'none',
-              },
-              '&:focus-within': {
-                outline: 'none',
-              },
+              padding: '6px 12px',
+              '&:focus': { outline: 'none' },
+              '&:focus-within': { outline: 'none' },
             },
             "& .MuiDataGrid-row": {
+              minHeight: '42px !important',
+              maxHeight: '42px !important',
               transition: 'background-color 0.2s ease',
               '&:hover': {
                 backgroundColor: `${colors.blueAccent[700]} !important`,
@@ -1523,9 +1476,7 @@ function UserManagementPage() {
               },
               '&.Mui-selected': {
                 backgroundColor: `${colors.blueAccent[600]} !important`,
-                '&:hover': {
-                  backgroundColor: `${colors.blueAccent[500]} !important`,
-                },
+                '&:hover': { backgroundColor: `${colors.blueAccent[500]} !important` },
               },
             },
             "& .username-column--cell": {
@@ -1535,21 +1486,17 @@ function UserManagementPage() {
             "& .MuiDataGrid-columnHeaders": {
               backgroundColor: `${colors.blueAccent[700]} !important`,
               borderBottom: `2px solid ${colors.blueAccent[600]}`,
-              fontSize: '0.95rem',
-              fontWeight: 700,
+              minHeight: '40px !important',
+              maxHeight: '40px !important',
               '& .MuiDataGrid-columnHeaderTitle': {
                 fontWeight: 700,
-                fontSize: '0.95rem',
+                fontSize: '0.85rem',
               },
             },
             "& .MuiDataGrid-columnHeader": {
-              padding: '12px 16px',
-              '&:focus': {
-                outline: 'none',
-              },
-              '&:focus-within': {
-                outline: 'none',
-              },
+              padding: '6px 12px',
+              '&:focus': { outline: 'none' },
+              '&:focus-within': { outline: 'none' },
             },
             "& .MuiDataGrid-virtualScroller": {
               backgroundColor: colors.primary[400],
@@ -1557,8 +1504,8 @@ function UserManagementPage() {
             "& .MuiDataGrid-footerContainer": {
               borderTop: `2px solid ${colors.blueAccent[600]}`,
               backgroundColor: `${colors.blueAccent[700]} !important`,
-              padding: '16px 20px',
-              minHeight: '64px',
+              padding: '8px 16px',
+              minHeight: 48,
               '& .MuiTablePagination-root': {
                 color: `${colors.grey[100]} !important`,
                 width: '100%',
@@ -1569,58 +1516,50 @@ function UserManagementPage() {
                 padding: 0,
                 minHeight: 'auto',
                 flexWrap: 'wrap',
-                gap: '8px',
+                gap: '6px',
               },
               '& .MuiTablePagination-selectLabel': {
                 color: `${colors.grey[100]} !important`,
                 fontWeight: 600,
-                fontSize: '0.95rem',
+                fontSize: '0.8rem',
                 margin: 0,
-                marginRight: '8px',
+                marginRight: '6px',
               },
               '& .MuiTablePagination-displayedRows': {
                 color: `${colors.grey[100]} !important`,
                 fontWeight: 600,
-                fontSize: '0.95rem',
+                fontSize: '0.8rem',
                 margin: 0,
-                marginLeft: '16px',
+                marginLeft: '10px',
               },
               '& .MuiTablePagination-select': {
                 color: `${colors.grey[100]} !important`,
                 fontWeight: 600,
-                fontSize: '0.95rem',
-                marginRight: '32px',
-                paddingRight: '24px',
+                fontSize: '0.8rem',
+                marginRight: '16px',
+                paddingRight: '20px',
               },
-              '& .MuiTablePagination-spacer': {
-                flex: '1 1 auto',
-              },
+              '& .MuiTablePagination-spacer': { flex: '1 1 auto' },
               '& .MuiTablePagination-actions': {
-                marginLeft: '16px',
+                marginLeft: '8px',
                 '& .MuiIconButton-root': {
                   color: `${colors.grey[100]} !important`,
-                  padding: '8px',
-                  '&:hover': {
-                    backgroundColor: `${colors.blueAccent[600]} !important`,
-                  },
-                  '&.Mui-disabled': {
-                    color: `${colors.grey[600]} !important`,
-                  },
+                  padding: '4px',
+                  '&:hover': { backgroundColor: `${colors.blueAccent[600]} !important` },
+                  '&.Mui-disabled': { color: `${colors.grey[600]} !important` },
                 },
               },
             },
             "& .MuiDataGrid-toolbarContainer": {
-              padding: '12px 16px',
+              padding: '8px 12px',
               backgroundColor: colors.primary[400],
             },
             "& .MuiCheckbox-root": {
               color: `${colors.greenAccent[200]} !important`,
-              '&.Mui-checked': {
-                color: `${colors.greenAccent[300]} !important`,
-              },
+              '&.Mui-checked': { color: `${colors.greenAccent[300]} !important` },
             },
             "& .MuiDataGrid-cellContent": {
-              fontSize: '0.9rem',
+              fontSize: '0.85rem',
             },
           }}
         >
@@ -1628,6 +1567,7 @@ function UserManagementPage() {
             rows={filteredUsers}
             columns={userColumns}
             getRowId={(row) => row.userId}
+            rowHeight={42}
             pageSizeOptions={[10, 25, 50, 100]}
             initialState={{
               pagination: {
@@ -1636,13 +1576,157 @@ function UserManagementPage() {
             }}
             disableRowSelectionOnClick
             sx={{
-              '& .MuiDataGrid-cell': {
-                color: colors.grey[100],
-              },
+              '& .MuiDataGrid-cell': { color: colors.grey[100] },
             }}
           />
         </Box>
       )}
+
+      {/* View User Details Dialog */}
+      <Dialog open={openViewDetailsDialog} onClose={handleCloseViewDetails} fullWidth maxWidth="sm" PaperProps={{ sx: { minHeight: '72vh' } }}>
+        <DialogTitle sx={{ backgroundColor: colors.blueAccent[700], color: 'white', fontWeight: 700, fontSize: '1.1rem', py: 1.25 }}>
+          User details
+        </DialogTitle>
+        <DialogContent
+          dividers
+          sx={{
+            backgroundColor: theme.palette.mode === 'dark' ? colors.primary[400] : '#f9fafb',
+            pt: 1.5,
+            pb: 1.5,
+            flex: 1,
+            minHeight: 0,
+          }}
+        >
+          {viewDetailsUser && (() => {
+            const u = viewDetailsUser;
+            const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.username || '—';
+            const initials = fullName !== '—' ? fullName.split(/\s+/).map(s => s[0]).join('').slice(0, 2).toUpperCase() : '?';
+            const roleColors = {
+              admin: colors.redAccent[600],
+              manager: colors.blueAccent[600],
+              data_entry: colors.orange?.[600] || colors.yellowAccent?.[600],
+              viewer: colors.greenAccent[600],
+              project_lead: colors.purple?.[600] || colors.blueAccent[700],
+            };
+            const roleBg = roleColors[u.role?.toLowerCase()] || colors.grey[600];
+            const DetailRow = ({ label, value, emptyChar = '—' }) => (
+              <Grid item xs={6} sm={4}>
+                <Typography variant="caption" sx={{ color: colors.grey[400], display: 'block', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em', fontSize: '0.7rem' }}>
+                  {label}
+                </Typography>
+                <Typography sx={{ color: value && value !== emptyChar ? colors.grey[100] : colors.grey[500], fontSize: '0.85rem', lineHeight: 1.3 }}>
+                  {value || emptyChar}
+                </Typography>
+              </Grid>
+            );
+            return (
+              <Box>
+                {/* Header: avatar + name + status & role chips */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5, pb: 1.5, borderBottom: `1px solid ${colors.grey[700]}` }}>
+                  <Avatar
+                    sx={{
+                      width: 44,
+                      height: 44,
+                      bgcolor: colors.blueAccent[600],
+                      fontSize: '1rem',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {initials}
+                  </Avatar>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: colors.grey[100], mb: 0.25 }}>
+                      {fullName}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: colors.grey[400], fontSize: '0.8rem', mb: 0.5 }}>
+                      @{u.username}
+                    </Typography>
+                    <Stack direction="row" spacing={0.75} flexWrap="wrap">
+                      <Chip
+                        size="small"
+                        label={u.isActive ? 'Active' : 'Disabled'}
+                        sx={{
+                          height: 22,
+                          backgroundColor: u.isActive ? colors.greenAccent[600] : colors.redAccent[600],
+                          color: colors.grey[100],
+                          fontWeight: 600,
+                          fontSize: '0.7rem',
+                          '& .MuiChip-label': { px: 1 },
+                        }}
+                      />
+                      {u.role && (
+                        <Chip
+                          size="small"
+                          label={u.role}
+                          sx={{
+                            height: 22,
+                            backgroundColor: roleBg,
+                            color: colors.grey[100],
+                            fontWeight: 600,
+                            fontSize: '0.7rem',
+                            textTransform: 'capitalize',
+                            '& .MuiChip-label': { px: 1 },
+                          }}
+                        />
+                      )}
+                    </Stack>
+                  </Box>
+                </Box>
+
+                {/* Account */}
+                <Typography variant="subtitle2" sx={{ color: colors.blueAccent[300], fontWeight: 700, mb: 0.75, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem' }}>
+                  Account
+                </Typography>
+                <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
+                  <DetailRow label="User ID" value={u.userId?.toString()} />
+                  <DetailRow label="Username" value={u.username} />
+                  <DetailRow label="Email" value={u.email} />
+                  <DetailRow label="Phone" value={u.phoneNumber || u.phone} />
+                </Grid>
+
+                {/* Personal */}
+                <Typography variant="subtitle2" sx={{ color: colors.blueAccent[300], fontWeight: 700, mb: 0.75, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem' }}>
+                  Personal
+                </Typography>
+                <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
+                  <DetailRow label="First Name" value={u.firstName} />
+                  <DetailRow label="Last Name" value={u.lastName} />
+                  <DetailRow label="ID Number" value={u.idNumber} />
+                  <DetailRow label="Employee No." value={u.employeeNumber} />
+                </Grid>
+
+                {/* Organization */}
+                <Typography variant="subtitle2" sx={{ color: colors.blueAccent[300], fontWeight: 700, mb: 0.75, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.7rem' }}>
+                  Organization
+                </Typography>
+                <Grid container spacing={1.5}>
+                  <DetailRow label="Role" value={u.role} />
+                  <DetailRow label="Ministry" value={u.ministry} />
+                  <DetailRow label="State Dept." value={u.stateDepartment || u.state_department} />
+                  <DetailRow label="Agency" value={u.agencyName} />
+                </Grid>
+              </Box>
+            );
+          })()}
+        </DialogContent>
+        <DialogActions sx={{ backgroundColor: theme.palette.mode === 'dark' ? colors.primary[500] : '#f0f0f0', px: 1.5, py: 0.75, minHeight: 0 }}>
+          {viewDetailsUser && hasPrivilege('user.update') && (
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<EditIcon sx={{ fontSize: '1rem' }} />}
+              onClick={() => {
+                handleCloseViewDetails();
+                handleOpenEditUserDialog(viewDetailsUser);
+              }}
+              sx={{ backgroundColor: colors.blueAccent[600], '&:hover': { backgroundColor: colors.blueAccent[500] }, py: 0.5 }}
+            >
+              Edit user
+            </Button>
+          )}
+          <Button size="small" variant="outlined" onClick={handleCloseViewDetails} sx={{ py: 0.5 }}>Close</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Create/Edit User Dialog */}
       <Dialog open={openUserDialog} onClose={handleCloseUserDialog} fullWidth maxWidth="sm">

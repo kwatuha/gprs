@@ -53,6 +53,33 @@ const ProjectFormDialog = ({
   const [sectors, setSectors] = useState([]);
   const [loadingSectors, setLoadingSectors] = useState(false);
 
+  // Fallback: fetch project categories when dialog opens if not in allMetadata (same source as /project-types)
+  const [projectCategoriesFallback, setProjectCategoriesFallback] = useState([]);
+  const [loadingProjectCategories, setLoadingProjectCategories] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const fromMetadata = allMetadata?.projectCategories;
+    if (fromMetadata && Array.isArray(fromMetadata) && fromMetadata.length > 0) {
+      setProjectCategoriesFallback([]);
+      return;
+    }
+    let cancelled = false;
+    const fetchCategories = async () => {
+      setLoadingProjectCategories(true);
+      try {
+        const list = await apiService.metadata.projectCategories.getAllCategories();
+        if (!cancelled) setProjectCategoriesFallback(Array.isArray(list) ? list : []);
+      } catch (err) {
+        console.error('ProjectFormDialog: fallback fetch project categories failed', err);
+        if (!cancelled) setProjectCategoriesFallback([]);
+      } finally {
+        if (!cancelled) setLoadingProjectCategories(false);
+      }
+    };
+    fetchCategories();
+    return () => { cancelled = true; };
+  }, [open, allMetadata?.projectCategories]);
+
   // Fetch counties on mount - only if dialog is open
   useEffect(() => {
     if (!open) return;
@@ -378,12 +405,14 @@ const ProjectFormDialog = ({
                   }}
                 >
                   {(() => {
-                    const categories = allMetadata?.projectCategories;
-                    // Remove the console.warn to reduce noise - categories will be logged in useProjectData
+                    const fromMetadata = allMetadata?.projectCategories;
+                    const categories = (fromMetadata && Array.isArray(fromMetadata) && fromMetadata.length > 0)
+                      ? fromMetadata
+                      : projectCategoriesFallback;
                     if (!categories || categories.length === 0) {
                       return (
                         <MenuItem disabled value="">
-                          {categories === undefined ? 'Loading project types...' : 'No project types available. Please add project types first.'}
+                          {loadingProjectCategories ? 'Loading project types...' : 'No project types available. Please add project types first.'}
                         </MenuItem>
                       );
                     }

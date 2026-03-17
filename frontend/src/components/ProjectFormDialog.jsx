@@ -245,132 +245,34 @@ const ProjectFormDialog = ({
       maxWidth="lg"
       sx={{
         '& .MuiDialog-paper': {
-          borderRadius: '20px',
+          borderRadius: '12px',
           overflow: 'hidden',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+          boxShadow: '0 12px 40px rgba(0, 0, 0, 0.25)',
         },
-        '@keyframes shimmer': {
-          '0%': { backgroundPosition: '200% 0' },
-          '100%': { backgroundPosition: '-200% 0' },
-        }
       }}
     >
-      <DialogTitle 
-        sx={{ 
-          background: `linear-gradient(135deg, ${colors.blueAccent[700]}, ${colors.blueAccent[600]})`,
-          color: 'white', 
-          padding: '16px 24px',
-          position: 'relative',
-          overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '4px',
-            background: `linear-gradient(90deg, ${colors.greenAccent[500]}, ${colors.blueAccent[400]}, ${colors.greenAccent[500]})`,
-            backgroundSize: '200% 100%',
-            animation: 'shimmer 3s ease-in-out infinite',
-          },
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            top: '50%',
-            right: '24px',
-            transform: 'translateY(-50%)',
-            width: '40px',
-            height: '40px',
-            background: `radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 50%, transparent 100%)`,
-            borderRadius: '50%',
-          }
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Box 
-            sx={{ 
-              width: '36px', 
-              height: '36px', 
-              borderRadius: '50%',
-              background: `linear-gradient(135deg, ${colors.greenAccent[500]}, ${colors.blueAccent[400]})`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 3px 12px rgba(0, 0, 0, 0.2)',
-              border: '2px solid rgba(255, 255, 255, 0.3)',
-              fontSize: '16px'
-            }}
-          >
-            {currentProject ? '✏️' : '🚀'}
-          </Box>
-          <Box>
-            <Typography 
-              variant="h5" 
-              sx={{ 
-                fontWeight: 'bold', 
-                textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
-                mb: 0.25,
-                lineHeight: 1.2
-              }}
-            >
-              {currentProject ? 'Edit Project' : 'Add New Project'}
-            </Typography>
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                opacity: 0.9, 
-                fontWeight: 500,
-                textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
-                fontSize: '0.875rem',
-                lineHeight: 1.3
-              }}
-            >
-              {currentProject ? 'Update project information and details' : 'Create a new project with comprehensive details'}
-            </Typography>
-          </Box>
-        </Box>
+      <DialogTitle sx={{ backgroundColor: theme.palette.primary.main, color: 'white', py: 1.25, fontSize: '1.1rem', fontWeight: 700 }}>
+        {currentProject ? 'Edit Project' : 'Add New Project'}
       </DialogTitle>
-              <DialogContent dividers sx={{ backgroundColor: colors.primary[400], padding: '16px' }}>
+      <DialogContent dividers sx={{ backgroundColor: theme.palette.background.default, padding: '12px 16px', maxHeight: '72vh', overflowY: 'auto' }}>
+        <Typography variant="caption" sx={{ display: 'block', color: colors.grey[500], mb: 1, fontStyle: 'italic' }}>
+          Fields marked with * are required.
+        </Typography>
         {/* Project Details Section */}
         <Paper 
           elevation={0} 
           sx={{ 
-            p: 2, 
-            mb: 2.5, 
-            borderRadius: '16px',
-            background: colorMode === 'dark' 
-              ? `linear-gradient(145deg, ${colors.primary[300]}, ${colors.primary[400]})`
-              : `linear-gradient(145deg, ${colors.grey[900]}, ${colors.grey[800]})`,
-            border: `1px solid ${colors.blueAccent[700]}`,
-            boxShadow: `0 6px 24px rgba(0, 0, 0, 0.08)`,
-            position: 'relative',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '4px',
-              background: `linear-gradient(90deg, ${colors.greenAccent[500]}, ${colors.blueAccent[500]})`,
-              borderRadius: '16px 16px 0 0',
-            }
+            p: 1.25, 
+            mb: 1.5, 
+            borderRadius: '10px',
+            background: colorMode === 'dark' ? colors.primary[400] : colors.grey[50],
+            border: `1px solid ${colorMode === 'dark' ? colors.blueAccent[700] : colors.grey[300]}`,
           }}
         >
-          <Typography 
-            variant="h6" 
-            gutterBottom 
-            sx={{ 
-              color: colorMode === 'dark' ? colors.blueAccent[700] : colors.blueAccent[300], 
-              mb: 2, 
-              fontWeight: 'bold',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1
-            }}
-          >
-            📋 Project Details
+          <Typography variant="subtitle1" sx={{ color: colors.blueAccent[600], mb: 1, fontWeight: 700, fontSize: '0.9rem' }}>
+            Project Details
           </Typography>
-          <Grid container spacing={2}>
+          <Grid container spacing={1.5}>
             {/* Project Type - determines which site fields are shown */}
             <Grid item xs={12} sm={6}>
               <FormControl 
@@ -378,16 +280,18 @@ const ProjectFormDialog = ({
                 variant="outlined" 
                 size="small" 
                 error={!!formErrors.categoryId}
+                required
                 sx={{ minWidth: 200 }}
               >
                 <InputLabel sx={{ color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200], fontWeight: 'bold' }}>
-                  Project Type
+                  Project Type *
                 </InputLabel>
                 <Select 
                   name="categoryId" 
-                  label="Project Type"
+                  label="Project Type *"
                   value={formData.categoryId ? String(formData.categoryId) : ''} 
                   onChange={handleChange}
+                  autoFocus
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       '& fieldset': {
@@ -897,42 +801,17 @@ const ProjectFormDialog = ({
         <Paper 
           elevation={0} 
           sx={{ 
-            p: 2, 
-            mb: 2.5, 
-            borderRadius: '16px',
-            background: colorMode === 'dark' 
-              ? `linear-gradient(145deg, ${colors.primary[300]}, ${colors.primary[400]})`
-              : `linear-gradient(145deg, ${colors.grey[900]}, ${colors.grey[800]})`,
-            border: `1px solid ${colors.blueAccent[700]}`,
-            boxShadow: `0 6px 24px rgba(0, 0, 0, 0.08)`,
-            position: 'relative',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '4px',
-              background: `linear-gradient(90deg, ${colors.greenAccent[500]}, ${colors.blueAccent[500]})`,
-              borderRadius: '16px 16px 0 0',
-            }
+            p: 1.25, 
+            mb: 1.5, 
+            borderRadius: '10px',
+            background: colorMode === 'dark' ? colors.primary[400] : colors.grey[50],
+            border: `1px solid ${colorMode === 'dark' ? colors.blueAccent[700] : colors.grey[300]}`,
           }}
         >
-          <Typography 
-            variant="h6" 
-            gutterBottom 
-            sx={{ 
-              color: colorMode === 'dark' ? colors.blueAccent[700] : colors.blueAccent[300], 
-              mb: 2, 
-              fontWeight: 'bold',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1
-            }}
-          >
-            🏢 Organizational Details
+          <Typography variant="subtitle1" sx={{ color: colors.blueAccent[600], mb: 1, fontWeight: 700, fontSize: '0.9rem' }}>
+            Organizational Details
           </Typography>
-          <Grid container spacing={2}>
+          <Grid container spacing={1.5}>
             <Grid item xs={12} sm={6}>
               <TextField 
                 name="ministry" 
@@ -1008,44 +887,17 @@ const ProjectFormDialog = ({
         <Paper 
           elevation={0} 
           sx={{ 
-            p: 2, 
-            borderRadius: '16px',
-            background: colorMode === 'dark' 
-              ? `linear-gradient(145deg, ${colors.primary[300]}, ${colors.primary[400]})`
-              : `linear-gradient(145deg, ${colors.grey[900]}, ${colors.grey[800]})`,
-            border: `1px solid ${colors.blueAccent[700]}`,
-            boxShadow: `0 6px 24px rgba(0, 0, 0, 0.08)`,
-            position: 'relative',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '4px',
-              background: `linear-gradient(90deg, ${colors.greenAccent[500]}, ${colors.blueAccent[500]})`,
-              borderRadius: '16px 16px 0 0',
-            }
+            p: 1.25, 
+            mb: 1.5, 
+            borderRadius: '10px',
+            background: colorMode === 'dark' ? colors.primary[400] : colors.grey[50],
+            border: `1px solid ${colorMode === 'dark' ? colors.blueAccent[700] : colors.grey[300]}`,
           }}
         >
-          <Typography 
-            variant="h6" 
-            gutterBottom 
-            sx={{ 
-              color: colorMode === 'dark' ? colors.blueAccent[700] : colors.blueAccent[300], 
-              mb: 2, 
-              fontWeight: 'bold',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1
-            }}
-          >
-            📍 Geographical Coverage
-            <Typography component="span" variant="caption" sx={{ ml: 1, opacity: 0.7, fontWeight: 'normal' }}>
-              (Select Counties, Constituencies, and Wards)
-            </Typography>
+          <Typography variant="subtitle1" sx={{ color: colors.blueAccent[600], mb: 1, fontWeight: 700, fontSize: '0.9rem' }}>
+            Geographical Coverage
           </Typography>
-          <Grid container spacing={2}>
+          <Grid container spacing={1.5}>
             {/* Searchable dropdowns for County, Constituency, Ward */}
             <Grid item xs={12} sm={4}>
               <Autocomplete
@@ -1222,43 +1074,17 @@ const ProjectFormDialog = ({
         <Paper 
           elevation={0} 
           sx={{ 
-            p: 2, 
-            mb: 2.5, 
-            borderRadius: '16px',
-            background: colorMode === 'dark' 
-              ? `linear-gradient(145deg, ${colors.primary[300]}, ${colors.primary[400]})`
-              : `linear-gradient(145deg, ${colors.grey[900]}, ${colors.grey[800]})`,
-            border: `1px solid ${colors.blueAccent[700]}`,
-            boxShadow: `0 6px 24px rgba(0, 0, 0, 0.08)`,
-            position: 'relative',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '4px',
-              background: `linear-gradient(90deg, ${colors.greenAccent[500]}, ${colors.blueAccent[500]})`,
-              borderRadius: '16px 16px 0 0',
-            }
+            p: 1.25, 
+            mb: 1.5, 
+            borderRadius: '10px',
+            background: colorMode === 'dark' ? colors.primary[400] : colors.grey[50],
+            border: `1px solid ${colorMode === 'dark' ? colors.blueAccent[700] : colors.grey[300]}`,
           }}
         >
-          <Typography 
-            variant="h6" 
-            gutterBottom 
-            sx={{ 
-              color: colorMode === 'dark' ? colors.blueAccent[700] : colors.blueAccent[300], 
-              mb: 2, 
-              fontWeight: 'bold',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1
-            }}
-          >
-            📋 Additional Details
+          <Typography variant="subtitle1" sx={{ color: colors.blueAccent[600], mb: 1, fontWeight: 700, fontSize: '0.9rem' }}>
+            Additional Details
           </Typography>
-          
-          <Grid container spacing={2}>
+          <Grid container spacing={1.5}>
             {/* Budget Details */}
             <Grid item xs={12} sm={6}>
               <TextField
@@ -1382,7 +1208,7 @@ const ProjectFormDialog = ({
                 type="text" 
                 fullWidth 
                 multiline 
-                rows={3} 
+                rows={2} 
                 variant="outlined" 
                 size="small"
                 value={formData.progressSummary || ''} 
@@ -1538,7 +1364,7 @@ const ProjectFormDialog = ({
       </DialogContent>
       <DialogActions 
         sx={{ 
-          padding: '20px 24px', 
+          padding: '12px 16px', 
           borderTop: colorMode === 'dark' 
             ? `1px solid ${colors.blueAccent[700]}`
             : `1px solid ${colors.blueAccent[300]}`,
@@ -1556,16 +1382,17 @@ const ProjectFormDialog = ({
         <Button 
           onClick={handleClose} 
           variant="outlined"
+          size="small"
           sx={{
             borderColor: colorMode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[400],
             color: colorMode === 'dark' ? colors.blueAccent[600] : colors.blueAccent[400],
             fontWeight: 'bold',
-            px: 3,
-            py: 1.2,
-            borderRadius: '10px',
-            borderWidth: '2px',
+            px: 2.5,
+            py: 0.9,
+            borderRadius: '8px',
+            borderWidth: '1.5px',
             textTransform: 'none',
-            fontSize: '0.95rem',
+            fontSize: '0.9rem',
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
             '&:hover': {
               borderColor: colorMode === 'dark' ? colors.blueAccent[500] : colors.blueAccent[300],
@@ -1587,17 +1414,18 @@ const ProjectFormDialog = ({
           }} 
           variant="contained" 
           disabled={loading}
+          size="small"
           sx={{
             background: colorMode === 'dark'
               ? `linear-gradient(135deg, ${colors.greenAccent[600]}, ${colors.greenAccent[500]})`
               : `linear-gradient(135deg, ${colors.greenAccent[500]}, ${colors.greenAccent[400]})`,
             color: 'white',
             fontWeight: 'bold',
-            px: 4,
-            py: 1.2,
-            borderRadius: '10px',
+            px: 3,
+            py: 0.9,
+            borderRadius: '8px',
             textTransform: 'none',
-            fontSize: '0.95rem',
+            fontSize: '0.9rem',
             boxShadow: colorMode === 'dark'
               ? '0 4px 16px rgba(0, 0, 0, 0.25)'
               : '0 3px 12px rgba(0, 0, 0, 0.2)',

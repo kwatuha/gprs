@@ -92,11 +92,27 @@ export function getThemedDataGridSx(theme, colors, overrides = {}) {
       backgroundColor: `${isLight ? '#fbfdff' : 'transparent'} !important`,
     },
 
-    // Toolbar
+    // Toolbar (v8 slot) + legacy container — square corners (grid root still rounds outer frame via parent sx)
+    '& .MuiDataGrid-toolbar': {
+      borderRadius: 0,
+    },
+    // Toolbar sits under mainContent; cancel top radius if theme or wrapper added it
+    '& .MuiDataGrid-mainContent > .MuiDataGrid-toolbar': {
+      borderTopLeftRadius: 0,
+      borderTopRightRadius: 0,
+    },
     '& .MuiDataGrid-toolbarContainer': {
       p: 1,
       borderBottom: `1px solid ${isLight ? '#e0e7ff' : 'transparent'}`,
       backgroundColor: `${isLight ? colors.blueAccent[100] : 'transparent'}`,
+      borderRadius: 0,
+    },
+    // MUI TablePagination toolbar = MuiToolbar-root + MuiTablePagination-toolbar — square corners
+    '& .MuiDataGrid-footerContainer .MuiToolbar-root': {
+      borderRadius: 0,
+    },
+    '& .MuiDataGrid-root .MuiToolbar-root': {
+      borderRadius: 0,
     },
 
     // Footer / pagination – ensure labels and text are visible
@@ -106,6 +122,7 @@ export function getThemedDataGridSx(theme, colors, overrides = {}) {
       color: isLight ? theme.palette.text.primary : '#ffffff',
     },
     '& .MuiTablePagination-toolbar': {
+      borderRadius: 0,
       color: isLight ? theme.palette.text.primary : '#ffffff',
     },
     '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {

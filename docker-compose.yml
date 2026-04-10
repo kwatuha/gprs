@@ -13,7 +13,6 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      network: host
     container_name: gov_react_frontend
     restart: always
     dns:
@@ -21,15 +20,19 @@ services:
       - 1.1.1.1
     ports:
       - "5176:5173"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./frontend:/app
       - /app/node_modules
     depends_on:
       - api
     command: sh -c "cd /app && npm run dev"
-    # Remove VITE_API_URL - let .env.development handle it
-    # environment:
-    #   VITE_API_URL: /api  # Uses vite.config.js proxy to api:3000
+    environment:
+      # Browser uses nginx :8081; asset URLs in index.html must match (fixes SPA deep links).
+      - VITE_DEV_PUBLIC_URL=http://localhost:8081
+      # API on host :3001 when api service uses network_mode: host
+      - VITE_PROXY_TARGET=http://host.docker.internal:3001
 
   # public-dashboard service removed - not needed for this application
   # public-dashboard:

@@ -1,5 +1,4 @@
 import { useState, useMemo, useCallback, useEffect, useRef, memo } from "react";
-import { ProSidebar, Menu, MenuItem, SubMenu } from "react-pro-sidebar";
 import { 
   Box, 
   IconButton, 
@@ -22,7 +21,6 @@ import {
   LinearProgress
 } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
-import "react-pro-sidebar/dist/css/styles.css";
 // ✨ Removed old theme system - using modern theme directly!
 import MenuOutlinedIcon from "@mui/icons-material/MenuOutlined";
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -560,8 +558,8 @@ const Sidebar = ({ isPinnedOpen = false, onTogglePinned }) => {
         },
       }}
     >
-      <ProSidebar 
-        style={{
+      <Box
+        sx={{
           position: 'fixed',
           top: '64px',
           left: 0,
@@ -570,11 +568,11 @@ const Sidebar = ({ isPinnedOpen = false, onTogglePinned }) => {
           zIndex: 999,
           display: 'block',
           visibility: 'visible',
-          backgroundColor: theme.palette.mode === 'dark' 
-            ? colors.primary[600] 
+          backgroundColor: theme.palette.mode === 'dark'
+            ? colors.primary[600]
             : '#81d4fa',
-          borderRight: `1px solid ${theme.palette.mode === 'dark' 
-            ? colors.primary[400] 
+          borderRight: `1px solid ${theme.palette.mode === 'dark'
+            ? colors.primary[400]
             : '#4fc3f7'}`,
           transition: 'width 0.3s ease-in-out',
         }}
@@ -685,7 +683,7 @@ const Sidebar = ({ isPinnedOpen = false, onTogglePinned }) => {
             )
           )}
         </Box>
-      </ProSidebar>
+      </Box>
     </Box>
   );
 };

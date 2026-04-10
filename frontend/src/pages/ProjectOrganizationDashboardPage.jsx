@@ -204,9 +204,40 @@ export default function ProjectOrganizationDashboardPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} layout="vertical" margin={{ left: 20, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.mode === 'dark' ? colors.grey[700] : colors.grey[300]} />
-                  <XAxis type="number" allowDecimals={false} stroke={theme.palette.mode === 'dark' ? colors.grey[300] : colors.grey[700]} />
-                  <YAxis type="category" dataKey="name" width={320} tick={{ fontSize: 11, fill: theme.palette.mode === 'dark' ? colors.grey[200] : colors.grey[800] }} />
-                  <Tooltip />
+                  <XAxis
+                    type="number"
+                    allowDecimals={false}
+                    stroke={theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]}
+                    tick={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      fill: theme.palette.text.primary,
+                    }}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={320}
+                    stroke={theme.palette.mode === 'dark' ? colors.grey[500] : colors.grey[600]}
+                    tick={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      fill: theme.palette.text.primary,
+                    }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      fontWeight: 600,
+                      borderRadius: 8,
+                      border: `1px solid ${theme.palette.divider}`,
+                      color: theme.palette.text.primary,
+                    }}
+                    labelStyle={{
+                      fontWeight: 600,
+                      color: theme.palette.text.primary,
+                    }}
+                    itemStyle={{ fontWeight: 600, color: theme.palette.text.secondary }}
+                  />
                   <Bar dataKey="projects" fill={colors.blueAccent[500]} />
                 </BarChart>
               </ResponsiveContainer>

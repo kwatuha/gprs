@@ -2,12 +2,58 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+/**
+ * Behind nginx (or any reverse proxy), deep links like /project-by-status-dashboard can hit
+ * Vite before SPA fallback and return HTTP 404. Rewrite HTML navigations to "/" so index.html
+ * is served; the browser URL is unchanged so React Router still sees the real path.
+ */
+function spaDeepLinkFallback() {
+  return {
+    name: 'spa-deep-link-fallback',
+    enforce: 'pre',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+        const raw = req.url || '/';
+        const pathname = raw.split('?')[0] || '/';
+        const search = raw.includes('?') ? raw.slice(raw.indexOf('?')) : '';
+
+        if (
+          pathname === '/' ||
+          pathname === '/index.html' ||
+          pathname.startsWith('/api') ||
+          pathname.startsWith('/@') ||
+          pathname.startsWith('/src') ||
+          pathname.startsWith('/node_modules') ||
+          pathname.startsWith('/assets') ||
+          pathname.startsWith('/socket.io') ||
+          pathname === '/vite.svg' ||
+          pathname.startsWith('/.well-known')
+        ) {
+          return next();
+        }
+        if (/\.[a-zA-Z0-9][a-zA-Z0-9.~+-]*$/.test(pathname)) {
+          return next();
+        }
+
+        req.url = `/${search}`;
+        next();
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [spaDeepLinkFallback(), react()],
   base: '/',  // Serve app from domain root
   server: {
     host: '0.0.0.0',
     port: 5173,
+    // When using nginx (or similar) on another port, set VITE_DEV_PUBLIC_URL so index.html
+    // references /@vite/client and modules via the browser-visible origin (fixes deep-link 404).
+    ...(process.env.VITE_DEV_PUBLIC_URL
+      ? { origin: process.env.VITE_DEV_PUBLIC_URL.replace(/\/$/, '') }
+      : {}),
     watch: {
       usePolling: true,
       // Reduce file system events for better performance

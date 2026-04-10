@@ -3,7 +3,7 @@
     {
       "id": "dashboard",
       "label": "Dashboard",
-      "icon": "DashboardIcon",
+      "icon": "GridViewIcon",
       "submenus": [
         {
           "title": "Project By Status",
@@ -50,7 +50,7 @@
         },
         {
           "title": "Projects by Organization",
-          "icon": "AnalyticsIcon",
+          "icon": "ApartmentIcon",
           "route": "PROJECTS_BY_ORGANIZATION",
           "permission": "organization.scope_bypass",
           "roles": ["admin", "super_admin", "super admin", "administrator"]

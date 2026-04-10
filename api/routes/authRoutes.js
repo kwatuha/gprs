@@ -69,15 +69,32 @@ async function getPrivilegesByRole(roleId) {
 router.post('/register', async (req, res) => {
     const { username, email, password, firstName, lastName, roleName, idNumber, employeeNumber, consentGiven, ministry, state_department, agency_id, phoneNumber } = req.body;
 
-    // Validate required fields
-    if (!username || !email || !password || !firstName || !lastName || !idNumber || !employeeNumber || !ministry || !state_department || !agency_id) {
-        return res.status(400).json({ error: 'Please enter all required fields: username, email, password, first name, last name, ID number, employee number, ministry, state department, and agency.' });
+    let resolvedAgencyId = null;
+    if (agency_id !== undefined && agency_id !== null && agency_id !== '') {
+        const n = Number(agency_id);
+        if (Number.isNaN(n)) {
+            return res.status(400).json({ error: 'Invalid agency selection.' });
+        }
+        resolvedAgencyId = n;
+    }
+
+    // Validate required fields (agency is optional)
+    if (!username || !email || !password || !firstName || !lastName || !idNumber || !employeeNumber || !ministry || !state_department) {
+        return res.status(400).json({ error: 'Please enter all required fields: username, email, password, first name, last name, ID number, employee number, ministry, and state department.' });
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         return res.status(400).json({ error: 'Please enter a valid email address (e.g., user@example.com).' });
+    }
+
+    // Validate phone format if provided (0718109196 or +254718109196)
+    if (phoneNumber !== undefined && phoneNumber !== null && String(phoneNumber).trim() !== '') {
+        const phoneRegex = /^(?:07\d{8}|\+2547\d{8})$/;
+        if (!phoneRegex.test(String(phoneNumber).trim())) {
+            return res.status(400).json({ error: 'Invalid phone number format. Use 07XXXXXXXX or +2547XXXXXXXX.' });
+        }
     }
 
     // Validate consent
@@ -88,22 +105,65 @@ router.post('/register', async (req, res) => {
     try {
         const DB_TYPE = process.env.DB_TYPE || 'mysql';
         
-        // Check for existing users
+        // Check for existing users (clear message; voided-only → ask admin to restore)
+        const rowVoided = (r) => {
+            const v = r.voided ?? r.Voided ?? r.VOIDED;
+            if (v === true || v === 1 || v === '1') return true;
+            if (v === false || v === 0 || v === '0' || v === null || v === undefined) return false;
+            return Boolean(v);
+        };
+        const rowUser = (r) => r.username ?? r.userName ?? r.USERNAME;
+        const rowEmail = (r) => r.email ?? r.Email ?? r.EMAIL;
+
         let checkQuery;
         let checkParams;
         if (DB_TYPE === 'postgresql') {
-            checkQuery = 'SELECT userid FROM users WHERE username = $1 OR email = $2';
+            checkQuery = `
+                SELECT username, email, voided
+                FROM users
+                WHERE username = $1 OR email = $2
+                LIMIT 2
+            `;
             checkParams = [username, email];
         } else {
-            checkQuery = 'SELECT userId FROM users WHERE username = ? OR email = ?';
+            checkQuery = `
+                SELECT username, email, voided
+                FROM users
+                WHERE username = ? OR email = ?
+                LIMIT 2
+            `;
             checkParams = [username, email];
         }
-        
+
         const checkResult = await pool.query(checkQuery, checkParams);
-        const existingUsers = DB_TYPE === 'postgresql' ? checkResult.rows : (Array.isArray(checkResult) ? checkResult[0] : checkResult);
-        
-        if (Array.isArray(existingUsers) ? existingUsers.length > 0 : existingUsers) {
-            return res.status(400).json({ error: 'User with that username or email already exists.' });
+        const dupRows = DB_TYPE === 'postgresql'
+            ? (checkResult.rows || [])
+            : (Array.isArray(checkResult) ? checkResult[0] : checkResult) || [];
+        const dupList = Array.isArray(dupRows) ? dupRows : dupRows ? [dupRows] : [];
+
+        if (dupList.length > 0) {
+            const matchesUsername = dupList.filter((r) => rowUser(r) === username);
+            const matchesEmail = dupList.filter((r) => rowEmail(r) === email);
+            const activeUsernameConflict = matchesUsername.some((r) => !rowVoided(r));
+            const activeEmailConflict = matchesEmail.some((r) => !rowVoided(r));
+
+            if (activeUsernameConflict || activeEmailConflict) {
+                const usernameTaken = matchesUsername.length > 0;
+                const emailTaken = matchesEmail.length > 0;
+                let dupMessage;
+                if (usernameTaken && emailTaken) {
+                    dupMessage = 'An account with this username and email is already registered. Please sign in instead, or use a different username and email.';
+                } else if (usernameTaken) {
+                    dupMessage = 'This username is already taken. Please choose a different username.';
+                } else {
+                    dupMessage = 'An account with this email address already exists. Please sign in or use a different email.';
+                }
+                return res.status(400).json({ error: dupMessage, code: 'DUPLICATE_USER' });
+            }
+
+            const voidedMessage =
+                'This username or email is linked to a deactivated account. Please contact your system administrator to restore access.';
+            return res.status(400).json({ error: voidedMessage, code: 'VOIDED_USER' });
         }
 
         const salt = await bcrypt.genSalt(10);
@@ -182,21 +242,21 @@ router.post('/register', async (req, res) => {
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false)
                     RETURNING userid
                 `;
-                insertParams = [username, email, phoneNumber || null, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, state_department, agency_id];
+                insertParams = [username, email, phoneNumber || null, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, state_department, resolvedAgencyId];
             } else if (hasMinistry && hasStateDepartment && hasAgencyId) {
                 insertQuery = `
                     INSERT INTO users (username, email, passwordhash, firstname, lastname, roleid, id_number, employee_number, ministry, state_department, agency_id, createdat, updatedat, isactive, voided)
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false)
                     RETURNING userid
                 `;
-                insertParams = [username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, state_department, agency_id];
+                insertParams = [username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, state_department, resolvedAgencyId];
             } else if (hasMinistry && hasAgencyId && hasPhoneNumber) {
                 insertQuery = `
                     INSERT INTO users (username, email, phone_number, passwordhash, firstname, lastname, roleid, id_number, employee_number, ministry, agency_id, createdat, updatedat, isactive, voided)
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false)
                     RETURNING userid
                 `;
-                insertParams = [username, email, phoneNumber || null, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, agency_id];
+                insertParams = [username, email, phoneNumber || null, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, resolvedAgencyId];
             } else {
                 insertQuery = `
                     INSERT INTO users (username, email, passwordhash, firstname, lastname, roleid, id_number, employee_number, createdat, updatedat, isactive, voided)
@@ -222,13 +282,13 @@ router.post('/register', async (req, res) => {
                     INSERT INTO users (username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, state_department, agency_id, createdAt, updatedAt, isActive, voided)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), 0, 0)
                 `;
-                insertParams = [username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, state_department, agency_id];
+                insertParams = [username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, state_department, resolvedAgencyId];
             } else if (hasMinistry && hasAgencyId) {
                 insertQuery = `
                     INSERT INTO users (username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, agency_id, createdAt, updatedAt, isActive, voided)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), 0, 0)
                 `;
-                insertParams = [username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, agency_id];
+                insertParams = [username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, ministry, resolvedAgencyId];
             } else {
                 insertQuery = `
                     INSERT INTO users (username, email, passwordHash, firstName, lastName, roleId, idNumber, employeeNumber, createdAt, updatedAt, isActive, voided)
@@ -255,7 +315,10 @@ router.post('/register', async (req, res) => {
         console.error('Error during registration:', err);
         
         if (err.code === 'ER_DUP_ENTRY' || err.code === '23505') {
-            return res.status(400).json({ error: 'User with that username or email already exists.' });
+            return res.status(400).json({
+                error: 'An account with this username or email already exists. Please sign in or use different details.',
+                code: 'DUPLICATE_USER',
+            });
         }
         res.status(500).json({ error: 'Server error during registration.', details: err.message });
     }
@@ -356,6 +419,8 @@ router.post('/login', async (req, res) => {
                 organizationScopes,
             }
         };
+        const normalizedRole = String(user.role || '').trim().toLowerCase().replace(/[_-]+/g, ' ');
+        const forcePasswordChange = normalizedRole === 'super admin';
 
         jwt.sign(
             payload,
@@ -366,7 +431,7 @@ router.post('/login', async (req, res) => {
                     console.error('JWT signing error:', err);
                     return res.status(500).json({ error: 'Server error during token generation.' });
                 }
-                res.json({ token, message: 'Logged in successfully!' });
+                res.json({ token, message: 'Logged in successfully!', forcePasswordChange });
             }
         );
 

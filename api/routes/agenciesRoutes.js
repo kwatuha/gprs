@@ -12,8 +12,46 @@ try {
 }
 const fs = require('fs');
 const path = require('path');
+const XLSX = require('xlsx');
 
 const getScopeUserId = (user) => user?.id ?? user?.userId ?? user?.actualUserId ?? null;
+
+const mapAgencyCsvRow = (row) => {
+    const ministry = (row['Ministry'] || row['\ufeffMinistry'] || row['ministry'] || '').trim();
+    const stateDepartment = (row['State Department'] || row['state_department'] || '').trim();
+    const agencyName = (row['Agency / Institution'] || row['agency_name'] || '').trim();
+    if (!agencyName || !ministry || !stateDepartment) return null;
+    return {
+        ministry,
+        state_department: stateDepartment,
+        agency_name: agencyName,
+    };
+};
+
+const parseAgenciesCsv = async (filePath) => {
+    // Prefer csv-parser when available.
+    if (csv) {
+        const agencies = [];
+        await new Promise((resolve, reject) => {
+            fs.createReadStream(filePath)
+                .pipe(csv())
+                .on('data', (row) => {
+                    const mapped = mapAgencyCsvRow(row);
+                    if (mapped) agencies.push(mapped);
+                })
+                .on('end', resolve)
+                .on('error', reject);
+        });
+        return agencies;
+    }
+
+    // Fallback parser using xlsx for CSV files when csv-parser is unavailable.
+    const wb = XLSX.readFile(filePath, { raw: true });
+    const sheetName = wb.SheetNames[0];
+    if (!sheetName) return [];
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
+    return rows.map(mapAgencyCsvRow).filter(Boolean);
+};
 
 // Configure multer for file uploads
 const upload = multer({ 
@@ -418,12 +456,6 @@ router.delete('/:id', async (req, res) => {
  * @description Import agencies from uploaded CSV file
  */
 router.post('/import', upload.single('file'), async (req, res) => {
-    if (!csv) {
-        return res.status(500).json({ 
-            message: 'CSV import is not available. Please install csv-parser module.' 
-        });
-    }
-
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
     }
@@ -435,26 +467,8 @@ router.post('/import', upload.single('file'), async (req, res) => {
     let errors = [];
 
     try {
-        await new Promise((resolve, reject) => {
-            fs.createReadStream(filePath)
-                .pipe(csv())
-                .on('data', (row) => {
-                    // Map CSV columns to database fields (handle BOM character)
-                    const ministry = (row['Ministry'] || row['\ufeffMinistry'] || row['ministry'] || '').trim();
-                    const stateDepartment = (row['State Department'] || row['state_department'] || '').trim();
-                    const agencyName = (row['Agency / Institution'] || row['agency_name'] || '').trim();
-
-                    if (agencyName && ministry && stateDepartment) {
-                        agencies.push({
-                            ministry,
-                            state_department: stateDepartment,
-                            agency_name: agencyName
-                        });
-                    }
-                })
-                .on('end', resolve)
-                .on('error', reject);
-        });
+        const parsed = await parseAgenciesCsv(filePath);
+        agencies.push(...parsed);
 
         // Get all existing agency names in one query
         const existingAgenciesResult = await pool.query(
@@ -522,12 +536,6 @@ router.post('/import', upload.single('file'), async (req, res) => {
  * @description Import agencies from a file path on the server
  */
 router.post('/import-from-path', async (req, res) => {
-    if (!csv) {
-        return res.status(500).json({ 
-            message: 'CSV import is not available. Please install csv-parser module.' 
-        });
-    }
-
     const filePath = req.body.path || '/app/adp/agencies.csv';
     
     if (!fs.existsSync(filePath)) {
@@ -540,26 +548,8 @@ router.post('/import-from-path', async (req, res) => {
     let errors = [];
 
     try {
-        await new Promise((resolve, reject) => {
-            fs.createReadStream(filePath)
-                .pipe(csv())
-                .on('data', (row) => {
-                    // Map CSV columns to database fields (handle BOM character)
-                    const ministry = (row['Ministry'] || row['\ufeffMinistry'] || row['ministry'] || '').trim();
-                    const stateDepartment = (row['State Department'] || row['state_department'] || '').trim();
-                    const agencyName = (row['Agency / Institution'] || row['agency_name'] || '').trim();
-
-                    if (agencyName && ministry && stateDepartment) {
-                        agencies.push({
-                            ministry,
-                            state_department: stateDepartment,
-                            agency_name: agencyName
-                        });
-                    }
-                })
-                .on('end', resolve)
-                .on('error', reject);
-        });
+        const parsed = await parseAgenciesCsv(filePath);
+        agencies.push(...parsed);
 
         // Get all existing agency names in one query
         const existingAgenciesResult = await pool.query(

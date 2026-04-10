@@ -223,7 +223,8 @@ async function ensureDefaultAgencyScope(userId, agencyId) {
 /**
  * Create initial user_organization_scope row(s) from users.agency_id, ministry, state_department
  * when the user has no scopes yet (registration approval, admin create, or legacy backfill).
- * Priority: AGENCY > STATE_DEPARTMENT_ALL > MINISTRY_ALL (matches table CHECK constraints).
+ * Priority: STATE_DEPARTMENT_ALL > AGENCY > MINISTRY_ALL.
+ * This default keeps most users scoped at state-department level without manual scope assignment.
  *
  * @param {number|string} userId
  * @param {{ onlyIfEmpty?: boolean }} options onlyIfEmpty defaults true — do not insert if user already has any scope row.
@@ -263,14 +264,6 @@ async function syncOrganizationScopesFromUserProfile(userId, options = {}) {
     const ministry = (row.ministry != null ? String(row.ministry) : '').trim();
     const stateDepartment = (row.stateDepartment != null ? String(row.stateDepartment) : '').trim();
 
-    if (Number.isFinite(aid)) {
-        await pool.query(
-            `INSERT INTO user_organization_scope (user_id, scope_type, agency_id, ministry, state_department)
-             VALUES ($1, $2, $3, NULL, NULL)`,
-            [uid, SCOPE_TYPES.AGENCY, aid]
-        );
-        return { ok: true, scopeType: SCOPE_TYPES.AGENCY };
-    }
     if (ministry && stateDepartment) {
         await pool.query(
             `INSERT INTO user_organization_scope (user_id, scope_type, agency_id, ministry, state_department)
@@ -278,6 +271,14 @@ async function syncOrganizationScopesFromUserProfile(userId, options = {}) {
             [uid, SCOPE_TYPES.STATE_DEPARTMENT_ALL, ministry, stateDepartment]
         );
         return { ok: true, scopeType: SCOPE_TYPES.STATE_DEPARTMENT_ALL };
+    }
+    if (Number.isFinite(aid)) {
+        await pool.query(
+            `INSERT INTO user_organization_scope (user_id, scope_type, agency_id, ministry, state_department)
+             VALUES ($1, $2, $3, NULL, NULL)`,
+            [uid, SCOPE_TYPES.AGENCY, aid]
+        );
+        return { ok: true, scopeType: SCOPE_TYPES.AGENCY };
     }
     if (ministry) {
         await pool.query(
@@ -321,17 +322,35 @@ function buildProjectListScopeFragment(projectAlias = 'p') {
         OR (
             NOT EXISTS (SELECT 1 FROM user_organization_scope s0 WHERE s0.user_id = ?)
             AND EXISTS (
-                SELECT 1 FROM users u
-                JOIN agencies ag ON u.agency_id = ag.id AND COALESCE(ag.voided, false) = false
-                WHERE u.userid = ? AND COALESCE(u.voided, false) = false
-                AND (
-                    LOWER(TRIM(COALESCE(${pa}.implementing_agency, ''))) = LOWER(TRIM(COALESCE(ag.agency_name, '')))
-                    OR (
-                        NULLIF(TRIM(COALESCE(${pa}.implementing_agency, '')), '') IS NULL
-                        AND LOWER(TRIM(COALESCE(${pa}.ministry, ''))) = LOWER(TRIM(COALESCE(ag.ministry, '')))
-                        AND LOWER(TRIM(COALESCE(${pa}.state_department, ''))) = LOWER(TRIM(COALESCE(ag.state_department, '')))
-                    )
-                )
+                SELECT 1
+                FROM users u
+                LEFT JOIN agencies ag ON u.agency_id = ag.id AND COALESCE(ag.voided, false) = false
+                WHERE u.userid = ?
+                  AND COALESCE(u.voided, false) = false
+                  AND (
+                        (
+                            NULLIF(TRIM(COALESCE(u.ministry, '')), '') IS NOT NULL
+                            AND NULLIF(TRIM(COALESCE(u.state_department, '')), '') IS NOT NULL
+                            AND LOWER(TRIM(COALESCE(${pa}.ministry, ''))) = LOWER(TRIM(COALESCE(u.ministry, '')))
+                            AND LOWER(TRIM(COALESCE(${pa}.state_department, ''))) = LOWER(TRIM(COALESCE(u.state_department, '')))
+                        )
+                        OR (
+                            NULLIF(TRIM(COALESCE(u.ministry, '')), '') IS NOT NULL
+                            AND NULLIF(TRIM(COALESCE(u.state_department, '')), '') IS NULL
+                            AND LOWER(TRIM(COALESCE(${pa}.ministry, ''))) = LOWER(TRIM(COALESCE(u.ministry, '')))
+                        )
+                        OR (
+                            ag.id IS NOT NULL
+                            AND (
+                                LOWER(TRIM(COALESCE(${pa}.implementing_agency, ''))) = LOWER(TRIM(COALESCE(ag.agency_name, '')))
+                                OR (
+                                    NULLIF(TRIM(COALESCE(${pa}.implementing_agency, '')), '') IS NULL
+                                    AND LOWER(TRIM(COALESCE(${pa}.ministry, ''))) = LOWER(TRIM(COALESCE(ag.ministry, '')))
+                                    AND LOWER(TRIM(COALESCE(${pa}.state_department, ''))) = LOWER(TRIM(COALESCE(ag.state_department, '')))
+                                )
+                            )
+                        )
+                  )
             )
         )
     )`;

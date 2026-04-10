@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Box,
-  Container,
   Typography,
   Button,
   Grid,
@@ -10,8 +9,6 @@ import {
   CardContent,
   Avatar,
   useTheme,
-  useMediaQuery,
-  Paper,
   Chip,
   LinearProgress,
   CircularProgress,
@@ -70,12 +67,125 @@ import { normalizeProjectStatus } from '../utils/projectStatusNormalizer';
 import { tokens } from './dashboard/theme';
 import { isAdmin } from '../utils/privilegeUtils.js';
 
+/** Same KPI count animation as `FinanceDashboardPage`. */
+const STATUS_COUNT_UP_MS = 500;
+
+function useCountUp(endValue, durationMs = STATUS_COUNT_UP_MS) {
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    const end = Math.max(0, Math.round(Number(endValue) || 0));
+    if (end === 0) {
+      setDisplay(0);
+      return undefined;
+    }
+
+    setDisplay(0);
+    const startTime = performance.now();
+    let rafId;
+
+    const tick = (now) => {
+      const t = Math.min(1, (now - startTime) / durationMs);
+      const eased = 1 - (1 - t) ** 3;
+      setDisplay(Math.round(eased * end));
+      if (t < 1) {
+        rafId = requestAnimationFrame(tick);
+      } else {
+        setDisplay(end);
+      }
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => {
+      if (rafId != null) cancelAnimationFrame(rafId);
+    };
+  }, [endValue, durationMs]);
+
+  return display;
+}
+
+const projectStatusKpiColumnSx = {
+  flex: { xs: '0 0 auto', sm: '1 1 0%' },
+  minWidth: { xs: 160, sm: 0 },
+  maxWidth: { sm: '100%' },
+  display: 'flex',
+  flexDirection: 'column',
+  minHeight: 0,
+};
+
+/** Metadata + theme hooks for home status KPIs (layout matches `FinanceDashboardPage` KPI row). */
+const PROJECT_STATUS_KPI_DEFS = [
+  {
+    statusKey: 'Completed',
+    title: 'Completed',
+    Icon: CheckCircleIcon,
+    iconColor: (c, L) => (L ? 'rgba(255, 255, 255, 0.9)' : c.greenAccent[500]),
+    background: (c, L) =>
+      L ? 'linear-gradient(135deg, #4caf50 0%, #81c784 100%)' : `linear-gradient(135deg, ${c.greenAccent[800]}, ${c.greenAccent[700]})`,
+    borderTop: (c, L) => (L ? '#388e3c' : c.greenAccent[500]),
+    hoverShadow: (L) => (L ? '0 4px 12px rgba(76, 175, 80, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)'),
+  },
+  {
+    statusKey: 'Ongoing',
+    title: 'Ongoing',
+    Icon: PlayArrowIcon,
+    iconColor: (c, L) => (L ? 'rgba(255, 255, 255, 0.9)' : c.blueAccent[500]),
+    background: (c, L) =>
+      L ? 'linear-gradient(135deg, #2196f3 0%, #42a5f5 100%)' : `linear-gradient(135deg, ${c.blueAccent[800]}, ${c.blueAccent[700]})`,
+    borderTop: (c, L) => (L ? '#1976d2' : c.blueAccent[500]),
+    hoverShadow: (L) => (L ? '0 4px 12px rgba(33, 150, 243, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)'),
+  },
+  {
+    statusKey: 'Not started',
+    title: 'Not Started',
+    Icon: ScheduleIcon,
+    iconColor: (c, L) => (L ? 'rgba(255, 255, 255, 0.9)' : c.grey[400]),
+    background: (c, L) =>
+      L ? 'linear-gradient(135deg, #9e9e9e 0%, #bdbdbd 100%)' : `linear-gradient(135deg, ${c.grey[800]}, ${c.grey[700]})`,
+    borderTop: (c, L) => (L ? '#616161' : c.grey[500]),
+    hoverShadow: (L) => (L ? '0 4px 12px rgba(158, 158, 158, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)'),
+  },
+  {
+    statusKey: 'Stalled',
+    title: 'Stalled',
+    Icon: PauseIcon,
+    iconColor: (c, L) => (L ? 'rgba(255, 255, 255, 0.9)' : c.orange?.[400] || c.yellowAccent[400]),
+    background: (c, L) =>
+      L
+        ? 'linear-gradient(135deg, #ff9800 0%, #ffb74d 100%)'
+        : `linear-gradient(135deg, ${c.orange?.[800] || c.yellowAccent[800]}, ${c.orange?.[700] || c.yellowAccent[700]})`,
+    borderTop: (c, L) => (L ? '#f57c00' : c.orange?.[500] || c.yellowAccent[500]),
+    hoverShadow: (L) => (L ? '0 4px 12px rgba(255, 152, 0, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)'),
+  },
+  {
+    statusKey: 'Under Procurement',
+    title: 'Under Procurement',
+    Icon: HourglassIcon,
+    iconColor: (c, L) => (L ? 'rgba(255, 255, 255, 0.9)' : c.purple?.[400] || c.blueAccent[400]),
+    background: (c, L) =>
+      L
+        ? 'linear-gradient(135deg, #9c27b0 0%, #ba68c8 100%)'
+        : `linear-gradient(135deg, ${c.purple?.[800] || c.blueAccent[800]}, ${c.purple?.[700] || c.blueAccent[700]})`,
+    borderTop: (c, L) => (L ? '#7b1fa2' : c.purple?.[500] || c.blueAccent[500]),
+    hoverShadow: (L) => (L ? '0 4px 12px rgba(156, 39, 176, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)'),
+  },
+  {
+    statusKey: 'Suspended',
+    title: 'Suspended',
+    Icon: WarningIcon,
+    iconColor: (c, L) => (L ? 'rgba(255, 255, 255, 0.9)' : c.redAccent[400]),
+    background: (c, L) =>
+      L ? 'linear-gradient(135deg, #f44336 0%, #e57373 100%)' : `linear-gradient(135deg, ${c.redAccent[800]}, ${c.redAccent[700]})`,
+    borderTop: (c, L) => (L ? '#d32f2f' : c.redAccent[500]),
+    hoverShadow: (L) => (L ? '0 4px 12px rgba(244, 67, 54, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)'),
+  },
+];
+
 const HomePage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { user, hasPrivilege } = useAuth();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   const {
     dashboardData = { loading: false, metrics: {}, recentActivity: [] },
     refreshing,
@@ -535,7 +645,37 @@ const HomePage = () => {
   const colors = tokens(theme.palette.mode);
   const isLight = theme.palette.mode === 'light';
   const ui = {
-    elevatedShadow: isLight ? '0 1px 6px rgba(0,0,0,0.06)' : '0 4px 20px rgba(0, 0, 0, 0.15), 0 -2px 10px rgba(0, 0, 0, 0.1)'
+    elevatedShadow: isLight ? '0 1px 6px rgba(0,0,0,0.06)' : '0 4px 20px rgba(0, 0, 0, 0.15), 0 -2px 10px rgba(0, 0, 0, 0.1)',
+  };
+
+  const dashboardShellCardSx = {
+    borderRadius: 4,
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    background:
+      theme.palette.mode === 'dark'
+        ? `linear-gradient(135deg, ${colors.primary[400]} 0%, ${colors.primary[500]} 100%)`
+        : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+    border: `1px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[700] : 'rgba(0,0,0,0.08)'}`,
+    boxShadow:
+      theme.palette.mode === 'dark'
+        ? '0 8px 32px rgba(0,0,0,0.4)'
+        : '0 4px 20px rgba(0,0,0,0.08)',
+    transition: 'all 0.3s ease',
+    '&:hover': {
+      boxShadow:
+        theme.palette.mode === 'dark'
+          ? '0 12px 48px rgba(0,0,0,0.5)'
+          : '0 8px 32px rgba(0,0,0,0.12)',
+      transform: 'translateY(-2px)',
+    },
+  };
+
+  const dashboardSectionTitleSx = {
+    fontWeight: 700,
+    fontSize: '0.95rem',
+    color: colors.grey[100],
   };
 
   const statusStats = useMemo(() => {
@@ -574,6 +714,22 @@ const HomePage = () => {
 
     return stats;
   }, [allProjects]);
+
+  const animStatusCompleted = useCountUp(loadingProjects ? 0 : statusStats['Completed'] || 0);
+  const animStatusOngoing = useCountUp(loadingProjects ? 0 : statusStats.Ongoing || 0);
+  const animStatusNotStarted = useCountUp(loadingProjects ? 0 : statusStats['Not started'] || 0);
+  const animStatusStalled = useCountUp(loadingProjects ? 0 : statusStats.Stalled || 0);
+  const animStatusUnderProcurement = useCountUp(loadingProjects ? 0 : statusStats['Under Procurement'] || 0);
+  const animStatusSuspended = useCountUp(loadingProjects ? 0 : statusStats.Suspended || 0);
+
+  const statusCountAnimByKey = {
+    Completed: animStatusCompleted,
+    Ongoing: animStatusOngoing,
+    'Not started': animStatusNotStarted,
+    Stalled: animStatusStalled,
+    'Under Procurement': animStatusUnderProcurement,
+    Suspended: animStatusSuspended,
+  };
 
   // Handler to open modal with projects for a specific status
   const handleStatusClick = async (status) => {
@@ -624,385 +780,309 @@ const HomePage = () => {
   return (
     <Box
       sx={{
-        minHeight: 'calc(100vh - 48px)',
-        background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-        py: { xs: 1, md: 1.5 },
+        width: {
+          xs: `calc(100% + ${theme.spacing(1.5)})`,
+          sm: `calc(100% + ${theme.spacing(2)})`,
+          md: `calc(100% + ${theme.spacing(2.5)})`,
+        },
+        maxWidth: 'none',
+        boxSizing: 'border-box',
+        overflowX: 'hidden',
+        mx: { xs: -0.75, sm: -1, md: -1.25 },
+        px: 0,
+        py: { xs: 1, sm: 1.25, md: 1.5 },
+        background:
+          theme.palette.mode === 'dark'
+            ? `linear-gradient(135deg, ${colors.primary[900]} 0%, ${colors.primary[800]} 50%, ${colors.primary[900]} 100%)`
+            : 'linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%)',
+        minHeight: '100vh',
       }}
     >
-      <Container maxWidth="xl">
-        {/* Header Section - Subtle */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 0.75, md: 1 },
-            mb: 1,
-            borderRadius: 1.5,
-            background: 'transparent',
-            border: '1px solid',
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
-          }}
-        >
-          <Box display="flex" justifyContent="space-between" alignItems="center" gap={1.5}>
-            <Box flex={1}>
-              <Box display="flex" alignItems="center" gap={1} mb={0.25}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: { xs: '0.875rem', md: '0.9375rem' }, color: 'text.primary' }}>
-                  Welcome back, {user?.username || 'User'}
-                </Typography>
-                <Chip
-                  label={user?.roleName || 'User'}
-                  size="small"
-                  sx={{
-                    bgcolor: 'primary.main',
-                    color: 'white',
-                    fontWeight: '500',
-                    fontSize: '0.7rem',
-                    height: '20px',
-                  }}
-                />
-              </Box>
-              <Typography 
-                variant="caption" 
-                sx={{ 
-                  color: 'text.secondary',
-                  fontSize: { xs: '0.7rem', md: '0.75rem' },
-                  fontWeight: 400,
-                }}
-              >
-                Here's what's happening in your system today
-              </Typography>
-            </Box>
+      <Box
+        sx={{
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          px: { xs: 0.75, sm: 1, md: 1.25 },
+          mb: 1.5,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1, flexWrap: 'wrap' }}>
+          <Box
+            sx={{
+              width: 3,
+              height: 28,
+              background: `linear-gradient(180deg, ${colors.blueAccent[500]}, ${colors.greenAccent[500]})`,
+              borderRadius: 1.5,
+              mt: 0.25,
+            }}
+          />
+          <Box sx={{ flex: 1, minWidth: 200 }}>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 800,
+                background: `linear-gradient(135deg, ${colors.blueAccent[500]}, ${colors.greenAccent[500]})`,
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                letterSpacing: '-0.02em',
+                fontSize: { xs: '1.1rem', md: '1.35rem' },
+                lineHeight: 1.2,
+              }}
+            >
+              Dashboard
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ mt: 0.35, color: colors.grey[300], fontSize: '0.8rem', lineHeight: 1.4, maxWidth: 720 }}
+            >
+              Welcome back, <strong>{user?.username || 'User'}</strong>
+              {user?.roleName ? ` · ${user.roleName}` : ''} — here&apos;s what&apos;s happening in your system today.
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+            <Chip
+              label="Summary Statistics"
+              size="small"
+              onClick={() => navigate(ROUTES.SYSTEM_DASHBOARD)}
+              sx={{
+                bgcolor: colors.blueAccent[600],
+                color: 'white',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                height: 24,
+                '&:hover': { bgcolor: colors.blueAccent[700], transform: 'scale(1.05)' },
+                transition: 'all 0.2s ease',
+              }}
+            />
+            <Chip
+              label="Project By Status"
+              size="small"
+              onClick={() => navigate(ROUTES.PROJECT_BY_STATUS_DASHBOARD)}
+              sx={{
+                bgcolor: colors.orange[600],
+                color: 'white',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                height: 24,
+                '&:hover': { bgcolor: colors.orange[700], transform: 'scale(1.05)' },
+                transition: 'all 0.2s ease',
+              }}
+            />
+            <Chip
+              label="Finance"
+              size="small"
+              onClick={() => navigate(ROUTES.FINANCE_DASHBOARD)}
+              sx={{
+                bgcolor: colors.blueAccent[600],
+                color: 'white',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                height: 24,
+                '&:hover': { bgcolor: colors.blueAccent[700], transform: 'scale(1.05)' },
+                transition: 'all 0.2s ease',
+              }}
+            />
+            <Chip
+              label="Jobs & Impact"
+              size="small"
+              onClick={() => navigate(ROUTES.JOBS_DASHBOARD)}
+              sx={{
+                bgcolor: colors.greenAccent[600],
+                color: 'white',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                height: 24,
+                '&:hover': { bgcolor: colors.greenAccent[700], transform: 'scale(1.05)' },
+                transition: 'all 0.2s ease',
+              }}
+            />
             <IconButton
               onClick={refreshDashboard}
               disabled={refreshing}
               size="small"
               sx={{
-                color: 'text.secondary',
-                width: { xs: 28, md: 32 },
-                height: { xs: 28, md: 32 },
-                '&:hover': { 
-                  bgcolor: 'action.hover',
+                color: colors.grey[300],
+                width: 36,
+                height: 36,
+                border: `1px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[700] : 'rgba(0,0,0,0.12)'}`,
+                '&:hover': {
+                  bgcolor: theme.palette.mode === 'dark' ? colors.primary[500] : 'rgba(0,0,0,0.04)',
                   transform: 'rotate(180deg)',
                 },
                 transition: 'all 0.3s ease-in-out',
               }}
             >
-              <RefreshIcon sx={{ fontSize: { xs: 16, md: 18 } }} />
+              <RefreshIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Box>
-        </Paper>
+        </Box>
+      </Box>
 
-        {/* Status Overview Cards - Matching Project Management Page */}
-        <Box
+      {/* Project status KPIs — layout & motion match `FinanceDashboardPage` KPI row; click opens detail modal */}
+      <Box
+        sx={{
+          mb: 1,
+          mt: 1,
+          width: '100%',
+          display: 'flex',
+          flexWrap: 'nowrap',
+          gap: 1,
+          pb: 1,
+          px: '1rem',
+          overflowX: { xs: 'auto', sm: 'hidden' },
+          boxSizing: 'border-box',
+          '&::-webkit-scrollbar': { height: '8px' },
+          '&::-webkit-scrollbar-track': {
+            background: isLight ? colors.grey[100] : colors.grey[800],
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: isLight ? colors.grey[400] : colors.grey[600],
+            borderRadius: '4px',
+            '&:hover': { background: isLight ? colors.grey[500] : colors.grey[500] },
+          },
+        }}
+      >
+        {PROJECT_STATUS_KPI_DEFS.map((def) => {
+          const { statusKey, title, Icon } = def;
+          const count = statusStats[statusKey] || 0;
+          const pct =
+            statusStats.totalProjects > 0
+              ? Math.round((count / statusStats.totalProjects) * 100)
+              : 0;
+          const animated = statusCountAnimByKey[statusKey];
+
+          return (
+            <Box key={statusKey} sx={projectStatusKpiColumnSx}>
+              <Card
+                role="button"
+                tabIndex={0}
+                onClick={() => handleStatusClick(statusKey)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleStatusClick(statusKey);
+                  }
+                }}
+                sx={{
+                  flex: 1,
+                  width: '100%',
+                  minHeight: '100%',
+                  cursor: 'pointer',
+                  background: def.background(colors, isLight),
+                  color: isLight ? 'white' : 'inherit',
+                  borderTop: `2px solid ${def.borderTop(colors, isLight)}`,
+                  boxShadow: ui.elevatedShadow,
+                  transition: 'all 0.2s ease-in-out',
+                  borderRadius: '8px',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: def.hoverShadow(isLight),
+                  },
+                }}
+              >
+                <CardContent sx={{ p: 0.75, '&:last-child': { pb: 0.75 }, pt: 0.75 }}>
+                  <Box display="flex" alignItems="center" gap={0.75}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100],
+                          fontWeight: 600,
+                          fontSize: '0.65rem',
+                          display: 'block',
+                        }}
+                      >
+                        {title}
+                      </Typography>
+                      <Typography
+                        variant="h5"
+                        sx={{
+                          color: isLight ? '#ffffff' : '#fff',
+                          fontWeight: 800,
+                          fontSize: '2rem',
+                          mb: 0,
+                          lineHeight: 1.15,
+                          minHeight: loadingProjects ? 32 : undefined,
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                      >
+                        {loadingProjects ? (
+                          <CircularProgress size={22} sx={{ color: 'white' }} />
+                        ) : (
+                          animated
+                        )}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        component="div"
+                        sx={{
+                          color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[300],
+                          fontWeight: 600,
+                          fontSize: '1.1rem',
+                          mt: 0.125,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {pct}%
+                      </Typography>
+                    </Box>
+                    <Icon
+                      sx={{
+                        color: def.iconColor(colors, isLight),
+                        fontSize: '2rem',
+                        flexShrink: 0,
+                      }}
+                    />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Box>
+          );
+        })}
+      </Box>
+
+        {/* Main content — summary-statistics card shell */}
+        <Grid
+          container
+          rowSpacing={2.5}
+          columnSpacing={{ xs: 1, sm: 1.5, md: 2 }}
+          alignItems="stretch"
           sx={{
             mb: 2,
-            overflowX: 'auto',
-            '&::-webkit-scrollbar': {
-              height: '8px',
-            },
-            '&::-webkit-scrollbar-track': {
-              background: isLight ? colors.grey[100] : colors.grey[800],
-              borderRadius: '4px',
-            },
-            '&::-webkit-scrollbar-thumb': {
-              background: isLight ? colors.grey[400] : colors.grey[600],
-              borderRadius: '4px',
-              '&:hover': {
-                background: isLight ? colors.grey[500] : colors.grey[500],
-              },
-            },
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
+            mx: 0,
+            px: '1rem',
           }}
         >
-          <Grid container spacing={1} sx={{ display: 'flex', flexWrap: 'nowrap', pb: 1 }}>
-            {/* Completed */}
-            <Grid item sx={{ minWidth: { xs: '110px', sm: '130px', md: '145px' }, flex: '0 0 auto' }}>
-              <Card 
-                onClick={() => handleStatusClick('Completed')}
-                sx={{ 
-                  height: '100%',
-                  background: isLight 
-                    ? 'linear-gradient(135deg, #4caf50 0%, #81c784 100%)'
-                    : `linear-gradient(135deg, ${colors.greenAccent[800]}, ${colors.greenAccent[700]})`,
-                  color: isLight ? 'white' : 'inherit',
-                  borderTop: `2px solid ${isLight ? '#388e3c' : colors.greenAccent[500]}`,
-                  boxShadow: ui.elevatedShadow,
-                  transition: 'all 0.2s ease-in-out',
-                  cursor: 'pointer',
-                  borderRadius: '8px',
-                  '&:hover': {
-                    transform: 'translateY(-2px) scale(1.02)',
-                    boxShadow: isLight ? '0 4px 12px rgba(76, 175, 80, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)',
-                  }
-                }}
-              >
-                <CardContent sx={{ p: 0.75, '&:last-child': { pb: 0.75 }, pt: 0.75 }}>
-                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.25}>
-                    <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem' }}>
-                      Completed
-                    </Typography>
-                    <CheckCircleIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.greenAccent[500], fontSize: 14 }} />
-                  </Box>
-                  <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 'bold', fontSize: '1rem', mb: 0, lineHeight: 1.1 }}>
-                    {loadingProjects ? <CircularProgress size={16} sx={{ color: 'white' }} /> : statusStats['Completed'] || 0}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.8)' : colors.grey[300], fontWeight: 400, fontSize: '0.6rem', mt: 0.125 }}>
-                    {statusStats.totalProjects > 0 
-                      ? Math.round((statusStats['Completed'] || 0) / statusStats.totalProjects * 100) 
-                      : 0}%
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Ongoing */}
-            <Grid item sx={{ minWidth: { xs: '110px', sm: '130px', md: '145px' }, flex: '0 0 auto' }}>
-              <Card 
-                onClick={() => handleStatusClick('Ongoing')}
-                sx={{ 
-                  height: '100%',
-                  background: isLight 
-                    ? 'linear-gradient(135deg, #2196f3 0%, #42a5f5 100%)'
-                    : `linear-gradient(135deg, ${colors.blueAccent[800]}, ${colors.blueAccent[700]})`,
-                  color: isLight ? 'white' : 'inherit',
-                  borderTop: `2px solid ${isLight ? '#1976d2' : colors.blueAccent[500]}`,
-                  boxShadow: ui.elevatedShadow,
-                  transition: 'all 0.2s ease-in-out',
-                  cursor: 'pointer',
-                  borderRadius: '8px',
-                  '&:hover': {
-                    transform: 'translateY(-2px) scale(1.02)',
-                    boxShadow: isLight ? '0 4px 12px rgba(33, 150, 243, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)',
-                  }
-                }}
-              >
-                <CardContent sx={{ p: 0.75, '&:last-child': { pb: 0.75 }, pt: 0.75 }}>
-                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.25}>
-                    <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem' }}>
-                      Ongoing
-                    </Typography>
-                    <PlayArrowIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.blueAccent[500], fontSize: 14 }} />
-                  </Box>
-                  <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 'bold', fontSize: '1rem', mb: 0, lineHeight: 1.1 }}>
-                    {loadingProjects ? <CircularProgress size={16} sx={{ color: 'white' }} /> : statusStats['Ongoing'] || 0}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.8)' : colors.grey[300], fontWeight: 400, fontSize: '0.6rem', mt: 0.125 }}>
-                    {statusStats.totalProjects > 0 
-                      ? Math.round((statusStats['Ongoing'] || 0) / statusStats.totalProjects * 100) 
-                      : 0}%
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Not started */}
-            <Grid item sx={{ minWidth: { xs: '110px', sm: '130px', md: '145px' }, flex: '0 0 auto' }}>
-              <Card 
-                onClick={() => handleStatusClick('Not started')}
-                sx={{ 
-                  height: '100%',
-                  background: isLight 
-                    ? 'linear-gradient(135deg, #9e9e9e 0%, #bdbdbd 100%)'
-                    : `linear-gradient(135deg, ${colors.grey[800]}, ${colors.grey[700]})`,
-                  color: isLight ? 'white' : 'inherit',
-                  borderTop: `2px solid ${isLight ? '#616161' : colors.grey[500]}`,
-                  boxShadow: ui.elevatedShadow,
-                  transition: 'all 0.2s ease-in-out',
-                  cursor: 'pointer',
-                  borderRadius: '8px',
-                  '&:hover': {
-                    transform: 'translateY(-2px) scale(1.02)',
-                    boxShadow: isLight ? '0 4px 12px rgba(158, 158, 158, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)',
-                  }
-                }}
-              >
-                <CardContent sx={{ p: 0.75, '&:last-child': { pb: 0.75 }, pt: 0.75 }}>
-                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.25}>
-                    <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem' }}>
-                      Not Started
-                    </Typography>
-                    <ScheduleIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[400], fontSize: 14 }} />
-                  </Box>
-                  <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 'bold', fontSize: '1rem', mb: 0, lineHeight: 1.1 }}>
-                    {loadingProjects ? <CircularProgress size={16} sx={{ color: 'white' }} /> : statusStats['Not started'] || 0}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.8)' : colors.grey[300], fontWeight: 400, fontSize: '0.6rem', mt: 0.125 }}>
-                    {statusStats.totalProjects > 0 
-                      ? Math.round((statusStats['Not started'] || 0) / statusStats.totalProjects * 100) 
-                      : 0}%
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Stalled */}
-            <Grid item sx={{ minWidth: { xs: '110px', sm: '130px', md: '145px' }, flex: '0 0 auto' }}>
-              <Card 
-                onClick={() => handleStatusClick('Stalled')}
-                sx={{ 
-                  height: '100%',
-                  background: isLight 
-                    ? 'linear-gradient(135deg, #ff9800 0%, #ffb74d 100%)'
-                    : `linear-gradient(135deg, ${colors.orange?.[800] || colors.yellowAccent[800]}, ${colors.orange?.[700] || colors.yellowAccent[700]})`,
-                  color: isLight ? 'white' : 'inherit',
-                  borderTop: `2px solid ${isLight ? '#f57c00' : colors.orange?.[500] || colors.yellowAccent[500]}`,
-                  boxShadow: ui.elevatedShadow,
-                  transition: 'all 0.2s ease-in-out',
-                  cursor: 'pointer',
-                  borderRadius: '8px',
-                  '&:hover': {
-                    transform: 'translateY(-2px) scale(1.02)',
-                    boxShadow: isLight ? '0 4px 12px rgba(255, 152, 0, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)',
-                  }
-                }}
-              >
-                <CardContent sx={{ p: 0.75, '&:last-child': { pb: 0.75 }, pt: 0.75 }}>
-                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.25}>
-                    <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem' }}>
-                      Stalled
-                    </Typography>
-                    <PauseIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.orange?.[400] || colors.yellowAccent[400], fontSize: 14 }} />
-                  </Box>
-                  <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 'bold', fontSize: '1rem', mb: 0, lineHeight: 1.1 }}>
-                    {loadingProjects ? <CircularProgress size={16} sx={{ color: 'white' }} /> : statusStats['Stalled'] || 0}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.8)' : colors.grey[300], fontWeight: 400, fontSize: '0.6rem', mt: 0.125 }}>
-                    {statusStats.totalProjects > 0 
-                      ? Math.round((statusStats['Stalled'] || 0) / statusStats.totalProjects * 100) 
-                      : 0}%
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Under Procurement */}
-            <Grid item sx={{ minWidth: { xs: '110px', sm: '130px', md: '145px' }, flex: '0 0 auto' }}>
-              <Card 
-                onClick={() => handleStatusClick('Under Procurement')}
-                sx={{ 
-                  height: '100%',
-                  background: isLight 
-                    ? 'linear-gradient(135deg, #9c27b0 0%, #ba68c8 100%)'
-                    : `linear-gradient(135deg, ${colors.purple?.[800] || colors.blueAccent[800]}, ${colors.purple?.[700] || colors.blueAccent[700]})`,
-                  color: isLight ? 'white' : 'inherit',
-                  borderTop: `2px solid ${isLight ? '#7b1fa2' : colors.purple?.[500] || colors.blueAccent[500]}`,
-                  boxShadow: ui.elevatedShadow,
-                  transition: 'all 0.2s ease-in-out',
-                  cursor: 'pointer',
-                  borderRadius: '8px',
-                  '&:hover': {
-                    transform: 'translateY(-2px) scale(1.02)',
-                    boxShadow: isLight ? '0 4px 12px rgba(156, 39, 176, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)',
-                  }
-                }}
-              >
-                <CardContent sx={{ p: 0.75, '&:last-child': { pb: 0.75 }, pt: 0.75 }}>
-                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.25}>
-                    <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem' }}>
-                      Under Procurement
-                    </Typography>
-                    <HourglassIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.purple?.[400] || colors.blueAccent[400], fontSize: 14 }} />
-                  </Box>
-                  <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 'bold', fontSize: '1rem', mb: 0, lineHeight: 1.1 }}>
-                    {loadingProjects ? <CircularProgress size={16} sx={{ color: 'white' }} /> : statusStats['Under Procurement'] || 0}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.8)' : colors.grey[300], fontWeight: 400, fontSize: '0.6rem', mt: 0.125 }}>
-                    {statusStats.totalProjects > 0 
-                      ? Math.round((statusStats['Under Procurement'] || 0) / statusStats.totalProjects * 100) 
-                      : 0}%
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Suspended */}
-            <Grid item sx={{ minWidth: { xs: '110px', sm: '130px', md: '145px' }, flex: '0 0 auto' }}>
-              <Card 
-                onClick={() => handleStatusClick('Suspended')}
-                sx={{ 
-                  height: '100%',
-                  background: isLight 
-                    ? 'linear-gradient(135deg, #f44336 0%, #e57373 100%)'
-                    : `linear-gradient(135deg, ${colors.redAccent[800]}, ${colors.redAccent[700]})`,
-                  color: isLight ? 'white' : 'inherit',
-                  borderTop: `2px solid ${isLight ? '#d32f2f' : colors.redAccent[500]}`,
-                  boxShadow: ui.elevatedShadow,
-                  transition: 'all 0.2s ease-in-out',
-                  cursor: 'pointer',
-                  borderRadius: '8px',
-                  '&:hover': {
-                    transform: 'translateY(-2px) scale(1.02)',
-                    boxShadow: isLight ? '0 4px 12px rgba(244, 67, 54, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)',
-                  }
-                }}
-              >
-                <CardContent sx={{ p: 0.75, '&:last-child': { pb: 0.75 }, pt: 0.75 }}>
-                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.25}>
-                    <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem' }}>
-                      Suspended
-                    </Typography>
-                    <WarningIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.redAccent[500], fontSize: 14 }} />
-                  </Box>
-                  <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 'bold', fontSize: '1rem', mb: 0, lineHeight: 1.1 }}>
-                    {loadingProjects ? <CircularProgress size={16} sx={{ color: 'white' }} /> : statusStats['Suspended'] || 0}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.8)' : colors.grey[300], fontWeight: 400, fontSize: '0.6rem', mt: 0.125 }}>
-                    {statusStats.totalProjects > 0 
-                      ? Math.round((statusStats['Suspended'] || 0) / statusStats.totalProjects * 100) 
-                      : 0}%
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </Box>
-
-        {/* Main Content Grid - Better Space Utilization */}
-        <Grid container spacing={2}>
           {/* Notifications & Pending Approvals - Left Column */}
-          <Grid item xs={12} md={4}>
-            <Card 
-              elevation={0} 
-              sx={{ 
-                borderRadius: 2, 
-                height: '100%',
-                transition: 'all 0.3s ease',
-                background: theme.palette.mode === 'dark'
-                  ? `linear-gradient(135deg, ${colors.orange[800]}15 0%, ${colors.yellowAccent[800]}15 50%, ${colors.orange[700]}15 100%)`
-                  : `linear-gradient(135deg, ${colors.orange[50]} 0%, ${colors.yellowAccent[50]} 50%, ${colors.orange[100]} 100%)`,
-                border: `1px solid ${theme.palette.mode === 'dark' ? colors.orange[700] + '40' : colors.orange[200]}`,
-                position: 'relative',
-                overflow: 'hidden',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '4px',
-                  background: `linear-gradient(90deg, ${colors.orange[500]}, ${colors.yellowAccent[500]}, ${colors.orange[500]})`,
-                },
-                '&:hover': {
-                  boxShadow: `0 8px 24px ${colors.orange[500]}25`,
-                  transform: 'translateY(-2px)',
-                }
-              }}
-            >
-              <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                <Box display="flex" alignItems="center" gap={1} mb={1.5}>
-                  <Box sx={{ 
-                    p: 0.75, 
-                    borderRadius: 1, 
-                    background: `linear-gradient(135deg, ${colors.orange[500]}, ${colors.yellowAccent[500]})`,
-                    color: 'white', 
-                    display: 'flex', 
-                    alignItems: 'center',
-                    boxShadow: `0 2px 8px ${colors.orange[500]}40`,
-                  }}>
+          <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', minWidth: 0 }}>
+            <Card elevation={0} sx={{ ...dashboardShellCardSx, width: '100%', flex: 1 }}>
+              <CardContent sx={{ p: 1.5, pb: 0.5, flex: 1, display: 'flex', flexDirection: 'column', '&:last-child': { pb: 0.5 } }}>
+                <Box display="flex" alignItems="center" gap={1} mb={1.2}>
+                  <Box
+                    sx={{
+                      p: 0.65,
+                      borderRadius: 1,
+                      background: `linear-gradient(135deg, ${colors.orange[500]}, ${colors.yellowAccent[500]})`,
+                      color: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      boxShadow: `0 2px 8px ${colors.orange[500]}40`,
+                    }}
+                  >
                     <NotificationsActiveIcon sx={{ fontSize: 20 }} />
                   </Box>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1rem', color: 'text.primary' }}>
-                    Notifications & Approvals
-                  </Typography>
+                  <Typography sx={dashboardSectionTitleSx}>Notifications & Approvals</Typography>
                 </Box>
                 {loadingNotifications ? (
                   <Box display="flex" justifyContent="center" p={2}>
@@ -1083,7 +1163,7 @@ const HomePage = () => {
                           Quick Actions:
                         </Typography>
                         <Grid container spacing={1}>
-                          <Grid item xs={6}>
+                          <Grid size={{ xs: 6 }}>
                             <Button
                               fullWidth
                               variant="outlined"
@@ -1095,7 +1175,7 @@ const HomePage = () => {
                               Projects
                             </Button>
                           </Grid>
-                          <Grid item xs={6}>
+                          <Grid size={{ xs: 6 }}>
                             <Button
                               fullWidth
                               variant="outlined"
@@ -1117,62 +1197,37 @@ const HomePage = () => {
           </Grid>
 
           {/* Recent Projects */}
-          <Grid item xs={12} md={4}>
-            <Card 
-              elevation={0} 
-              sx={{ 
-                borderRadius: 2, 
-                height: '100%',
-                transition: 'all 0.3s ease',
-                background: theme.palette.mode === 'dark'
-                  ? `linear-gradient(135deg, ${colors.blueAccent[800]}20 0%, ${colors.blueAccent[700]}20 50%, ${colors.blueAccent[900]}20 100%)`
-                  : `linear-gradient(135deg, ${colors.blueAccent[50]} 0%, ${colors.blueAccent[100]} 50%, ${colors.blueAccent[50]} 100%)`,
-                border: `1px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[700] + '40' : colors.blueAccent[200]}`,
-                position: 'relative',
-                overflow: 'hidden',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '4px',
-                  background: `linear-gradient(90deg, ${colors.blueAccent[500]}, ${colors.blueAccent[400]}, ${colors.blueAccent[500]})`,
-                },
-                '&:hover': {
-                  boxShadow: `0 8px 24px ${colors.blueAccent[500]}25`,
-                  transform: 'translateY(-2px)',
-                }
-              }}
-            >
-              <CardContent sx={{ p: 2, position: 'relative', zIndex: 1 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
+          <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', minWidth: 0 }}>
+            <Card elevation={0} sx={{ ...dashboardShellCardSx, width: '100%', flex: 1 }}>
+              <CardContent sx={{ p: 1.5, pb: 0.5, flex: 1, display: 'flex', flexDirection: 'column', '&:last-child': { pb: 0.5 } }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.2}>
                   <Box display="flex" alignItems="center" gap={1}>
-                    <Box sx={{ 
-                      p: 0.75, 
-                      borderRadius: 1, 
-                      background: `linear-gradient(135deg, ${colors.blueAccent[500]}, ${colors.blueAccent[400]})`,
-                      color: 'white', 
-                      display: 'flex', 
-                      alignItems: 'center',
-                      boxShadow: `0 2px 8px ${colors.blueAccent[500]}40`,
-                    }}>
+                    <Box
+                      sx={{
+                        p: 0.65,
+                        borderRadius: 1,
+                        background: `linear-gradient(135deg, ${colors.blueAccent[500]}, ${colors.blueAccent[400]})`,
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        boxShadow: `0 2px 8px ${colors.blueAccent[500]}40`,
+                      }}
+                    >
                       <ProjectsIcon sx={{ fontSize: 18 }} />
                     </Box>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1rem', color: 'text.primary' }}>
-                      Recent Projects
-                    </Typography>
+                    <Typography sx={dashboardSectionTitleSx}>Recent Projects</Typography>
                   </Box>
                   <Button
                     size="small"
                     endIcon={<ArrowForwardIcon />}
                     onClick={() => navigate(ROUTES.PROJECTS)}
-                    sx={{ 
+                    sx={{
                       textTransform: 'none',
-                      fontSize: '0.75rem',
+                      fontSize: '0.72rem',
                       fontWeight: 600,
                       minWidth: 'auto',
                       px: 1,
+                      color: colors.grey[300],
                     }}
                   >
                     View All
@@ -1230,53 +1285,27 @@ const HomePage = () => {
           </Grid>
 
           {/* Quick Actions */}
-          <Grid item xs={12} md={4}>
-                <Card 
-                  elevation={0} 
-                  sx={{ 
-                    borderRadius: 2, 
-                    height: '100%',
-                    transition: 'all 0.3s ease',
-                    background: theme.palette.mode === 'dark'
-                      ? `linear-gradient(135deg, ${colors.greenAccent[800]}20 0%, ${colors.blueAccent[800]}20 50%, ${colors.greenAccent[700]}20 100%)`
-                      : `linear-gradient(135deg, ${colors.greenAccent[50]} 0%, ${colors.blueAccent[50]} 50%, ${colors.greenAccent[100]} 100%)`,
-                    border: `1px solid ${theme.palette.mode === 'dark' ? colors.greenAccent[700] + '40' : colors.greenAccent[200]}`,
-                    position: 'relative',
-                    overflow: 'hidden',
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: '4px',
-                      background: `linear-gradient(90deg, ${colors.greenAccent[500]}, ${colors.blueAccent[500]}, ${colors.greenAccent[500]})`,
-                    },
-                    '&:hover': {
-                      boxShadow: `0 8px 24px ${colors.greenAccent[500]}25`,
-                      transform: 'translateY(-2px)',
-                    }
-                  }}
-                >
-                  <CardContent sx={{ p: 1.5, position: 'relative', zIndex: 1 }}>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Box sx={{ 
-                          p: 0.5, 
-                          borderRadius: 1, 
-                          background: `linear-gradient(135deg, ${colors.greenAccent[500]}, ${colors.blueAccent[500]})`,
-                          color: 'white', 
-                          display: 'flex', 
-                          alignItems: 'center',
-                          boxShadow: `0 2px 8px ${colors.greenAccent[500]}40`,
-                        }}>
-                          <AnalyticsIcon sx={{ fontSize: 16 }} />
-                        </Box>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'text.primary' }}>
-                          Quick Actions
-                        </Typography>
-                      </Box>
+          <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', minWidth: 0 }}>
+            <Card elevation={0} sx={{ ...dashboardShellCardSx, width: '100%', flex: 1 }}>
+              <CardContent sx={{ p: 1.5, pb: 0.5, flex: 1, display: 'flex', flexDirection: 'column', '&:last-child': { pb: 0.5 } }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.2}>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Box
+                      sx={{
+                        p: 0.65,
+                        borderRadius: 1,
+                        background: `linear-gradient(135deg, ${colors.greenAccent[500]}, ${colors.blueAccent[500]})`,
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        boxShadow: `0 2px 8px ${colors.greenAccent[500]}40`,
+                      }}
+                    >
+                      <AnalyticsIcon sx={{ fontSize: 16 }} />
                     </Box>
+                    <Typography sx={dashboardSectionTitleSx}>Quick Actions</Typography>
+                  </Box>
+                </Box>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                       {/* Approve Users */}
                       {canApproveUsers && (
@@ -1553,8 +1582,6 @@ const HomePage = () => {
             </Button>
           </DialogActions>
         </Dialog>
-
-      </Container>
     </Box>
   );
 };

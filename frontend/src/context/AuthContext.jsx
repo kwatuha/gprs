@@ -6,12 +6,16 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(localStorage.getItem('jwtToken'));
+    const [mustChangePassword, setMustChangePassword] = useState(localStorage.getItem('mustChangePassword') === 'true');
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const login = useCallback(async (newToken) => {
+    const login = useCallback(async (newToken, options = {}) => {
         localStorage.setItem('jwtToken', newToken);
         setToken(newToken);
+        const force = options?.forcePasswordChange === true;
+        localStorage.setItem('mustChangePassword', force ? 'true' : 'false');
+        setMustChangePassword(force);
         try {
             const decodedUser = jwtDecode(newToken);
             setUser(decodedUser.user);
@@ -27,8 +31,15 @@ export const AuthProvider = ({ children }) => {
 
     const logout = useCallback(() => {
         localStorage.removeItem('jwtToken');
+        localStorage.removeItem('mustChangePassword');
         setToken(null);
+        setMustChangePassword(false);
         setUser(null);
+    }, []);
+
+    const completeForcedPasswordChange = useCallback(() => {
+        localStorage.setItem('mustChangePassword', 'false');
+        setMustChangePassword(false);
     }, []);
 
     const hasPrivilege = useCallback((privilegeName) => {
@@ -53,6 +64,7 @@ export const AuthProvider = ({ children }) => {
                     } else {
                         setUser(decoded.user);
                         setToken(storedToken);
+                        setMustChangePassword(localStorage.getItem('mustChangePassword') === 'true');
                         // console.log("EFFECT: User loaded from token:", decoded.user);
                         // console.log("EFFECT: User privileges loaded from token:", decoded.user.privileges);
                     }
@@ -72,9 +84,11 @@ export const AuthProvider = ({ children }) => {
     const contextValue = {
         token,
         user,
+        mustChangePassword,
         loading,
         login,
         logout,
+        completeForcedPasswordChange,
         hasPrivilege,
     };
 
@@ -97,9 +111,11 @@ export const useAuth = () => {
         return {
             token: null,
             user: null,
+            mustChangePassword: false,
             loading: true,
             login: () => {},
             logout: () => {},
+            completeForcedPasswordChange: () => {},
             hasPrivilege: () => false,
         };
     }

@@ -225,9 +225,10 @@ const useProjectForm = (currentProject, allMetadata, onFormSuccess, setSnackbar)
     if (!formData.projectName || !formData.projectName.trim()) {
       errors.projectName = 'Project Name is required.';
     }
-    // Implementing Agency (directorate) is required
-    if (!formData.directorate || !formData.directorate.trim()) {
-      errors.directorate = 'Implementing Agency is required.';
+    // Implementing Agency (directorate) is optional
+    // State Department is required
+    if (!formData.stateDepartment || !formData.stateDepartment.trim()) {
+      errors.stateDepartment = 'State Department is required.';
     }
     // Sector is required
     if (!formData.sector || !formData.sector.trim()) {

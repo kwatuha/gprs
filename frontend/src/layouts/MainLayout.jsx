@@ -48,7 +48,7 @@ function MainLayoutContent() {
     return null;
   }
   
-  const { token, user, logout, loading } = authContext || {};
+  const { token, user, logout, loading, mustChangePassword } = authContext || {};
   const isAdminLike = isAdmin(user);
   const normalizedRole = normalizeRoleName(user?.roleName || user?.role);
   const navigate = useNavigate();
@@ -88,6 +88,9 @@ function MainLayoutContent() {
 
   if (!token) {
     return <Navigate to={ROUTES.LOGIN} replace />;
+  }
+  if (mustChangePassword) {
+    return <Navigate to={ROUTES.FORCE_PASSWORD_CHANGE} replace />;
   }
 
   const handleLogout = () => {

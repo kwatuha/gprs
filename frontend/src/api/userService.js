@@ -59,6 +59,26 @@ const userService = {
     }
   },
 
+  getVoidedUsers: async () => {
+    try {
+      const response = await axiosInstance.get('/users/users/voided/list');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching voided users:', error);
+      throw error;
+    }
+  },
+
+  restoreUser: async (userId) => {
+    try {
+      const response = await axiosInstance.put(`/users/users/${userId}/restore`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error restoring user with ID ${userId}:`, error);
+      throw error;
+    }
+  },
+
   // --- Role Management API Calls (kemri_roles) ---
   getRoles: async () => {
     try {

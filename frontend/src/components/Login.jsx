@@ -17,6 +17,7 @@ import {
     CircularProgress,
     Container
 } from '@mui/material';
+import AppFooter from './AppFooter.jsx';
 
 const Login = () => {
     const [username, setUsername] = useState('');
@@ -37,9 +38,13 @@ const Login = () => {
 
             if (data && data.token) {
                 console.log('Login.jsx: Token received, calling AuthContext login:', data.token);
-                login(data.token);
-                console.log('Login.jsx: Login successful, navigating to dashboard.');
-                navigate('/', { replace: true });
+                login(data.token, { forcePasswordChange: data.forcePasswordChange === true });
+                if (data.forcePasswordChange === true) {
+                    navigate('/force-password-change', { replace: true });
+                } else {
+                    console.log('Login.jsx: Login successful, navigating to dashboard.');
+                    navigate('/', { replace: true });
+                }
             } else {
                 setError('Login successful, but no token property received in response.');
                 console.error('Login.jsx: Login successful, but no token property in response data:', data);
@@ -55,6 +60,7 @@ const Login = () => {
     };
 
     return (
+        <>
         <Container
             maxWidth="sm"
             sx={{
@@ -63,7 +69,8 @@ const Login = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 background: 'linear-gradient(135deg, #2196f3 0%, #42a5f5 25%, #1976d2 50%, #1e88e5 75%, #2196f3 100%)',
-                py: 2
+                py: 2,
+                pb: 7,
             }}
         >
             <Card
@@ -104,7 +111,7 @@ const Login = () => {
                                 GPRIS
                             </Typography>
                             <Typography variant="subtitle1" sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#64748b', letterSpacing: '0.05em', textTransform: 'none' }}>
-                                Government Projects Reporting Platform
+                                Government Projects Reporting Information System
                             </Typography>
                         </Box>
                         <Typography variant="body2" sx={{ fontSize: '0.75rem', mt: 1, fontStyle: 'italic', color: '#6b7280' }}>
@@ -234,6 +241,8 @@ const Login = () => {
                 </CardContent>
             </Card>
         </Container>
+        <AppFooter variant="fixed" />
+        </>
     );
 };
 

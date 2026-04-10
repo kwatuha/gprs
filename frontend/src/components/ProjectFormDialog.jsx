@@ -280,15 +280,14 @@ const ProjectFormDialog = ({
                 variant="outlined" 
                 size="small" 
                 error={!!formErrors.categoryId}
-                required
                 sx={{ minWidth: 200 }}
               >
                 <InputLabel sx={{ color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200], fontWeight: 'bold' }}>
-                  Project Type *
+                  Project Type (optional)
                 </InputLabel>
                 <Select 
                   name="categoryId" 
-                  label="Project Type *"
+                  label="Project Type (optional)"
                   value={formData.categoryId ? String(formData.categoryId) : ''} 
                   onChange={handleChange}
                   autoFocus
@@ -308,6 +307,9 @@ const ProjectFormDialog = ({
                     },
                   }}
                 >
+                  <MenuItem value="">
+                    <em>None</em>
+                  </MenuItem>
                   {(() => {
                     const fromMetadata = allMetadata?.projectCategories;
                     const categories = (fromMetadata && Array.isArray(fromMetadata) && fromMetadata.length > 0)
@@ -454,8 +456,9 @@ const ProjectFormDialog = ({
                     handleChange({ target: { name: 'ministry', value: newValue.ministry || '' } });
                     handleChange({ target: { name: 'stateDepartment', value: newValue.state_department || '' } });
                   } else {
-                    // Clear all fields if agency is cleared
                     handleChange({ target: { name: 'directorate', value: '' } });
+                    handleChange({ target: { name: 'ministry', value: '' } });
+                    handleChange({ target: { name: 'stateDepartment', value: '' } });
                   }
                 }}
                 loading={loadingAgencies}
@@ -465,12 +468,11 @@ const ProjectFormDialog = ({
                   <TextField
                     {...params}
                     name="directorate"
-                    label="Implementing Agency"
+                    label="Implementing Agency (optional)"
                     variant="outlined"
                     size="small"
-                    required
                     placeholder="Search or select agency"
-                    helperText={formErrors.directorate || "The organization responsible for project implementation"}
+                    helperText={formErrors.directorate || "The organization responsible for implementation (if applicable)"}
                     error={!!formErrors.directorate}
                     sx={{
                       minWidth: 200,
@@ -854,19 +856,22 @@ const ProjectFormDialog = ({
                 fullWidth 
                 variant="outlined" 
                 size="small"
+                required
                 value={formData.stateDepartment || ''} 
                 onChange={handleChange}
+                error={!!formErrors.stateDepartment}
+                helperText={formErrors.stateDepartment || 'Enter the responsible state department'}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     '& fieldset': {
-                      borderColor: colors.blueAccent[600],
+                      borderColor: formErrors.stateDepartment ? colors.redAccent[500] : colors.blueAccent[600],
                       borderWidth: '2px',
                     },
                     '&:hover fieldset': {
-                      borderColor: colors.blueAccent[500],
+                      borderColor: formErrors.stateDepartment ? colors.redAccent[600] : colors.blueAccent[500],
                     },
                     '&.Mui-focused fieldset': {
-                      borderColor: colors.greenAccent[500],
+                      borderColor: formErrors.stateDepartment ? colors.redAccent[500] : colors.greenAccent[500],
                       borderWidth: '2px',
                     },
                   },

@@ -361,13 +361,17 @@ export const modernTheme = createTheme({
       }
     },
     
-    // AppBar customization
+    // AppBar customization — full-width top bar (GPRIS strip), no rounded corners
     MuiAppBar: {
+      defaultProps: {
+        square: true,
+      },
       styleOverrides: {
         root: {
-          boxShadow: '0px 1px 3px rgba(0,0,0,0.08)'
-        }
-      }
+          boxShadow: '0px 1px 3px rgba(0,0,0,0.08)',
+          borderRadius: 0,
+        },
+      },
     },
     
     // Drawer customization

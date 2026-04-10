@@ -45,6 +45,7 @@ export const PROJECT_TYPES = [
 export const ROUTES = {
     // Top-level routes
     LOGIN: '/login',
+    FORCE_PASSWORD_CHANGE: '/force-password-change',
     DASHBOARD: '/',
     
     // NEW: Contractor-specific route

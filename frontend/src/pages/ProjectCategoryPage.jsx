@@ -301,10 +301,13 @@ const ProjectCategoryPage = () => {
           )}
         </Box>
 
-        {/* Compact Statistics Cards */}
-        <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
-          <Grid item xs={6} sm={3}>
+        {/* Statistics cards: equal columns, full row width */}
+        <Grid container spacing={1.5} sx={{ mb: 1.5, width: '100%' }}>
+          <Grid size={{ xs: 6, sm: 3 }} sx={{ display: 'flex', minWidth: 0 }}>
             <Card sx={{ 
+              width: '100%',
+              flex: 1,
+              minWidth: 0,
               background: isLight 
                 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
                 : 'linear-gradient(135deg, #4a5568 0%, #2d3748 100%)',
@@ -327,8 +330,11 @@ const ProjectCategoryPage = () => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={6} sm={3}>
+          <Grid size={{ xs: 6, sm: 3 }} sx={{ display: 'flex', minWidth: 0 }}>
             <Card sx={{ 
+              width: '100%',
+              flex: 1,
+              minWidth: 0,
               background: isLight 
                 ? 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
                 : 'linear-gradient(135deg, #5a5568 0%, #3d3748 100%)',
@@ -351,8 +357,11 @@ const ProjectCategoryPage = () => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={6} sm={3}>
+          <Grid size={{ xs: 6, sm: 3 }} sx={{ display: 'flex', minWidth: 0 }}>
             <Card sx={{ 
+              width: '100%',
+              flex: 1,
+              minWidth: 0,
               background: isLight 
                 ? 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
                 : 'linear-gradient(135deg, #2c5282 0%, #2a4365 100%)',
@@ -375,8 +384,11 @@ const ProjectCategoryPage = () => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={6} sm={3}>
+          <Grid size={{ xs: 6, sm: 3 }} sx={{ display: 'flex', minWidth: 0 }}>
             <Card sx={{ 
+              width: '100%',
+              flex: 1,
+              minWidth: 0,
               background: isLight 
                 ? 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
                 : 'linear-gradient(135deg, #744210 0%, #5a3208 100%)',

@@ -19,8 +19,10 @@ import {
     Autocomplete
 } from '@mui/material';
 import apiService from '../api';
+import AppFooter from './AppFooter.jsx';
 
 const Register = () => {
+    const phoneRegex = /^(?:07\d{8}|\+2547\d{8})$/;
     const [formData, setFormData] = useState({
         username: '',
         email: '',
@@ -230,6 +232,10 @@ const Register = () => {
                 setEmailError('');
             }
         }
+
+        if (name === 'phoneNumber') {
+            setFormErrors((prev) => ({ ...prev, phoneNumber: '' }));
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -247,15 +253,15 @@ const Register = () => {
             return;
         }
 
-        // Validate ministry, state department, and agency
+        // Validate ministry and state department (agency is optional)
         if (!formData.ministry) {
             errors.ministry = 'Ministry is required';
         }
         if (!formData.stateDepartment) {
             errors.stateDepartment = 'State Department is required';
         }
-        if (!formData.agencyId) {
-            errors.agencyId = 'Agency is required';
+        if (formData.phoneNumber && !phoneRegex.test(formData.phoneNumber.trim())) {
+            errors.phoneNumber = 'Use 07XXXXXXXX or +2547XXXXXXXX';
         }
 
         if (Object.keys(errors).length > 0) {
@@ -291,7 +297,7 @@ const Register = () => {
             const response = await axiosInstance.post('/auth/register', {
                 ...formData,
                 consentGiven: consentGiven,
-                agency_id: formData.agencyId,
+                agency_id: formData.agencyId || null,
                 state_department: formData.stateDepartment
             });
             const data = response.data;
@@ -321,7 +327,15 @@ const Register = () => {
             }, 4000);
         } catch (err) {
             console.error('Registration API error:', err);
-            const errorMessage = err.response?.data?.error || err.message || 'Registration failed. Please try again.';
+            // axiosInstance rejects with response.data on error, so err may be { error, ... } without .response
+            const payload = err?.response?.data ?? err;
+            const apiError =
+                (payload && typeof payload === 'object' && payload.error) ||
+                (typeof payload === 'string' ? payload : null);
+            const errorMessage =
+                apiError ||
+                err?.message ||
+                'Registration failed. Please try again.';
             setError(errorMessage);
         } finally {
             setLoading(false);
@@ -329,6 +343,7 @@ const Register = () => {
     };
 
     return (
+        <>
         <Container 
             maxWidth="sm" 
             sx={{ 
@@ -337,7 +352,8 @@ const Register = () => {
                 alignItems: 'center', 
                 justifyContent: 'center',
                 background: 'linear-gradient(135deg, #2196f3 0%, #42a5f5 25%, #1976d2 50%, #1e88e5 75%, #2196f3 100%)',
-                py: 4
+                py: 4,
+                pb: 9,
             }}
         >
             <Card 
@@ -632,7 +648,8 @@ const Register = () => {
                             value={formData.phoneNumber}
                             onChange={handleChange}
                             disabled={loading}
-                            helperText="Optional: Include a contact phone number"
+                            error={!!formErrors.phoneNumber}
+                            helperText={formErrors.phoneNumber || "Optional: 07XXXXXXXX or +2547XXXXXXXX"}
                             sx={{ 
                                 mb: 2,
                                 '& .MuiOutlinedInput-root': {
@@ -811,10 +828,9 @@ const Register = () => {
                             renderInput={(params) => (
                                 <TextField
                                     {...params}
-                                    label="Agency"
-                                    required
+                                    label="Agency (optional)"
                                     error={!!formErrors.agencyId}
-                                    helperText={formErrors.agencyId || (formData.ministry && formData.stateDepartment ? 'Select your agency' : 'Please select a ministry and state department first')}
+                                    helperText={formErrors.agencyId || (formData.ministry && formData.stateDepartment ? 'Select your agency if applicable' : 'Please select a ministry and state department first')}
                                     sx={{ 
                                         mb: 2,
                                         '& .MuiOutlinedInput-root': {
@@ -945,6 +961,8 @@ const Register = () => {
                 </CardContent>
             </Card>
         </Container>
+        <AppFooter variant="fixed" />
+        </>
     );
 };
 

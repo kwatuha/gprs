@@ -648,6 +648,19 @@ function KenyaWardsPage() {
     },
   ];
 
+  const compactActionButtonSx = {
+    fontSize: '0.75rem',
+    py: 0.5,
+    px: 1,
+    minWidth: 'auto',
+    textTransform: 'none',
+    whiteSpace: 'nowrap',
+    '& .MuiButton-startIcon': {
+      mr: 0.5,
+      '& > *': { fontSize: '0.95rem' },
+    },
+  };
+
   return (
     <Box m="20px">
       <Header title="Kenya Wards" subtitle="Manage Kenya ward data from IEBC" />
@@ -680,8 +693,25 @@ function KenyaWardsPage() {
         </Alert>
       )}
 
-      {/* Actions Bar */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} gap={2}>
+      {/* Actions Bar — compact labels, single horizontal row (scroll on narrow viewports) */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'nowrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1.5,
+          mb: 2,
+          minWidth: 0,
+          overflowX: 'auto',
+          pb: 0.25,
+          '&::-webkit-scrollbar': { height: 6 },
+          '&::-webkit-scrollbar-thumb': {
+            borderRadius: 3,
+            bgcolor: isLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)',
+          },
+        }}
+      >
         <TextField
           placeholder="Search wards..."
           variant="outlined"
@@ -705,9 +735,22 @@ function KenyaWardsPage() {
               </IconButton>
             ),
           }}
-          sx={{ width: 300 }}
+          sx={{
+            width: 280,
+            flex: '0 0 auto',
+            '& .MuiInputBase-input': { fontSize: '0.8rem' },
+          }}
         />
-        <Box display="flex" gap={1} alignItems="center">
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'nowrap',
+            alignItems: 'center',
+            gap: 0.5,
+            flex: '0 0 auto',
+            ml: 'auto',
+          }}
+        >
           <FormControlLabel
             control={
               <Checkbox
@@ -717,13 +760,20 @@ function KenyaWardsPage() {
               />
             }
             label="Export All"
-            sx={{ mr: 1 }}
+            sx={{
+              mr: 0,
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
+              '& .MuiFormControlLabel-label': { fontSize: '0.75rem' },
+            }}
           />
           <Button
             variant="outlined"
+            size="small"
             startIcon={<UploadIcon />}
             onClick={() => setImportDialogOpen(true)}
             sx={{
+              ...compactActionButtonSx,
               borderColor: colors.greenAccent[500],
               color: colors.greenAccent[500],
               '&:hover': {
@@ -736,10 +786,12 @@ function KenyaWardsPage() {
           </Button>
           <Button
             variant="outlined"
-            startIcon={exportingExcel ? <CircularProgress size={16} /> : <ExcelIcon />}
+            size="small"
+            startIcon={exportingExcel ? <CircularProgress size={14} color="inherit" /> : <ExcelIcon />}
             onClick={handleExportToExcel}
             disabled={exportingExcel || (!exportAll && wards.length === 0)}
             sx={{
+              ...compactActionButtonSx,
               borderColor: colors.greenAccent[500],
               color: colors.greenAccent[500],
               '&:hover': {
@@ -756,10 +808,12 @@ function KenyaWardsPage() {
           </Button>
           <Button
             variant="outlined"
-            startIcon={exportingPdf ? <CircularProgress size={16} /> : <PdfIcon />}
+            size="small"
+            startIcon={exportingPdf ? <CircularProgress size={14} color="inherit" /> : <PdfIcon />}
             onClick={handleExportToPDF}
             disabled={exportingPdf || (!exportAll && wards.length === 0)}
             sx={{
+              ...compactActionButtonSx,
               borderColor: colors.redAccent[500],
               color: colors.redAccent[500],
               '&:hover': {
@@ -776,9 +830,11 @@ function KenyaWardsPage() {
           </Button>
           <Button
             variant="contained"
+            size="small"
             startIcon={<AddIcon />}
             onClick={handleCreate}
             sx={{
+              ...compactActionButtonSx,
               backgroundColor: colors.blueAccent[500],
               '&:hover': {
                 backgroundColor: colors.blueAccent[600],

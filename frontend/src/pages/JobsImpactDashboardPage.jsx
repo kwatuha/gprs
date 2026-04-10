@@ -45,8 +45,6 @@ import {
   CartesianGrid,
   XAxis,
   YAxis,
-  LineChart,
-  Line,
 } from 'recharts';
 import { tokens } from './dashboard/theme';
 import { useNavigate } from 'react-router-dom';
@@ -86,6 +84,42 @@ const SAMPLE_JOBS_BY_SECTOR = [
   { sector: 'Education', sectorDisplay: 'Education', direct: 9, indirect: 3, total: 12 },
   { sector: 'Agriculture', sectorDisplay: 'Agriculture', direct: 15, indirect: 3, total: 18 },
 ];
+
+const STATUS_COUNT_UP_MS = 500;
+
+function useCountUp(endValue, durationMs = STATUS_COUNT_UP_MS) {
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    const end = Math.max(0, Math.round(Number(endValue) || 0));
+    if (end === 0) {
+      setDisplay(0);
+      return undefined;
+    }
+
+    setDisplay(0);
+    const startTime = performance.now();
+    let rafId;
+
+    const tick = (now) => {
+      const t = Math.min(1, (now - startTime) / durationMs);
+      const eased = 1 - (1 - t) ** 3;
+      setDisplay(Math.round(eased * end));
+      if (t < 1) {
+        rafId = requestAnimationFrame(tick);
+      } else {
+        setDisplay(end);
+      }
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => {
+      if (rafId != null) cancelAnimationFrame(rafId);
+    };
+  }, [endValue, durationMs]);
+
+  return display;
+}
 
 const JobsImpactDashboardPage = () => {
   const theme = useTheme();
@@ -191,6 +225,30 @@ const JobsImpactDashboardPage = () => {
     };
   }, [colors, sectors]);
 
+  const isLight = theme.palette.mode === 'light';
+  const ui = {
+    elevatedShadow: isLight
+      ? '0 1px 6px rgba(0,0,0,0.06)'
+      : '0 4px 20px rgba(0, 0, 0, 0.15), 0 -2px 10px rgba(0, 0, 0, 0.1)',
+  };
+
+  const animTotalJobs = useCountUp(SAMPLE_JOBS_SUMMARY.totalJobs);
+  const animDirectJobs = useCountUp(SAMPLE_JOBS_SUMMARY.totalDirectJobs);
+  const animIndirectJobs = useCountUp(SAMPLE_JOBS_SUMMARY.totalIndirectJobs);
+  const femalePct =
+    SAMPLE_JOBS_SUMMARY.totalJobs > 0
+      ? Math.round((SAMPLE_JOBS_SUMMARY.totalFemale / SAMPLE_JOBS_SUMMARY.totalJobs) * 100)
+      : 0;
+  const animFemalePct = useCountUp(femalePct);
+  const directSharePct =
+    SAMPLE_JOBS_SUMMARY.totalJobs > 0
+      ? Math.round((SAMPLE_JOBS_SUMMARY.totalDirectJobs / SAMPLE_JOBS_SUMMARY.totalJobs) * 100)
+      : 0;
+  const indirectSharePct =
+    SAMPLE_JOBS_SUMMARY.totalJobs > 0
+      ? Math.round((SAMPLE_JOBS_SUMMARY.totalIndirectJobs / SAMPLE_JOBS_SUMMARY.totalJobs) * 100)
+      : 0;
+
   return (
     <Box
       sx={{
@@ -201,23 +259,23 @@ const JobsImpactDashboardPage = () => {
         minHeight: '100vh',
       }}
     >
-      <Box mb={1.5}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.5 }}>
+      <Box mb={3}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.5, flexWrap: 'wrap' }}>
           <Box
             sx={{
               width: 3,
               height: 28,
-              background: `linear-gradient(180deg, ${colors.greenAccent[500]}, ${colors.orange[500]})`,
+              background: `linear-gradient(180deg, ${colors.blueAccent[500]}, ${colors.greenAccent[500]})`,
               borderRadius: 1.5,
               mt: 0.25,
             }}
           />
-          <Box sx={{ flex: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 200 }}>
             <Typography
               variant="h5"
               sx={{
                 fontWeight: 800,
-                background: `linear-gradient(135deg, ${colors.greenAccent[500]}, ${colors.orange[500]})`,
+                background: `linear-gradient(135deg, ${colors.blueAccent[500]}, ${colors.greenAccent[500]})`,
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -247,15 +305,15 @@ const JobsImpactDashboardPage = () => {
             startIcon={<RefreshIcon sx={{ fontSize: 16 }} />}
             onClick={() => navigate('/summary-statistics')}
             sx={{
-              borderColor: colors.greenAccent[500],
-              color: colors.greenAccent[500],
+              borderColor: colors.blueAccent[500],
+              color: colors.blueAccent[500],
               fontSize: '0.8rem',
               py: 0.5,
               px: 1.5,
               minWidth: 'auto',
               '&:hover': {
-                borderColor: colors.greenAccent[400],
-                bgcolor: colors.greenAccent[600] + '20',
+                borderColor: colors.blueAccent[400],
+                bgcolor: `${colors.blueAccent[600]}20`,
               },
             }}
           >
@@ -266,11 +324,11 @@ const JobsImpactDashboardPage = () => {
         {/* Filters - Collapsible at Top */}
         <Card
           sx={{
-            borderRadius: '8px',
+            borderRadius: 2,
             bgcolor: theme.palette.mode === 'dark' ? colors.primary[400] : '#ffffff',
             mb: 1,
-            border: `1px solid ${theme.palette.mode === 'dark' ? colors.greenAccent[700] : 'rgba(0,0,0,0.08)'}`,
-            boxShadow: `0 1px 4px ${colors.greenAccent[500]}10`,
+            border: `1px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[700] : 'rgba(0,0,0,0.08)'}`,
+            boxShadow: `0 1px 4px ${colors.blueAccent[500]}10`,
           }}
         >
           <Box
@@ -288,7 +346,7 @@ const JobsImpactDashboardPage = () => {
             onClick={() => setFiltersExpanded(!filtersExpanded)}
           >
             <Box display="flex" alignItems="center" gap={0.5}>
-              <FilterIcon sx={{ color: colors.greenAccent[500], fontSize: 14 }} />
+              <FilterIcon sx={{ color: colors.blueAccent[500], fontSize: 14 }} />
               <Typography variant="caption" sx={{ color: colors.grey[100], fontWeight: 600, fontSize: '0.7rem' }}>
                 Filters
               </Typography>
@@ -299,7 +357,7 @@ const JobsImpactDashboardPage = () => {
                   sx={{
                     height: 16,
                     fontSize: '0.6rem',
-                    bgcolor: colors.greenAccent[600],
+                    bgcolor: colors.blueAccent[600],
                     color: 'white',
                     '& .MuiChip-label': {
                       px: 0.5,
@@ -318,8 +376,24 @@ const JobsImpactDashboardPage = () => {
           </Box>
           <Collapse in={filtersExpanded}>
             <CardContent sx={{ p: 1.5, pt: 0, '&:last-child': { pb: 1.5 } }}>
-              <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
-                <FormControl size="small" sx={{ minWidth: 120 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  alignItems: { xs: 'stretch', sm: 'center' },
+                  gap: 1,
+                  width: '100%',
+                  minWidth: 0,
+                }}
+              >
+                <FormControl
+                  size="small"
+                  fullWidth
+                  sx={{
+                    flex: { xs: 'none', sm: '1 1 0%' },
+                    minWidth: { sm: 0 },
+                  }}
+                >
                   <InputLabel sx={{ fontSize: '0.75rem' }}>Project</InputLabel>
                   <Select
                     value={filters.project}
@@ -335,7 +409,14 @@ const JobsImpactDashboardPage = () => {
                     ))}
                   </Select>
                 </FormControl>
-                <FormControl size="small" sx={{ minWidth: 120 }}>
+                <FormControl
+                  size="small"
+                  fullWidth
+                  sx={{
+                    flex: { xs: 'none', sm: '1 1 0%' },
+                    minWidth: { sm: 0 },
+                  }}
+                >
                   <InputLabel sx={{ fontSize: '0.75rem' }}>Sector</InputLabel>
                   <Select
                     value={filters.sector || ''}
@@ -351,7 +432,14 @@ const JobsImpactDashboardPage = () => {
                     ))}
                   </Select>
                 </FormControl>
-                <FormControl size="small" sx={{ minWidth: 140 }}>
+                <FormControl
+                  size="small"
+                  fullWidth
+                  sx={{
+                    flex: { xs: 'none', sm: '1 1 0%' },
+                    minWidth: { sm: 0 },
+                  }}
+                >
                   <InputLabel sx={{ fontSize: '0.75rem' }}>Category</InputLabel>
                   <Select
                     value={filters.category}
@@ -367,350 +455,295 @@ const JobsImpactDashboardPage = () => {
                     ))}
                   </Select>
                 </FormControl>
+                <Chip
+                  label={`${SAMPLE_JOBS_SUMMARY.totalJobs} jobs`}
+                  size="small"
+                  sx={{
+                    flexShrink: 0,
+                    alignSelf: { xs: 'flex-start', sm: 'center' },
+                    bgcolor: colors.blueAccent[600],
+                    color: 'white',
+                    fontSize: '0.7rem',
+                    height: '24px',
+                  }}
+                />
               </Box>
             </CardContent>
           </Collapse>
         </Card>
+
+        {/* KPI row: equal-width columns on sm+, horizontal scroll on narrow screens */}
+        <Box
+          sx={{
+            mb: 1,
+            mt: 1,
+            width: '100%',
+            display: 'flex',
+            flexWrap: 'nowrap',
+            gap: 1,
+            pb: 1,
+            overflowX: { xs: 'auto', sm: 'hidden' },
+            boxSizing: 'border-box',
+            '&::-webkit-scrollbar': {
+              height: '8px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: isLight ? colors.grey[100] : colors.grey[800],
+              borderRadius: '4px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: isLight ? colors.grey[400] : colors.grey[600],
+              borderRadius: '4px',
+              '&:hover': {
+                background: isLight ? colors.grey[500] : colors.grey[500],
+              },
+            },
+          }}
+        >
+          <Box
+            sx={{
+              flex: { xs: '0 0 auto', sm: '1 1 0%' },
+              minWidth: { xs: 160, sm: 0 },
+              maxWidth: { sm: '100%' },
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 0,
+            }}
+          >
+            <Card
+              sx={{
+                flex: 1,
+                width: '100%',
+                minHeight: '100%',
+                background: isLight
+                  ? 'linear-gradient(135deg, #2196f3 0%, #42a5f5 100%)'
+                  : `linear-gradient(135deg, ${colors.blueAccent[800]}, ${colors.blueAccent[700]})`,
+                color: isLight ? 'white' : 'inherit',
+                borderTop: `2px solid ${isLight ? '#1976d2' : colors.blueAccent[500]}`,
+                boxShadow: ui.elevatedShadow,
+                transition: 'all 0.2s ease-in-out',
+                borderRadius: '8px',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: isLight ? '0 4px 12px rgba(33, 150, 243, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)',
+                },
+              }}
+            >
+              <CardContent sx={{ p: 0.75, '&:last-child': { pb: 0.75 }, pt: 0.75 }}>
+                <Box display="flex" alignItems="center" gap={0.75}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem', display: 'block' }}>
+                      Total Jobs
+                    </Typography>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        color: isLight ? '#ffffff' : '#fff',
+                        fontWeight: 800,
+                        fontSize: { xs: '0.95rem', sm: '1.15rem', md: '1.35rem' },
+                        mb: 0,
+                        lineHeight: 1.15,
+                      }}
+                    >
+                      {animTotalJobs}
+                    </Typography>
+                    <Typography variant="caption" component="div" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[300], fontWeight: 600, fontSize: '1.1rem', mt: 0.125, lineHeight: 1.2 }}>
+                      Across all projects
+                    </Typography>
+                  </Box>
+                  <WorkIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.blueAccent[500], fontSize: '2rem', flexShrink: 0 }} />
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+
+          <Box
+            sx={{
+              flex: { xs: '0 0 auto', sm: '1 1 0%' },
+              minWidth: { xs: 160, sm: 0 },
+              maxWidth: { sm: '100%' },
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 0,
+            }}
+          >
+            <Card
+              sx={{
+                flex: 1,
+                width: '100%',
+                minHeight: '100%',
+                background: isLight
+                  ? 'linear-gradient(135deg, #4caf50 0%, #81c784 100%)'
+                  : `linear-gradient(135deg, ${colors.greenAccent[800]}, ${colors.greenAccent[700]})`,
+                color: isLight ? 'white' : 'inherit',
+                borderTop: `2px solid ${isLight ? '#388e3c' : colors.greenAccent[500]}`,
+                boxShadow: ui.elevatedShadow,
+                transition: 'all 0.2s ease-in-out',
+                borderRadius: '8px',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: isLight ? '0 4px 12px rgba(76, 175, 80, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)',
+                },
+              }}
+            >
+              <CardContent sx={{ p: 0.75, '&:last-child': { pb: 0.75 }, pt: 0.75 }}>
+                <Box display="flex" alignItems="center" gap={0.75}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem', display: 'block' }}>
+                      Direct Jobs
+                    </Typography>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        color: isLight ? '#ffffff' : '#fff',
+                        fontWeight: 800,
+                        fontSize: { xs: '0.95rem', sm: '1.15rem', md: '1.35rem' },
+                        mb: 0,
+                        lineHeight: 1.15,
+                      }}
+                    >
+                      {animDirectJobs}
+                    </Typography>
+                    <Typography variant="caption" component="div" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[300], fontWeight: 600, fontSize: '1.1rem', mt: 0.125, lineHeight: 1.2 }}>
+                      {directSharePct}% of total
+                    </Typography>
+                  </Box>
+                  <PeopleIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.greenAccent[500], fontSize: '2rem', flexShrink: 0 }} />
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+
+          <Box
+            sx={{
+              flex: { xs: '0 0 auto', sm: '1 1 0%' },
+              minWidth: { xs: 160, sm: 0 },
+              maxWidth: { sm: '100%' },
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 0,
+            }}
+          >
+            <Card
+              sx={{
+                flex: 1,
+                width: '100%',
+                minHeight: '100%',
+                background: isLight
+                  ? 'linear-gradient(135deg, #ff9800 0%, #ffb74d 100%)'
+                  : `linear-gradient(135deg, ${colors.yellowAccent[800]}, ${colors.yellowAccent[700]})`,
+                color: isLight ? 'white' : 'inherit',
+                borderTop: `2px solid ${isLight ? '#f57c00' : colors.yellowAccent[500]}`,
+                boxShadow: ui.elevatedShadow,
+                transition: 'all 0.2s ease-in-out',
+                borderRadius: '8px',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: isLight ? '0 4px 12px rgba(255, 152, 0, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)',
+                },
+              }}
+            >
+              <CardContent sx={{ p: 0.75, '&:last-child': { pb: 0.75 }, pt: 0.75 }}>
+                <Box display="flex" alignItems="center" gap={0.75}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem', display: 'block' }}>
+                      Indirect Jobs
+                    </Typography>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        color: isLight ? '#ffffff' : '#fff',
+                        fontWeight: 800,
+                        fontSize: { xs: '0.95rem', sm: '1.15rem', md: '1.35rem' },
+                        mb: 0,
+                        lineHeight: 1.15,
+                      }}
+                    >
+                      {animIndirectJobs}
+                    </Typography>
+                    <Typography variant="caption" component="div" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[300], fontWeight: 600, fontSize: '1.1rem', mt: 0.125, lineHeight: 1.2 }}>
+                      {indirectSharePct}% of total
+                    </Typography>
+                  </Box>
+                  <TrendingUpIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.yellowAccent[400], fontSize: '2rem', flexShrink: 0 }} />
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+
+          <Box
+            sx={{
+              flex: { xs: '0 0 auto', sm: '1 1 0%' },
+              minWidth: { xs: 160, sm: 0 },
+              maxWidth: { sm: '100%' },
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 0,
+            }}
+          >
+            <Card
+              sx={{
+                flex: 1,
+                width: '100%',
+                minHeight: '100%',
+                background: isLight
+                  ? 'linear-gradient(135deg, #f44336 0%, #e57373 100%)'
+                  : `linear-gradient(135deg, ${colors.redAccent[800]}, ${colors.redAccent[700]})`,
+                color: isLight ? 'white' : 'inherit',
+                borderTop: `2px solid ${isLight ? '#d32f2f' : colors.redAccent[500]}`,
+                boxShadow: ui.elevatedShadow,
+                transition: 'all 0.2s ease-in-out',
+                borderRadius: '8px',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: isLight ? '0 4px 12px rgba(244, 67, 54, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.25)',
+                },
+              }}
+            >
+              <CardContent sx={{ p: 0.75, '&:last-child': { pb: 0.75 }, pt: 0.75 }}>
+                <Box display="flex" alignItems="center" gap={0.75}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem', display: 'block' }}>
+                      Female share
+                    </Typography>
+                    <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 800, fontSize: '2rem', mb: 0, lineHeight: 1.15 }}>
+                      {animFemalePct}%
+                    </Typography>
+                    <Typography variant="caption" component="div" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[300], fontWeight: 600, fontSize: '1.1rem', mt: 0.125, lineHeight: 1.2 }}>
+                      {SAMPLE_JOBS_SUMMARY.totalMale}M : {SAMPLE_JOBS_SUMMARY.totalFemale}F
+                    </Typography>
+                  </Box>
+                  <GroupIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.redAccent[400], fontSize: '2rem', flexShrink: 0 }} />
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        </Box>
       </Box>
 
-      {/* Summary KPIs */}
-      <Grid container spacing={1.5} mb={2}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              borderRadius: '8px',
-              background: theme.palette.mode === 'dark'
-                ? `linear-gradient(135deg, ${colors.primary[400]} 0%, ${colors.primary[500]} 100%)`
-                : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-              border: `1px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[700] : 'rgba(0,0,0,0.08)'}`,
-              boxShadow: theme.palette.mode === 'dark'
-                ? '0 4px 16px rgba(0,0,0,0.3)'
-                : '0 2px 12px rgba(0,0,0,0.06)',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: theme.palette.mode === 'dark'
-                  ? '0 8px 24px rgba(104, 112, 250, 0.25)'
-                  : '0 4px 20px rgba(0,0,0,0.1)',
-              },
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '4px',
-                background: `linear-gradient(90deg, ${colors.blueAccent[500]}, ${colors.blueAccent[300]})`,
-              },
-              position: 'relative',
-              height: '100%',
-            }}
-          >
-            <CardContent sx={{ p: 1.5 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    color: colors.grey[300],
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    fontSize: '0.65rem',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  Total Jobs
-                </Typography>
-                <Box
-                  sx={{
-                    p: 0.75,
-                    borderRadius: 1.5,
-                    background: `linear-gradient(135deg, ${colors.blueAccent[600]}, ${colors.blueAccent[400]})`,
-                    boxShadow: `0 2px 8px ${colors.blueAccent[700]}40`,
-                  }}
-                >
-                  <WorkIcon sx={{ color: 'white', fontSize: 18 }} />
-                </Box>
-              </Box>
-              <Typography
-                variant="h5"
-                sx={{
-                  color: colors.grey[100],
-                  fontWeight: 800,
-                  mb: 0.25,
-                  fontSize: { xs: '1.25rem', md: '1.5rem' },
-                  lineHeight: 1.2,
-                }}
-              >
-                {SAMPLE_JOBS_SUMMARY.totalJobs}
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: colors.grey[400],
-                  fontSize: '0.7rem',
-                }}
-              >
-                Created across all projects
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              borderRadius: '8px',
-              background: theme.palette.mode === 'dark'
-                ? `linear-gradient(135deg, ${colors.primary[400]} 0%, ${colors.primary[500]} 100%)`
-                : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-              border: `1px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[700] : 'rgba(0,0,0,0.08)'}`,
-              boxShadow: theme.palette.mode === 'dark'
-                ? '0 4px 16px rgba(0,0,0,0.3)'
-                : '0 2px 12px rgba(0,0,0,0.06)',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: theme.palette.mode === 'dark'
-                  ? '0 8px 24px rgba(104, 112, 250, 0.25)'
-                  : '0 4px 20px rgba(0,0,0,0.1)',
-              },
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '4px',
-                background: `linear-gradient(90deg, ${colors.blueAccent[500]}, ${colors.blueAccent[300]})`,
-              },
-              position: 'relative',
-              height: '100%',
-            }}
-          >
-            <CardContent sx={{ p: 1.5 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    color: colors.grey[300],
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    fontSize: '0.65rem',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  Direct Jobs
-                </Typography>
-                <Box
-                  sx={{
-                    p: 0.75,
-                    borderRadius: 1.5,
-                    background: `linear-gradient(135deg, ${colors.blueAccent[600]}, ${colors.blueAccent[400]})`,
-                    boxShadow: `0 2px 8px ${colors.blueAccent[700]}40`,
-                  }}
-                >
-                  <PeopleIcon sx={{ color: 'white', fontSize: 18 }} />
-                </Box>
-              </Box>
-              <Typography
-                variant="h5"
-                sx={{
-                  color: colors.grey[100],
-                  fontWeight: 800,
-                  mb: 0.25,
-                  fontSize: { xs: '1.25rem', md: '1.5rem' },
-                  lineHeight: 1.2,
-                }}
-              >
-                {SAMPLE_JOBS_SUMMARY.totalDirectJobs}
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: colors.grey[400],
-                  fontSize: '0.7rem',
-                }}
-              >
-                {Math.round((SAMPLE_JOBS_SUMMARY.totalDirectJobs / SAMPLE_JOBS_SUMMARY.totalJobs) * 100)}% of total
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              borderRadius: '8px',
-              background: theme.palette.mode === 'dark'
-                ? `linear-gradient(135deg, ${colors.primary[400]} 0%, ${colors.primary[500]} 100%)`
-                : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-              border: `1px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[700] : 'rgba(0,0,0,0.08)'}`,
-              boxShadow: theme.palette.mode === 'dark'
-                ? '0 8px 32px rgba(0,0,0,0.4)'
-                : '0 4px 20px rgba(0,0,0,0.08)',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: theme.palette.mode === 'dark'
-                  ? '0 12px 40px rgba(104, 112, 250, 0.3)'
-                  : '0 8px 30px rgba(0,0,0,0.12)',
-              },
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '4px',
-                background: `linear-gradient(90deg, ${colors.blueAccent[500]}, ${colors.blueAccent[300]})`,
-              },
-              position: 'relative',
-              height: '100%',
-            }}
-          >
-            <CardContent sx={{ p: 1.5 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    color: colors.grey[300],
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    fontSize: '0.65rem',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  Indirect Jobs
-                </Typography>
-                <Box
-                  sx={{
-                    p: 0.75,
-                    borderRadius: 1.5,
-                    background: `linear-gradient(135deg, ${colors.blueAccent[600]}, ${colors.blueAccent[400]})`,
-                    boxShadow: `0 2px 8px ${colors.blueAccent[700]}40`,
-                  }}
-                >
-                  <TrendingUpIcon sx={{ color: 'white', fontSize: 18 }} />
-                </Box>
-              </Box>
-              <Typography
-                variant="h5"
-                sx={{
-                  color: colors.grey[100],
-                  fontWeight: 800,
-                  mb: 0.25,
-                  fontSize: { xs: '1.25rem', md: '1.5rem' },
-                  lineHeight: 1.2,
-                }}
-              >
-                {SAMPLE_JOBS_SUMMARY.totalIndirectJobs}
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: colors.grey[400],
-                  fontSize: '0.7rem',
-                }}
-              >
-                {Math.round((SAMPLE_JOBS_SUMMARY.totalIndirectJobs / SAMPLE_JOBS_SUMMARY.totalJobs) * 100)}% of total
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card
-            sx={{
-              borderRadius: '8px',
-              background: theme.palette.mode === 'dark'
-                ? `linear-gradient(135deg, ${colors.primary[400]} 0%, ${colors.primary[500]} 100%)`
-                : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-              border: `1px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[700] : 'rgba(0,0,0,0.08)'}`,
-              boxShadow: theme.palette.mode === 'dark'
-                ? '0 8px 32px rgba(0,0,0,0.4)'
-                : '0 4px 20px rgba(0,0,0,0.08)',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: theme.palette.mode === 'dark'
-                  ? '0 12px 40px rgba(104, 112, 250, 0.3)'
-                  : '0 8px 30px rgba(0,0,0,0.12)',
-              },
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '4px',
-                background: `linear-gradient(90deg, ${colors.blueAccent[500]}, ${colors.blueAccent[300]})`,
-              },
-              position: 'relative',
-              height: '100%',
-            }}
-          >
-            <CardContent sx={{ p: 1.5 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    color: colors.grey[300],
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    fontSize: '0.65rem',
-                    letterSpacing: '0.5px',
-                  }}
-                >
-                  Gender Ratio
-                </Typography>
-                <Box
-                  sx={{
-                    p: 0.75,
-                    borderRadius: 1.5,
-                    background: `linear-gradient(135deg, ${colors.blueAccent[600]}, ${colors.blueAccent[400]})`,
-                    boxShadow: `0 2px 8px ${colors.blueAccent[700]}40`,
-                  }}
-                >
-                  <GroupIcon sx={{ color: 'white', fontSize: 18 }} />
-                </Box>
-              </Box>
-              <Typography
-                variant="h5"
-                sx={{
-                  color: colors.grey[100],
-                  fontWeight: 800,
-                  mb: 0.25,
-                  fontSize: { xs: '1.25rem', md: '1.5rem' },
-                  lineHeight: 1.2,
-                }}
-              >
-                {Math.round((SAMPLE_JOBS_SUMMARY.totalFemale / SAMPLE_JOBS_SUMMARY.totalJobs) * 100)}% Female
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: colors.grey[400],
-                  fontSize: '0.7rem',
-                }}
-              >
-                {SAMPLE_JOBS_SUMMARY.totalMale}M : {SAMPLE_JOBS_SUMMARY.totalFemale}F
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Charts Grid */}
-      <Grid container spacing={1.5}>
+      {/* Top charts: equal half-width row */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          gap: 2.5,
+          width: '100%',
+          maxWidth: '100%',
+          mb: 2.5,
+          boxSizing: 'border-box',
+        }}
+      >
         {/* Direct vs Indirect */}
-        <Grid item xs={12} md={6}>
+        <Box sx={{ flex: { xs: '1 1 auto', md: '1 1 0%' }, minWidth: 0, width: { xs: '100%' } }}>
           <Card
             sx={{
-              borderRadius: '8px',
+              borderRadius: 4,
+              width: '100%',
+              height: '100%',
               background: theme.palette.mode === 'dark'
                 ? `linear-gradient(135deg, ${colors.primary[400]} 0%, ${colors.primary[500]} 100%)`
                 : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-              border: `1px solid ${theme.palette.mode === 'dark' ? colors.greenAccent[700] : 'rgba(0,0,0,0.08)'}`,
+              border: `1px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[700] : 'rgba(0,0,0,0.08)'}`,
               boxShadow: theme.palette.mode === 'dark'
                 ? '0 8px 32px rgba(0,0,0,0.4)'
                 : '0 4px 20px rgba(0,0,0,0.08)',
@@ -723,13 +756,13 @@ const JobsImpactDashboardPage = () => {
               },
             }}
           >
-            <CardContent sx={{ p: 2 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={1.5}>
+            <CardContent sx={{ p: 1.5, pb: 0.5, border: 0, outline: 0, boxShadow: 'none', '&:last-child': { pb: 0.5 } }}>
+              <Box display="flex" alignItems="center" gap={1} mb={0.75}>
                 <Box
                   sx={{
                     p: 0.75,
                     borderRadius: 1.5,
-                    background: `linear-gradient(135deg, ${colors.greenAccent[600]}, ${colors.blueAccent[500]})`,
+                    background: `linear-gradient(135deg, ${colors.greenAccent[600]}, ${colors.greenAccent[400]})`,
                   }}
                 >
                   <WorkIcon sx={{ color: 'white', fontSize: 18 }} />
@@ -756,7 +789,7 @@ const JobsImpactDashboardPage = () => {
                   </Typography>
                 </Box>
               </Box>
-              <Box sx={{ height: 280, mt: 0.5 }}>
+              <Box sx={{ height: 320, mt: 0, position: 'relative' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -782,7 +815,7 @@ const JobsImpactDashboardPage = () => {
                     <RechartsTooltip
                       contentStyle={{
                         background: theme.palette.mode === 'dark' ? colors.primary[500] : '#ffffff',
-                        border: `1px solid ${colors.greenAccent[700]}`,
+                        border: `1px solid ${colors.blueAccent[700]}`,
                         borderRadius: 8,
                         padding: '8px 12px',
                       }}
@@ -796,17 +829,19 @@ const JobsImpactDashboardPage = () => {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
         {/* Gender Distribution */}
-        <Grid item xs={12} md={6}>
+        <Box sx={{ flex: { xs: '1 1 auto', md: '1 1 0%' }, minWidth: 0, width: { xs: '100%' } }}>
           <Card
             sx={{
-              borderRadius: '8px',
+              borderRadius: 4,
+              width: '100%',
+              height: '100%',
               background: theme.palette.mode === 'dark'
                 ? `linear-gradient(135deg, ${colors.primary[400]} 0%, ${colors.primary[500]} 100%)`
                 : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-              border: `1px solid ${theme.palette.mode === 'dark' ? (colors.purpleAccent?.[700] || colors.blueAccent[700]) : 'rgba(0,0,0,0.08)'}`,
+              border: `1px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[700] : 'rgba(0,0,0,0.08)'}`,
               boxShadow: theme.palette.mode === 'dark'
                 ? '0 8px 32px rgba(0,0,0,0.4)'
                 : '0 4px 20px rgba(0,0,0,0.08)',
@@ -819,16 +854,16 @@ const JobsImpactDashboardPage = () => {
               },
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={2}>
+            <CardContent sx={{ p: 1.5, pb: 0.5, border: 0, outline: 0, boxShadow: 'none', '&:last-child': { pb: 0.5 } }}>
+              <Box display="flex" alignItems="center" gap={1} mb={0.75}>
                 <Box
                   sx={{
-                    p: 1,
+                    p: 0.75,
                     borderRadius: 1.5,
-                    background: `linear-gradient(135deg, ${colors.blueAccent[600]}, ${colors.purpleAccent ? colors.purpleAccent[500] : colors.greenAccent[600]})`,
+                    background: `linear-gradient(135deg, ${colors.blueAccent[600]}, ${colors.blueAccent[400]})`,
                   }}
                 >
-                  <GroupIcon sx={{ color: 'white', fontSize: 20 }} />
+                  <GroupIcon sx={{ color: 'white', fontSize: 18 }} />
                 </Box>
                 <Box>
                   <Typography
@@ -836,7 +871,7 @@ const JobsImpactDashboardPage = () => {
                     sx={{
                       color: colors.grey[100],
                       fontWeight: 700,
-                      fontSize: '1.1rem',
+                      fontSize: '1rem',
                     }}
                   >
                     Gender Distribution
@@ -845,14 +880,14 @@ const JobsImpactDashboardPage = () => {
                     variant="caption"
                     sx={{
                       color: colors.grey[400],
-                      fontSize: '0.75rem',
+                      fontSize: '0.7rem',
                     }}
                   >
                     Male vs Female employment
                   </Typography>
                 </Box>
               </Box>
-              <Box sx={{ height: 300, mt: 1 }}>
+              <Box sx={{ height: 320, mt: 0, position: 'relative' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -892,17 +927,20 @@ const JobsImpactDashboardPage = () => {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
+      </Box>
 
+      <Grid container spacing={2.5} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
         {/* Jobs by Category with Direct/Indirect */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} sx={{ width: '100%', maxWidth: '100%' }}>
           <Card
             sx={{
-              borderRadius: '8px',
+              width: '100%',
+              borderRadius: 4,
               background: theme.palette.mode === 'dark'
                 ? `linear-gradient(135deg, ${colors.primary[400]} 0%, ${colors.primary[500]} 100%)`
                 : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-              border: `1px solid ${theme.palette.mode === 'dark' ? colors.orange[700] : 'rgba(0,0,0,0.08)'}`,
+              border: `1px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[700] : 'rgba(0,0,0,0.08)'}`,
               boxShadow: theme.palette.mode === 'dark'
                 ? '0 8px 32px rgba(0,0,0,0.4)'
                 : '0 4px 20px rgba(0,0,0,0.08)',
@@ -915,16 +953,16 @@ const JobsImpactDashboardPage = () => {
               },
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={2}>
+            <CardContent sx={{ p: 1.5, pb: 0.5, border: 0, outline: 0, boxShadow: 'none', '&:last-child': { pb: 0.5 } }}>
+              <Box display="flex" alignItems="center" gap={1} mb={0.75}>
                 <Box
                   sx={{
-                    p: 1,
+                    p: 0.75,
                     borderRadius: 1.5,
-                    background: `linear-gradient(135deg, ${colors.orange[600]}, ${colors.orange[400]})`,
+                    background: `linear-gradient(135deg, ${colors.blueAccent[600]}, ${colors.blueAccent[400]})`,
                   }}
                 >
-                  <WorkIcon sx={{ color: 'white', fontSize: 20 }} />
+                  <WorkIcon sx={{ color: 'white', fontSize: 18 }} />
                 </Box>
                 <Box>
                   <Typography
@@ -932,7 +970,7 @@ const JobsImpactDashboardPage = () => {
                     sx={{
                       color: colors.grey[100],
                       fontWeight: 700,
-                      fontSize: '1.1rem',
+                      fontSize: '1rem',
                     }}
                   >
                     Jobs by Category
@@ -941,14 +979,14 @@ const JobsImpactDashboardPage = () => {
                     variant="caption"
                     sx={{
                       color: colors.grey[400],
-                      fontSize: '0.75rem',
+                      fontSize: '0.7rem',
                     }}
                   >
                     Direct and indirect breakdown by category
                   </Typography>
                 </Box>
               </Box>
-              <Box sx={{ height: 300, mt: 1 }}>
+              <Box sx={{ height: 320, mt: 0, position: 'relative' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData.categoryChart} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
                     <CartesianGrid
@@ -967,7 +1005,7 @@ const JobsImpactDashboardPage = () => {
                     <RechartsTooltip
                       contentStyle={{
                         background: theme.palette.mode === 'dark' ? colors.primary[500] : '#ffffff',
-                        border: `1px solid ${colors.orange[700]}`,
+                        border: `1px solid ${colors.blueAccent[700]}`,
                         borderRadius: 8,
                         padding: '8px 12px',
                       }}
@@ -983,14 +1021,15 @@ const JobsImpactDashboardPage = () => {
         </Grid>
 
         {/* Top Projects by Jobs - Grid View */}
-        <Grid item xs={12}>
+        <Grid item xs={12} sx={{ width: '100%', maxWidth: '100%' }}>
           <Card
             sx={{
-              borderRadius: '8px',
+              width: '100%',
+              borderRadius: 4,
               background: theme.palette.mode === 'dark'
                 ? `linear-gradient(135deg, ${colors.primary[400]} 0%, ${colors.primary[500]} 100%)`
                 : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-              border: `1px solid ${theme.palette.mode === 'dark' ? colors.greenAccent[700] : 'rgba(0,0,0,0.08)'}`,
+              border: `1px solid ${theme.palette.mode === 'dark' ? colors.blueAccent[700] : 'rgba(0,0,0,0.08)'}`,
               boxShadow: theme.palette.mode === 'dark'
                 ? '0 8px 32px rgba(0,0,0,0.4)'
                 : '0 4px 20px rgba(0,0,0,0.08)',
@@ -1003,16 +1042,16 @@ const JobsImpactDashboardPage = () => {
               },
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={2}>
+            <CardContent sx={{ p: 1.5, pb: 0.5, border: 0, outline: 0, boxShadow: 'none', '&:last-child': { pb: 0.5 } }}>
+              <Box display="flex" alignItems="center" gap={1} mb={0.75}>
                 <Box
                   sx={{
-                    p: 1,
+                    p: 0.75,
                     borderRadius: 1.5,
                     background: `linear-gradient(135deg, ${colors.greenAccent[600]}, ${colors.greenAccent[400]})`,
                   }}
                 >
-                  <AssessmentIcon sx={{ color: 'white', fontSize: 20 }} />
+                  <AssessmentIcon sx={{ color: 'white', fontSize: 18 }} />
                 </Box>
                 <Box>
                   <Typography
@@ -1020,7 +1059,7 @@ const JobsImpactDashboardPage = () => {
                     sx={{
                       color: colors.grey[100],
                       fontWeight: 700,
-                      fontSize: '1.1rem',
+                      fontSize: '1rem',
                     }}
                   >
                     Top 10 Projects by Jobs Created
@@ -1029,7 +1068,7 @@ const JobsImpactDashboardPage = () => {
                     variant="caption"
                     sx={{
                       color: colors.grey[400],
-                      fontSize: '0.75rem',
+                      fontSize: '0.7rem',
                     }}
                   >
                     Projects with the highest number of jobs created
@@ -1051,12 +1090,13 @@ const JobsImpactDashboardPage = () => {
               ) : (
                 <TableContainer
                   sx={{
+                    width: '100%',
                     maxHeight: 360,
-                    border: `1px solid ${theme.palette.mode === 'dark' ? colors.grey[700] : colors.grey[300]}`,
+                    border: 0,
                     borderRadius: '8px',
                   }}
                 >
-                  <Table size="small" stickyHeader>
+                  <Table size="small" stickyHeader sx={{ width: '100%' }}>
                     <TableHead>
                       <TableRow>
                         <TableCell sx={{ fontWeight: 700, width: 70 }}>Rank</TableCell>
@@ -1115,11 +1155,12 @@ const JobsImpactDashboardPage = () => {
           </Card>
         </Grid>
 
-        {/* Jobs by Ward */}
-        <Grid item xs={12}>
+        {/* Jobs by Sector */}
+        <Grid item xs={12} sx={{ width: '100%', maxWidth: '100%' }}>
           <Card
             sx={{
-              borderRadius: '8px',
+              width: '100%',
+              borderRadius: 4,
               background: theme.palette.mode === 'dark'
                 ? `linear-gradient(135deg, ${colors.primary[400]} 0%, ${colors.primary[500]} 100%)`
                 : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
@@ -1136,16 +1177,16 @@ const JobsImpactDashboardPage = () => {
               },
             }}
           >
-            <CardContent sx={{ p: 3 }}>
-              <Box display="flex" alignItems="center" gap={1} mb={2}>
+            <CardContent sx={{ p: 1.5, pb: 0.5, border: 0, outline: 0, boxShadow: 'none', '&:last-child': { pb: 0.5 } }}>
+              <Box display="flex" alignItems="center" gap={1} mb={0.75}>
                 <Box
                   sx={{
-                    p: 1,
+                    p: 0.75,
                     borderRadius: 1.5,
                     background: `linear-gradient(135deg, ${colors.blueAccent[600]}, ${colors.blueAccent[400]})`,
                   }}
                 >
-                  <LocationOnIcon sx={{ color: 'white', fontSize: 20 }} />
+                  <LocationOnIcon sx={{ color: 'white', fontSize: 18 }} />
                 </Box>
                 <Box>
                   <Typography
@@ -1153,7 +1194,7 @@ const JobsImpactDashboardPage = () => {
                     sx={{
                       color: colors.grey[100],
                       fontWeight: 700,
-                      fontSize: '1.1rem',
+                      fontSize: '1rem',
                     }}
                   >
                     Jobs by Sector
@@ -1162,23 +1203,24 @@ const JobsImpactDashboardPage = () => {
                     variant="caption"
                     sx={{
                       color: colors.grey[400],
-                      fontSize: '0.75rem',
+                      fontSize: '0.7rem',
                     }}
                   >
                     Jobs created by sector
                   </Typography>
                 </Box>
               </Box>
-              <Box sx={{ mt: 1 }}>
+              <Box sx={{ mt: 0.5 }}>
                 <TableContainer
                   sx={{
+                    width: '100%',
                     maxHeight: 320,
-                    border: `1px solid ${theme.palette.mode === 'dark' ? colors.grey[700] : colors.grey[300]}`,
+                    border: 0,
                     borderRadius: '8px',
                     overflowX: 'auto',
                   }}
                 >
-                  <Table size="small" stickyHeader sx={{ minWidth: 760 }}>
+                  <Table size="small" stickyHeader sx={{ minWidth: 760, width: '100%' }}>
                     <TableHead>
                       <TableRow>
                         <TableCell sx={{ fontWeight: 700, minWidth: 220 }}>Sector</TableCell>

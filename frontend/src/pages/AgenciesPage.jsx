@@ -60,6 +60,7 @@ function AgenciesPage() {
   // Import dialog states
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState(null);
+  const [serverImportPath, setServerImportPath] = useState('/app/adp/agencies.csv');
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(null);
 
@@ -279,12 +280,22 @@ function AgenciesPage() {
   };
 
   const handleImportFromPath = async () => {
+    const normalizedPath = (serverImportPath || '').trim();
+    if (!normalizedPath) {
+      setSnackbar({
+        open: true,
+        message: 'Please provide a server file path',
+        severity: 'error'
+      });
+      return;
+    }
+
     setImporting(true);
     setImportProgress(null);
 
     try {
       const response = await axiosInstance.post('/agencies/import-from-path', {
-        path: '/app/adp/agencies.csv'
+        path: normalizedPath
       });
 
       setImportProgress(response.data);
@@ -571,6 +582,19 @@ function AgenciesPage() {
     },
   ];
 
+  const compactActionButtonSx = {
+    fontSize: '0.75rem',
+    py: 0.5,
+    px: 1,
+    minWidth: 'auto',
+    textTransform: 'none',
+    whiteSpace: 'nowrap',
+    '& .MuiButton-startIcon': {
+      mr: 0.5,
+      '& > *': { fontSize: '0.95rem' },
+    },
+  };
+
   return (
     <Box m="20px">
       <Header title="Agencies" subtitle="Manage government agencies and institutions" />
@@ -601,7 +625,24 @@ function AgenciesPage() {
         </Alert>
       )}
 
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} gap={2}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'nowrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1.5,
+          mb: 2,
+          minWidth: 0,
+          overflowX: 'auto',
+          pb: 0.25,
+          '&::-webkit-scrollbar': { height: 6 },
+          '&::-webkit-scrollbar-thumb': {
+            borderRadius: 3,
+            bgcolor: isLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)',
+          },
+        }}
+      >
         <TextField
           placeholder="Search agencies..."
           variant="outlined"
@@ -625,9 +666,22 @@ function AgenciesPage() {
               </IconButton>
             ),
           }}
-          sx={{ width: 300 }}
+          sx={{
+            width: 280,
+            flex: '0 0 auto',
+            '& .MuiInputBase-input': { fontSize: '0.8rem' },
+          }}
         />
-        <Box display="flex" gap={1} alignItems="center">
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'nowrap',
+            alignItems: 'center',
+            gap: 0.5,
+            flex: '0 0 auto',
+            ml: 'auto',
+          }}
+        >
           <FormControlLabel
             control={
               <Checkbox
@@ -637,13 +691,20 @@ function AgenciesPage() {
               />
             }
             label="Export All"
-            sx={{ mr: 1 }}
+            sx={{
+              mr: 0,
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
+              '& .MuiFormControlLabel-label': { fontSize: '0.75rem' },
+            }}
           />
           <Button
             variant="outlined"
+            size="small"
             startIcon={<UploadIcon />}
             onClick={() => setImportDialogOpen(true)}
             sx={{
+              ...compactActionButtonSx,
               borderColor: colors.greenAccent[500],
               color: colors.greenAccent[500],
               '&:hover': {
@@ -656,10 +717,12 @@ function AgenciesPage() {
           </Button>
           <Button
             variant="outlined"
-            startIcon={exportingExcel ? <CircularProgress size={16} /> : <ExcelIcon />}
+            size="small"
+            startIcon={exportingExcel ? <CircularProgress size={14} color="inherit" /> : <ExcelIcon />}
             onClick={handleExportToExcel}
             disabled={exportingExcel || (!exportAll && agencies.length === 0)}
             sx={{
+              ...compactActionButtonSx,
               borderColor: colors.greenAccent[500],
               color: colors.greenAccent[500],
               '&:hover': {
@@ -676,10 +739,12 @@ function AgenciesPage() {
           </Button>
           <Button
             variant="outlined"
-            startIcon={exportingPdf ? <CircularProgress size={16} /> : <PdfIcon />}
+            size="small"
+            startIcon={exportingPdf ? <CircularProgress size={14} color="inherit" /> : <PdfIcon />}
             onClick={handleExportToPDF}
             disabled={exportingPdf || (!exportAll && agencies.length === 0)}
             sx={{
+              ...compactActionButtonSx,
               borderColor: colors.redAccent[500],
               color: colors.redAccent[500],
               '&:hover': {
@@ -696,9 +761,11 @@ function AgenciesPage() {
           </Button>
           <Button
             variant="contained"
+            size="small"
             startIcon={<AddIcon />}
             onClick={handleCreate}
             sx={{
+              ...compactActionButtonSx,
               backgroundColor: colors.blueAccent[500],
               '&:hover': {
                 backgroundColor: colors.blueAccent[600],
@@ -816,7 +883,17 @@ function AgenciesPage() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={importDialogOpen} onClose={() => { setImportDialogOpen(false); setImportFile(null); }} maxWidth="sm" fullWidth>
+      <Dialog
+        open={importDialogOpen}
+        onClose={() => {
+          setImportDialogOpen(false);
+          setImportFile(null);
+          setImportProgress(null);
+          setServerImportPath('/app/adp/agencies.csv');
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Import Agencies from CSV</DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 1 }}>
@@ -849,6 +926,16 @@ function AgenciesPage() {
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                 OR
               </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                label="Server CSV Path"
+                value={serverImportPath}
+                onChange={(e) => setServerImportPath(e.target.value)}
+                placeholder="/app/adp/agencies.csv"
+                sx={{ mb: 1.5, textAlign: 'left' }}
+                helperText="Path must exist on the API server/container filesystem"
+              />
               <Button
                 variant="outlined"
                 startIcon={<UploadIcon />}
@@ -856,7 +943,7 @@ function AgenciesPage() {
                 disabled={importing}
                 fullWidth
               >
-                Import from Server Path (/app/adp/agencies.csv)
+                Import from Server Path
               </Button>
             </Box>
 
@@ -870,7 +957,12 @@ function AgenciesPage() {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => { setImportDialogOpen(false); setImportFile(null); setImportProgress(null); }}>
+          <Button onClick={() => {
+            setImportDialogOpen(false);
+            setImportFile(null);
+            setImportProgress(null);
+            setServerImportPath('/app/adp/agencies.csv');
+          }}>
             Close
           </Button>
           <Button

@@ -18,6 +18,7 @@ import ReportsPage from './pages/ReportsPage';
 import UserManagementPage from './pages/UserManagementPage';
 import Login from './components/Login';
 import Register from './components/Register';
+import ForcePasswordChangePage from './pages/ForcePasswordChangePage';
 
 // Import the StrategicPlanningPage
 import StrategicPlanningPage from './pages/StrategicPlanningPage';
@@ -98,6 +99,9 @@ import CentralImportPage from './pages/CentralImportPage';
 
 // Define routes at domain root ("/")
 const router = createBrowserRouter([
+  // Legacy bookmarks: app moved from /impes/ to / — avoid in-app 404 when nginx serves SPA on old URL
+  { path: '/impes', element: <Navigate to="/" replace /> },
+  { path: '/impes/*', element: <Navigate to="/" replace /> },
   {
     path: '/',
     element: <MainLayout />,
@@ -319,6 +323,10 @@ const router = createBrowserRouter([
   {
     path: '/register',
     element: <Register />,
+  },
+  {
+    path: '/force-password-change',
+    element: <ForcePasswordChangePage />,
   },
 ]);
 

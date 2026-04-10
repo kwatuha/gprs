@@ -327,6 +327,43 @@ const formatCurrency = (value) =>
     maximumFractionDigits: 0,
   }).format(value || 0);
 
+const STATUS_COUNT_UP_MS = 500;
+
+/** Animates displayed integer from 0 to `endValue` over `durationMs` when `endValue` changes. */
+function useCountUp(endValue, durationMs = STATUS_COUNT_UP_MS) {
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    const end = Math.max(0, Math.round(Number(endValue) || 0));
+    if (end === 0) {
+      setDisplay(0);
+      return undefined;
+    }
+
+    setDisplay(0);
+    const startTime = performance.now();
+    let rafId;
+
+    const tick = (now) => {
+      const t = Math.min(1, (now - startTime) / durationMs);
+      const eased = 1 - (1 - t) ** 3;
+      setDisplay(Math.round(eased * end));
+      if (t < 1) {
+        rafId = requestAnimationFrame(tick);
+      } else {
+        setDisplay(end);
+      }
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => {
+      if (rafId != null) cancelAnimationFrame(rafId);
+    };
+  }, [endValue, durationMs]);
+
+  return display;
+}
+
 const ProjectByStatusDashboardPage = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -534,6 +571,13 @@ const ProjectByStatusDashboardPage = () => {
 
     return stats;
   }, [filteredProjects]);
+
+  const countCompleted = useCountUp(statusStats['Completed'] || 0);
+  const countOngoing = useCountUp(statusStats['Ongoing'] || 0);
+  const countNotStarted = useCountUp(statusStats['Not started'] || 0);
+  const countStalled = useCountUp(statusStats['Stalled'] || 0);
+  const countUnderProcurement = useCountUp(statusStats['Under Procurement'] || 0);
+  const countSuspended = useCountUp(statusStats['Suspended'] || 0);
 
   // Handler to open modal with projects for a specific status
   const handleStatusClick = (status) => {
@@ -783,20 +827,22 @@ const ProjectByStatusDashboardPage = () => {
                 }}
               >
                 <CardContent sx={{ p: 0.75, '&:last-child': { pb: 0.75 }, pt: 0.75 }}>
-                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.25}>
-                    <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem' }}>
-                      Completed
-                    </Typography>
-                    <CheckCircleIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.greenAccent[500], fontSize: 14 }} />
+                  <Box display="flex" alignItems="center" gap={0.75}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem', display: 'block' }}>
+                        Completed
+                      </Typography>
+                      <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 800, fontSize: '2rem', mb: 0, lineHeight: 1.15 }}>
+                        {countCompleted}
+                      </Typography>
+                      <Typography variant="caption" component="div" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[300], fontWeight: 600, fontSize: '1.1rem', mt: 0.125, lineHeight: 1.2 }}>
+                        {statusStats.totalProjects > 0 
+                          ? Math.round((countCompleted / statusStats.totalProjects) * 100) 
+                          : 0}%
+                      </Typography>
+                    </Box>
+                    <CheckCircleIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.greenAccent[500], fontSize: '2rem', flexShrink: 0 }} />
                   </Box>
-                  <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 'bold', fontSize: '1rem', mb: 0, lineHeight: 1.1 }}>
-                    {statusStats['Completed'] || 0}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.8)' : colors.grey[300], fontWeight: 400, fontSize: '0.6rem', mt: 0.125 }}>
-                    {statusStats.totalProjects > 0 
-                      ? Math.round((statusStats['Completed'] || 0) / statusStats.totalProjects * 100) 
-                      : 0}%
-                  </Typography>
                 </CardContent>
               </Card>
             </Grid>
@@ -823,20 +869,22 @@ const ProjectByStatusDashboardPage = () => {
                 }}
               >
                 <CardContent sx={{ p: 0.75, '&:last-child': { pb: 0.75 }, pt: 0.75 }}>
-                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.25}>
-                    <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem' }}>
-                      Ongoing
-                    </Typography>
-                    <PlayArrowIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.blueAccent[500], fontSize: 14 }} />
+                  <Box display="flex" alignItems="center" gap={0.75}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem', display: 'block' }}>
+                        Ongoing
+                      </Typography>
+                      <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 800, fontSize: '2rem', mb: 0, lineHeight: 1.15 }}>
+                        {countOngoing}
+                      </Typography>
+                      <Typography variant="caption" component="div" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[300], fontWeight: 600, fontSize: '1.1rem', mt: 0.125, lineHeight: 1.2 }}>
+                        {statusStats.totalProjects > 0 
+                          ? Math.round((countOngoing / statusStats.totalProjects) * 100) 
+                          : 0}%
+                      </Typography>
+                    </Box>
+                    <PlayArrowIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.blueAccent[500], fontSize: '2rem', flexShrink: 0 }} />
                   </Box>
-                  <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 'bold', fontSize: '1rem', mb: 0, lineHeight: 1.1 }}>
-                    {statusStats['Ongoing'] || 0}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.8)' : colors.grey[300], fontWeight: 400, fontSize: '0.6rem', mt: 0.125 }}>
-                    {statusStats.totalProjects > 0 
-                      ? Math.round((statusStats['Ongoing'] || 0) / statusStats.totalProjects * 100) 
-                      : 0}%
-                  </Typography>
                 </CardContent>
               </Card>
             </Grid>
@@ -863,20 +911,22 @@ const ProjectByStatusDashboardPage = () => {
                 }}
               >
                 <CardContent sx={{ p: 0.75, '&:last-child': { pb: 0.75 }, pt: 0.75 }}>
-                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.25}>
-                    <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem' }}>
-                      Not Started
-                    </Typography>
-                    <ScheduleIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[400], fontSize: 14 }} />
+                  <Box display="flex" alignItems="center" gap={0.75}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem', display: 'block' }}>
+                        Not Started
+                      </Typography>
+                      <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 800, fontSize: '2rem', mb: 0, lineHeight: 1.15 }}>
+                        {countNotStarted}
+                      </Typography>
+                      <Typography variant="caption" component="div" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[300], fontWeight: 600, fontSize: '1.1rem', mt: 0.125, lineHeight: 1.2 }}>
+                        {statusStats.totalProjects > 0 
+                          ? Math.round((countNotStarted / statusStats.totalProjects) * 100) 
+                          : 0}%
+                      </Typography>
+                    </Box>
+                    <ScheduleIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[400], fontSize: '2rem', flexShrink: 0 }} />
                   </Box>
-                  <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 'bold', fontSize: '1rem', mb: 0, lineHeight: 1.1 }}>
-                    {statusStats['Not started'] || 0}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.8)' : colors.grey[300], fontWeight: 400, fontSize: '0.6rem', mt: 0.125 }}>
-                    {statusStats.totalProjects > 0 
-                      ? Math.round((statusStats['Not started'] || 0) / statusStats.totalProjects * 100) 
-                      : 0}%
-                  </Typography>
                 </CardContent>
               </Card>
             </Grid>
@@ -903,20 +953,22 @@ const ProjectByStatusDashboardPage = () => {
                 }}
               >
                 <CardContent sx={{ p: 0.75, '&:last-child': { pb: 0.75 }, pt: 0.75 }}>
-                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.25}>
-                    <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem' }}>
-                      Stalled
-                    </Typography>
-                    <PauseIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.yellowAccent[400], fontSize: 14 }} />
+                  <Box display="flex" alignItems="center" gap={0.75}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem', display: 'block' }}>
+                        Stalled
+                      </Typography>
+                      <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 800, fontSize: '2rem', mb: 0, lineHeight: 1.15 }}>
+                        {countStalled}
+                      </Typography>
+                      <Typography variant="caption" component="div" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[300], fontWeight: 600, fontSize: '1.1rem', mt: 0.125, lineHeight: 1.2 }}>
+                        {statusStats.totalProjects > 0 
+                          ? Math.round((countStalled / statusStats.totalProjects) * 100) 
+                          : 0}%
+                      </Typography>
+                    </Box>
+                    <PauseIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.yellowAccent[400], fontSize: '2rem', flexShrink: 0 }} />
                   </Box>
-                  <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 'bold', fontSize: '1rem', mb: 0, lineHeight: 1.1 }}>
-                    {statusStats['Stalled'] || 0}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.8)' : colors.grey[300], fontWeight: 400, fontSize: '0.6rem', mt: 0.125 }}>
-                    {statusStats.totalProjects > 0 
-                      ? Math.round((statusStats['Stalled'] || 0) / statusStats.totalProjects * 100) 
-                      : 0}%
-                  </Typography>
                 </CardContent>
               </Card>
             </Grid>
@@ -944,20 +996,22 @@ const ProjectByStatusDashboardPage = () => {
                   }}
                 >
                   <CardContent sx={{ p: 0.75, '&:last-child': { pb: 0.75 }, pt: 0.75 }}>
-                    <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.25}>
-                      <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem' }}>
-                        Under Procurement
-                      </Typography>
-                      <HourglassIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.blueAccent[400], fontSize: 14 }} />
+                    <Box display="flex" alignItems="center" gap={0.75}>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem', display: 'block' }}>
+                          Under Procurement
+                        </Typography>
+                        <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 800, fontSize: '2rem', mb: 0, lineHeight: 1.15 }}>
+                          {countUnderProcurement}
+                        </Typography>
+                        <Typography variant="caption" component="div" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[300], fontWeight: 600, fontSize: '1.1rem', mt: 0.125, lineHeight: 1.2 }}>
+                          {statusStats.totalProjects > 0 
+                            ? Math.round((countUnderProcurement / statusStats.totalProjects) * 100) 
+                            : 0}%
+                        </Typography>
+                      </Box>
+                      <HourglassIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.blueAccent[400], fontSize: '2rem', flexShrink: 0 }} />
                     </Box>
-                    <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 'bold', fontSize: '1rem', mb: 0, lineHeight: 1.1 }}>
-                      {statusStats['Under Procurement'] || 0}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.8)' : colors.grey[300], fontWeight: 400, fontSize: '0.6rem', mt: 0.125 }}>
-                      {statusStats.totalProjects > 0 
-                        ? Math.round((statusStats['Under Procurement'] || 0) / statusStats.totalProjects * 100) 
-                        : 0}%
-                    </Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -986,20 +1040,22 @@ const ProjectByStatusDashboardPage = () => {
                   }}
                 >
                   <CardContent sx={{ p: 0.75, '&:last-child': { pb: 0.75 }, pt: 0.75 }}>
-                    <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.25}>
-                      <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem' }}>
-                        Suspended
-                      </Typography>
-                      <PauseIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.redAccent[400], fontSize: 14 }} />
+                    <Box display="flex" alignItems="center" gap={0.75}>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[100], fontWeight: 600, fontSize: '0.65rem', display: 'block' }}>
+                          Suspended
+                        </Typography>
+                        <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 800, fontSize: '2rem', mb: 0, lineHeight: 1.15 }}>
+                          {countSuspended}
+                        </Typography>
+                        <Typography variant="caption" component="div" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[300], fontWeight: 600, fontSize: '1.1rem', mt: 0.125, lineHeight: 1.2 }}>
+                          {statusStats.totalProjects > 0 
+                            ? Math.round((countSuspended / statusStats.totalProjects) * 100) 
+                            : 0}%
+                        </Typography>
+                      </Box>
+                      <PauseIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.redAccent[400], fontSize: '2rem', flexShrink: 0 }} />
                     </Box>
-                    <Typography variant="h5" sx={{ color: isLight ? '#ffffff' : '#fff', fontWeight: 'bold', fontSize: '1rem', mb: 0, lineHeight: 1.1 }}>
-                      {statusStats['Suspended'] || 0}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.8)' : colors.grey[300], fontWeight: 400, fontSize: '0.6rem', mt: 0.125 }}>
-                      {statusStats.totalProjects > 0 
-                        ? Math.round((statusStats['Suspended'] || 0) / statusStats.totalProjects * 100) 
-                        : 0}%
-                    </Typography>
                   </CardContent>
                 </Card>
               </Grid>

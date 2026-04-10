@@ -17,6 +17,7 @@ export const hasConfiguredRole = (user, roles) => {
 // Icon mapping for Material-UI icons
 export const ICON_MAP = {
   DashboardIcon: () => import('@mui/icons-material/Dashboard').then(m => m.default),
+  GridViewIcon: () => import('@mui/icons-material/GridView').then(m => m.default),
   AssessmentIcon: () => import('@mui/icons-material/Assessment').then(m => m.default),
   SettingsIcon: () => import('@mui/icons-material/Settings').then(m => m.default),
   GroupIcon: () => import('@mui/icons-material/Group').then(m => m.default),
@@ -35,6 +36,8 @@ export const ICON_MAP = {
   PublicIcon: () => import('@mui/icons-material/Public').then(m => m.default),
   AnalyticsIcon: () => import('@mui/icons-material/Analytics').then(m => m.default),
   AttachMoneyIcon: () => import('@mui/icons-material/AttachMoney').then(m => m.default),
+  ApartmentIcon: () => import('@mui/icons-material/Apartment').then(m => m.default),
+  CategoryIcon: () => import('@mui/icons-material/Category').then(m => m.default),
 };
 
 // Get icon component by name

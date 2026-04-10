@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import { CssBaseline, ThemeProvider, Box, CircularProgress } from '@mui/material';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 
 // Import AuthProvider and ChatProvider (keep these - they're small)
 import { AuthProvider } from './context/AuthContext';
@@ -65,6 +65,8 @@ const LazyRoute = ({ component: Component }) => (
 
 // Define routes with lazy loading
 const router = createBrowserRouter([
+  { path: '/impes', element: <Navigate to="/" replace /> },
+  { path: '/impes/*', element: <Navigate to="/" replace /> },
   {
     path: '/',
     element: <MainLayout />,

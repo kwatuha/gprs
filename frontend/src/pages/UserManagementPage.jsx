@@ -111,6 +111,7 @@ function getUserOrgGroupInfo(user) {
 
 function UserManagementPage() {
   const { user, logout, hasPrivilege } = useAuth();
+  const isSuperAdmin = String(user?.role || user?.roleName || '').trim().toLowerCase() === 'super admin';
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -119,6 +120,7 @@ function UserManagementPage() {
   const showPendingOnly = searchParams.get('pending') === 'true';
 
   const [users, setUsers] = useState([]);
+  const [voidedUsers, setVoidedUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -287,6 +289,22 @@ function UserManagementPage() {
     }
   }, [hasPrivilege, logout]);
 
+  const fetchVoidedUsers = useCallback(async () => {
+    if (!isSuperAdmin) {
+      setVoidedUsers([]);
+      return;
+    }
+    try {
+      const data = await apiService.getVoidedUsers();
+      const list = Array.isArray(data) ? data : [];
+      setVoidedUsers(list.map((u) => snakeToCamelCase(u)));
+    } catch (err) {
+      console.error('Error fetching voided users:', err);
+      setSnackbar({ open: true, message: err?.error || err?.message || 'Failed to load voided users.', severity: 'error' });
+      setVoidedUsers([]);
+    }
+  }, [isSuperAdmin]);
+
   const fetchRoles = useCallback(async () => {
     try {
       if (hasPrivilege('role.read_all')) {
@@ -425,6 +443,7 @@ function UserManagementPage() {
       fetchRoles();
       fetchPrivileges();
       fetchAgencies();
+      fetchVoidedUsers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.userId, user?.id]); // Only re-fetch if user ID changes (user login/logout)
@@ -433,6 +452,7 @@ function UserManagementPage() {
   useEffect(() => {
     if (lastFetchedUserIdRef.current === (user?.userId || user?.id)) {
       fetchUsers(showPendingOnly);
+      fetchVoidedUsers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPendingOnly]);
@@ -714,13 +734,20 @@ function UserManagementPage() {
   const handleUserFormChange = (e) => {
     const { name, value } = e.target;
     setUserFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'phoneNumber') {
+      setUserFormErrors((prev) => ({ ...prev, phoneNumber: '' }));
+    }
   };
 
   const validateUserForm = () => {
     let errors = {};
+    const phoneRegex = /^(?:07\d{8}|\+2547\d{8})$/;
     if (!userFormData.username.trim()) errors.username = 'Username is required.';
     if (!userFormData.email.trim()) errors.email = 'Email is required.';
     if (!/\S+@\S+\.\S+/.test(userFormData.email)) errors.email = 'Email is invalid.';
+    if (userFormData.phoneNumber && !phoneRegex.test(userFormData.phoneNumber.trim())) {
+      errors.phoneNumber = 'Use 07XXXXXXXX or +2547XXXXXXXX';
+    }
 
     if (!currentUserToEdit) {
         // For new users, password is required
@@ -781,6 +808,13 @@ function UserManagementPage() {
       delete dataToSend.agencyId;
       delete dataToSend.stateDepartment;
 
+      // Editing organization profile fields on existing users is restricted to Super Admin.
+      if (currentUserToEdit && !isSuperAdmin) {
+        delete dataToSend.ministry;
+        delete dataToSend.state_department;
+        delete dataToSend.agency_id;
+      }
+
       if (currentUserToEdit) {
         if (!hasPrivilege('user.update')) {
             setSnackbar({ open: true, message: 'Permission denied to update user.', severity: 'error' });
@@ -838,9 +872,29 @@ function UserManagementPage() {
       await apiService.deleteUser(userToDeleteId);
       setSnackbar({ open: true, message: 'User deleted successfully!', severity: 'success' });
       fetchUsers();
+      fetchVoidedUsers();
     } catch (err) {
       console.error("Delete user error:", err);
       setSnackbar({ open: true, message: err.response?.data?.message || err.message || 'Failed to delete user.', severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRestoreVoidedUser = async (userId, username) => {
+    if (!isSuperAdmin) {
+      setSnackbar({ open: true, message: 'Only Super Admin can restore voided users.', severity: 'error' });
+      return;
+    }
+    setLoading(true);
+    try {
+      await apiService.restoreUser(userId);
+      setSnackbar({ open: true, message: `User "${username}" restored successfully.`, severity: 'success' });
+      fetchUsers(showPendingOnly);
+      fetchVoidedUsers();
+    } catch (err) {
+      const errorMessage = err?.error || err?.message || 'Failed to restore user.';
+      setSnackbar({ open: true, message: errorMessage, severity: 'error' });
     } finally {
       setLoading(false);
     }
@@ -1360,6 +1414,27 @@ function UserManagementPage() {
     });
   }, [users, globalSearch]);
 
+  const filteredVoidedUsers = useMemo(() => {
+    if (!globalSearch.trim()) return voidedUsers;
+    const query = globalSearch.toLowerCase().trim();
+    return voidedUsers.filter((user) => {
+      const searchableFields = [
+        user.userId?.toString() || '',
+        user.username || '',
+        user.email || '',
+        user.firstName || '',
+        user.lastName || '',
+        user.role || '',
+        `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        user.ministry || '',
+        user.stateDepartment || user.state_department || '',
+        user.agencyName || user.agency_name || '',
+        user.agencyId != null && user.agencyId !== '' ? String(user.agencyId) : '',
+      ];
+      return searchableFields.some((field) => String(field).toLowerCase().includes(query));
+    });
+  }, [voidedUsers, globalSearch]);
+
   const usersByOrganization = useMemo(() => {
     const groups = new Map();
     for (const u of filteredUsers) {
@@ -1602,6 +1677,58 @@ function UserManagementPage() {
     },
   ];
 
+  const voidedUserColumns = [
+    ...userColumns.filter((c) => c.field !== 'isActive' && c.field !== 'actions'),
+    {
+      field: "voidedStatus",
+      headerName: "Status",
+      width: 130,
+      minWidth: 130,
+      headerAlign: 'center',
+      align: 'center',
+      renderCell: () => (
+        <Box
+          m="0 auto"
+          p="6px 12px"
+          display="inline-flex"
+          justifyContent="center"
+          alignItems="center"
+          gap={0.5}
+          backgroundColor={colors.redAccent[700]}
+          borderRadius="6px"
+        >
+          <Typography color={colors.grey[100]} sx={{ fontSize: '0.875rem', fontWeight: 600 }}>
+            Voided
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      field: "restoreAction",
+      headerName: "Actions",
+      width: 120,
+      sortable: false,
+      filterable: false,
+      headerAlign: 'center',
+      align: 'center',
+      renderCell: (params) => (
+        <IconButton
+          size="small"
+          sx={{
+            color: colors.grey[100],
+            backgroundColor: colors.greenAccent[700],
+            '&:hover': { backgroundColor: colors.greenAccent[600], transform: 'scale(1.1)' },
+            transition: 'all 0.2s ease'
+          }}
+          onClick={() => handleRestoreVoidedUser(params.row.userId, params.row.username)}
+          title="Restore user"
+        >
+          <CheckCircleIcon fontSize="small" />
+        </IconButton>
+      ),
+    },
+  ];
+
   const roleColumns = [
     { field: "roleId", headerName: "ID", width: 90 },
     { field: "roleName", headerName: "Role Name", flex: 1, cellClassName: "username-column--cell" },
@@ -1713,6 +1840,7 @@ function UserManagementPage() {
           <Tab value="all" icon={<ViewListIcon sx={{ fontSize: '1.05rem' }} />} iconPosition="start" label="All users" />
           <Tab value="byOrganization" icon={<HubIcon sx={{ fontSize: '1.05rem' }} />} iconPosition="start" label="By organization" />
           <Tab value="byRole" icon={<AdminPanelSettingsIcon sx={{ fontSize: '1.05rem' }} />} iconPosition="start" label="By role" />
+          {isSuperAdmin && <Tab value="voided" icon={<BlockIcon sx={{ fontSize: '1.05rem' }} />} iconPosition="start" label="Voided users" />}
         </Tabs>
 
         {/* Search Bar and Action Buttons Row */}
@@ -1759,15 +1887,15 @@ function UserManagementPage() {
               <Grid item xs={12} md={3}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, justifyContent: { xs: 'flex-start', md: 'center' } }}>
                   <Chip
-                    label={`${filteredUsers.length} result${filteredUsers.length !== 1 ? 's' : ''} found`}
+                    label={`${(userListView === 'voided' ? filteredVoidedUsers.length : filteredUsers.length)} result${(userListView === 'voided' ? filteredVoidedUsers.length : filteredUsers.length) !== 1 ? 's' : ''} found`}
                     color="primary"
                     size="small"
                     icon={<SearchIcon sx={{ fontSize: '0.9rem !important' }} />}
                     sx={{ fontWeight: 600, height: 24, '& .MuiChip-label': { px: 1, fontSize: '0.75rem' } }}
                   />
-                  {filteredUsers.length < users.length && (
+                  {(userListView === 'voided' ? filteredVoidedUsers.length < voidedUsers.length : filteredUsers.length < users.length) && (
                     <Typography variant="caption" sx={{ color: colors.grey[300], fontWeight: 500, fontSize: '0.75rem' }}>
-                      (of {users.length})
+                      (of {userListView === 'voided' ? voidedUsers.length : users.length})
                     </Typography>
                   )}
                 </Box>
@@ -1844,7 +1972,34 @@ function UserManagementPage() {
         </Paper>
       </Box>
 
-      {users.length === 0 && hasPrivilege('user.read_all') ? (
+      {userListView === 'voided' ? (
+        !isSuperAdmin ? (
+          <Alert severity="warning">Only Super Admin can view voided users.</Alert>
+        ) : filteredVoidedUsers.length === 0 ? (
+          <Alert severity="info">{globalSearch ? `No voided users found matching "${globalSearch}".` : 'No voided users found.'}</Alert>
+        ) : (
+          <Box
+            mt={1.5}
+            sx={{
+              height: 'calc(100vh - 220px)',
+              minHeight: 320,
+              overflow: 'hidden',
+            }}
+          >
+            <DataGrid
+              rows={filteredVoidedUsers}
+              columns={voidedUserColumns}
+              getRowId={(row) => row.userId}
+              disableRowSelectionOnClick
+              density="compact"
+              sx={{
+                border: 0,
+                '& .MuiDataGrid-columnHeaders': { backgroundColor: theme.palette.mode === 'dark' ? colors.primary[500] : colors.grey[100] },
+              }}
+            />
+          </Box>
+        )
+      ) : users.length === 0 && hasPrivilege('user.read_all') ? (
         <Alert severity="info">No users found. Add a new user to get started.</Alert>
       ) : filteredUsers.length === 0 && globalSearch ? (
         <Alert severity="info">
@@ -2121,7 +2276,10 @@ function UserManagementPage() {
             "& .MuiDataGrid-toolbarContainer": {
               padding: '8px 12px',
               backgroundColor: colors.primary[400],
+              borderRadius: 0,
             },
+            "& .MuiDataGrid-toolbar": { borderRadius: 0 },
+            "& .MuiDataGrid-footerContainer .MuiToolbar-root": { borderRadius: 0 },
             "& .MuiCheckbox-root": {
               color: `${colors.greenAccent[200]} !important`,
               '&.Mui-checked': { color: `${colors.greenAccent[300]} !important` },
@@ -2391,7 +2549,7 @@ function UserManagementPage() {
             value={userFormData.phoneNumber} 
             onChange={handleUserFormChange} 
             error={!!userFormErrors.phoneNumber} 
-            helperText={userFormErrors.phoneNumber} 
+            helperText={userFormErrors.phoneNumber || 'Optional: 07XXXXXXXX or +2547XXXXXXXX'} 
             sx={{ 
               mb: 2,
               '& .MuiOutlinedInput-root': {
@@ -2602,7 +2760,7 @@ function UserManagementPage() {
               setUserFormErrors(prev => ({ ...prev, ministry: '', stateDepartment: '', agencyId: '' }));
             }}
             loading={loadingAgencies}
-            disabled={!!currentUserToEdit}
+            disabled={!!currentUserToEdit && !isSuperAdmin}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -2634,7 +2792,7 @@ function UserManagementPage() {
               setUserFormErrors(prev => ({ ...prev, stateDepartment: '', agencyId: '' }));
             }}
             loading={loadingAgencies}
-            disabled={!!currentUserToEdit || !userFormData.ministry}
+            disabled={(!!currentUserToEdit && !isSuperAdmin) || !userFormData.ministry}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -2666,15 +2824,14 @@ function UserManagementPage() {
               setUserFormErrors(prev => ({ ...prev, agencyId: '' }));
             }}
             loading={loadingAgencies}
-            disabled={!!currentUserToEdit || !userFormData.ministry || !userFormData.stateDepartment}
+            disabled={(!!currentUserToEdit && !isSuperAdmin) || !userFormData.ministry || !userFormData.stateDepartment}
             renderInput={(params) => (
               <TextField
                 {...params}
                 margin="dense"
-                label="Agency"
-                required
+                label="Agency (optional)"
                 error={!!userFormErrors.agencyId}
-                helperText={userFormErrors.agencyId || (userFormData.ministry && userFormData.stateDepartment ? 'Select the agency' : 'Please select a ministry and state department first')}
+                helperText={userFormErrors.agencyId || (userFormData.ministry && userFormData.stateDepartment ? 'Select the agency if applicable' : 'Please select a ministry and state department first')}
                 sx={{ 
                   mb: 2,
                   '& .MuiOutlinedInput-root': {

@@ -199,7 +199,7 @@ router.get('/users/:id', async (req, res) => {
 router.post('/users', async (req, res) => {
     const {
         username, email, password, firstName, lastName, roleId, idNumber, employeeNumber,
-        ministry, state_department, agency_id,
+        ministry, state_department, agency_id, phoneNumber, phone_number,
         organizationScopes: organizationScopesBody,
         organization_scopes: organization_scopes_snake,
     } = req.body;
@@ -207,6 +207,14 @@ router.post('/users', async (req, res) => {
 
     if (!username || !email || !password || !firstName || !lastName || !roleId) {
         return res.status(400).json({ error: 'Please enter all required fields: username, email, password, first name, last name, and role ID.' });
+    }
+
+    const resolvedPhone = phoneNumber ?? phone_number;
+    if (resolvedPhone !== undefined && resolvedPhone !== null && String(resolvedPhone).trim() !== '') {
+        const phoneRegex = /^(?:07\d{8}|\+2547\d{8})$/;
+        if (!phoneRegex.test(String(resolvedPhone).trim())) {
+            return res.status(400).json({ error: 'Invalid phone number format. Use 07XXXXXXXX or +2547XXXXXXXX.' });
+        }
     }
 
     try {
@@ -365,6 +373,24 @@ router.put('/users/:id', async (req, res) => {
         ...otherFieldsToUpdate
     } = req.body;
     const scopesPayload = organizationScopesBody !== undefined ? organizationScopesBody : organization_scopes_snake;
+    const incomingPhone = req.body.phoneNumber ?? req.body.phone_number;
+    if (incomingPhone !== undefined && incomingPhone !== null && String(incomingPhone).trim() !== '') {
+        const phoneRegex = /^(?:07\d{8}|\+2547\d{8})$/;
+        if (!phoneRegex.test(String(incomingPhone).trim())) {
+            return res.status(400).json({ error: 'Invalid phone number format. Use 07XXXXXXXX or +2547XXXXXXXX.' });
+        }
+    }
+    const requesterRole = String(req.user?.roleName || req.user?.role || '').trim().toLowerCase();
+    const isSuperAdmin = requesterRole === 'super admin';
+    const orgProfileFields = ['ministry', 'stateDepartment', 'state_department', 'agencyId', 'agency_id'];
+    const attemptedOrgProfileEdit = orgProfileFields.some((f) =>
+        Object.prototype.hasOwnProperty.call(otherFieldsToUpdate, f)
+    );
+    if (attemptedOrgProfileEdit && !isSuperAdmin) {
+        return res.status(403).json({
+            error: 'Only Super Admin can update a user ministry, state department, or agency.',
+        });
+    }
 
     const DB_TYPE = process.env.DB_TYPE || 'mysql';
     
@@ -548,6 +574,115 @@ router.delete('/users/:id', async (req, res) => {
     } catch (error) {
         console.error('Error deleting user:', error);
         res.status(500).json({ message: 'Error deleting user', error: error.message });
+    }
+});
+
+/**
+ * @route GET /api/users/users/voided/list
+ * @description Get all voided users (Super Admin only).
+ */
+router.get('/users/voided/list', async (req, res) => {
+    try {
+        const requesterRole = String(req.user?.roleName || req.user?.role || '').trim().toLowerCase();
+        if (requesterRole !== 'super admin') {
+            return res.status(403).json({ error: 'Only Super Admin can view voided users.' });
+        }
+
+        const DB_TYPE = process.env.DB_TYPE || 'mysql';
+        let query;
+        if (DB_TYPE === 'postgresql') {
+            query = `
+                SELECT 
+                    u.userid AS "userId",
+                    u.username,
+                    u.email,
+                    u.firstname AS "firstName",
+                    u.lastname AS "lastName",
+                    u.id_number AS "idNumber",
+                    u.employee_number AS "employeeNumber",
+                    u.createdat AS "createdAt",
+                    u.updatedat AS "updatedAt",
+                    u.isactive AS "isActive",
+                    u.roleid AS "roleId",
+                    r.name AS role,
+                    u.ministry,
+                    u.state_department AS "stateDepartment",
+                    u.agency_id AS "agencyId",
+                    a.agency_name AS "agencyName"
+                FROM users u
+                LEFT JOIN roles r ON u.roleid = r.roleid
+                LEFT JOIN agencies a ON u.agency_id = a.id
+                WHERE u.voided = true
+                ORDER BY u.updatedat DESC
+            `;
+        } else {
+            query = `
+                SELECT
+                    u.userId,
+                    u.username,
+                    u.email,
+                    u.firstName,
+                    u.lastName,
+                    u.idNumber,
+                    u.employeeNumber,
+                    u.createdAt,
+                    u.updatedAt,
+                    u.isActive,
+                    u.roleId,
+                    r.roleName AS role,
+                    u.ministry,
+                    u.state_department AS stateDepartment,
+                    u.agency_id AS agencyId,
+                    a.agency_name AS agencyName
+                FROM users u
+                LEFT JOIN roles r ON u.roleId = r.roleId
+                LEFT JOIN agencies a ON u.agency_id = a.id
+                WHERE u.voided = 1
+                ORDER BY u.updatedAt DESC
+            `;
+        }
+
+        const result = await pool.query(query);
+        const rows = DB_TYPE === 'postgresql' ? (result.rows || result) : (Array.isArray(result) ? result[0] : result);
+        return res.status(200).json(Array.isArray(rows) ? rows : []);
+    } catch (error) {
+        console.error('Error fetching voided users:', error);
+        return res.status(500).json({ message: 'Error fetching voided users', error: error.message });
+    }
+});
+
+/**
+ * @route PUT /api/users/users/:id/restore
+ * @description Restore a voided user by setting voided = 0/false (Super Admin only).
+ */
+router.put('/users/:id/restore', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const requesterRole = String(req.user?.roleName || req.user?.role || '').trim().toLowerCase();
+        if (requesterRole !== 'super admin') {
+            return res.status(403).json({ error: 'Only Super Admin can restore voided users.' });
+        }
+
+        const DB_TYPE = process.env.DB_TYPE || 'mysql';
+        let query;
+        let params;
+        if (DB_TYPE === 'postgresql') {
+            query = 'UPDATE users SET voided = false, updatedat = CURRENT_TIMESTAMP WHERE userid = $1 AND voided = true';
+            params = [id];
+        } else {
+            query = 'UPDATE users SET voided = 0, updatedAt = CURRENT_TIMESTAMP WHERE userId = ? AND voided = 1';
+            params = [id];
+        }
+
+        const result = await pool.query(query, params);
+        const affectedRows = DB_TYPE === 'postgresql' ? result.rowCount : result.affectedRows;
+        if (!affectedRows) {
+            return res.status(404).json({ message: 'Voided user not found.' });
+        }
+        return res.status(200).json({ message: 'User restored successfully.' });
+    } catch (error) {
+        console.error('Error restoring voided user:', error);
+        return res.status(500).json({ message: 'Error restoring voided user', error: error.message });
     }
 });
 

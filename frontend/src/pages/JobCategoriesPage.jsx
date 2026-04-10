@@ -14,12 +14,11 @@ import {
   Clear as ClearIcon
 } from '@mui/icons-material';
 import axiosInstance from '../api/axiosInstance';
-import { useAuth } from '../context/AuthContext.jsx';
 import { tokens } from "./dashboard/theme";
 import Header from "./dashboard/Header";
+import { getThemedDataGridSx } from '../utils/dataGridTheme';
 
 function JobCategoriesPage() {
-  const { user, hasPrivilege } = useAuth();
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isLight = theme.palette.mode === 'light';
@@ -220,21 +219,23 @@ function JobCategoriesPage() {
       width: 150,
       sortable: false,
       renderCell: (params) => (
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', height: '100%' }}>
           <IconButton
             size="small"
+            color="primary"
             onClick={() => handleEdit(params.row)}
-            sx={{ color: colors.blueAccent[500] }}
+            aria-label={`Edit ${params.row.jobCategory || 'category'}`}
           >
             <EditIcon fontSize="small" />
           </IconButton>
           <IconButton
             size="small"
+            color="error"
             onClick={() => {
               setCategoryToDelete(params.row);
               setDeleteConfirmOpen(true);
             }}
-            sx={{ color: colors.redAccent[500] }}
+            aria-label={`Delete ${params.row.jobCategory || 'category'}`}
           >
             <DeleteIcon fontSize="small" />
           </IconButton>
@@ -305,8 +306,30 @@ function JobCategoriesPage() {
         </Button>
       </Box>
 
-      {/* DataGrid */}
-      <Paper sx={{ height: 600, width: '100%' }}>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      {/* DataGrid — Material surface + themed header, rows, footer (shared app pattern) */}
+      <Paper
+        elevation={0}
+        sx={{
+          height: 600,
+          width: '100%',
+          overflow: 'hidden',
+          ...getThemedDataGridSx(theme, colors, {
+            '& .MuiDataGrid-columnHeader': {
+              '&:hover': {
+                backgroundColor: isLight
+                  ? 'rgba(25, 118, 210, 0.08) !important'
+                  : `${colors.blueAccent[700]} !important`,
+              },
+            },
+          }),
+        }}
+      >
         <DataGrid
           rows={filteredCategories}
           columns={columns}
@@ -318,16 +341,23 @@ function JobCategoriesPage() {
               paginationModel: { pageSize: 25 },
             },
           }}
+          disableRowSelectionOnClick
+          columnHeaderHeight={48}
           sx={{
-            '& .MuiDataGrid-cell': {
-              borderBottom: `1px solid ${isLight ? colors.grey[200] : colors.grey[700]}`,
+            border: 'none',
+            '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+              outline: 'none',
             },
-            '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: isLight ? colors.blueAccent[100] : colors.blueAccent[800],
-              borderBottom: `2px solid ${isLight ? colors.blueAccent[300] : colors.blueAccent[600]}`,
+            '& .MuiDataGrid-cell[data-field="actions"]': {
+              cursor: 'default',
             },
-            '& .MuiDataGrid-columnHeaderTitle': {
-              fontWeight: 700,
+            '& .MuiDataGrid-virtualScroller::-webkit-scrollbar': { height: 10, width: 10 },
+            '& .MuiDataGrid-virtualScroller::-webkit-scrollbar-thumb': {
+              backgroundColor: isLight ? theme.palette.grey[400] : theme.palette.grey[700],
+              borderRadius: 8,
+            },
+            '& .MuiDataGrid-virtualScroller::-webkit-scrollbar-track': {
+              backgroundColor: 'transparent',
             },
           }}
         />

@@ -17,7 +17,11 @@ router.get('/', async (req, res) => {
         let query;
         
         if (DB_TYPE === 'postgresql') {
-            query = 'SELECT "departmentId", name, alias, location, "createdAt", "updatedAt", "userId" FROM departments WHERE voided = false';
+            query = `SELECT d."departmentId", d.name, d.alias, d.location, d."ministryId", d."createdAt", d."updatedAt", d."userId",
+                m.name AS "ministryName"
+                FROM departments d
+                LEFT JOIN ministries m ON m."ministryId" = d."ministryId"
+                WHERE d.voided = false`;
         } else {
             query = 'SELECT departmentId, name, alias, location, createdAt, updatedAt, userId FROM departments WHERE voided = 0';
         }

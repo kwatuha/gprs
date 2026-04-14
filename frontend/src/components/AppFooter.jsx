@@ -2,11 +2,17 @@ import React from 'react';
 import { Box, Typography } from '@mui/material';
 
 /**
- * @param {{ variant?: 'inline' | 'fixed' }} props
+ * @param {{
+ *   variant?: 'inline' | 'fixed';
+ *   barColor?: string;
+ *   contact?: React.ReactNode;
+ * }} props
  * — inline: sits in document flow (e.g. bottom of main column)
  * — fixed: full viewport width at bottom (e.g. login/register)
+ * — barColor: footer background (default gray for app shell)
+ * — contact: optional row above copyright (e.g. portal links on auth pages)
  */
-export default function AppFooter({ variant = 'inline' }) {
+export default function AppFooter({ variant = 'inline', barColor = '#424242', contact = null }) {
   const year = new Date().getFullYear();
 
   return (
@@ -16,12 +22,12 @@ export default function AppFooter({ variant = 'inline' }) {
       sx={{
         width: '100%',
         flexShrink: 0,
-        bgcolor: '#424242',
-        color: 'rgba(255, 255, 255, 0.88)',
-        py: 1.25,
-        px: 2,
+        bgcolor: barColor,
+        color: 'rgba(255, 255, 255, 0.92)',
+        py: contact ? { xs: 1.75, sm: 1.5 } : 1.25,
+        px: { xs: 1.5, sm: 2 },
         textAlign: 'center',
-        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
         ...(variant === 'fixed'
           ? {
               position: 'fixed',
@@ -33,7 +39,23 @@ export default function AppFooter({ variant = 'inline' }) {
           : {}),
       }}
     >
-      <Typography variant="caption" component="p" sx={{ m: 0, fontSize: '0.8125rem' }}>
+      {contact ? (
+        <Box
+          sx={{
+            maxWidth: 960,
+            mx: 'auto',
+            mb: 1.25,
+            pb: 1.25,
+            borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+            fontSize: '0.75rem',
+            lineHeight: 1.6,
+            color: 'rgba(255, 255, 255, 0.95)',
+          }}
+        >
+          {contact}
+        </Box>
+      ) : null}
+      <Typography variant="caption" component="p" sx={{ m: 0, fontSize: '0.8125rem', opacity: 0.92 }}>
         Copyright {year} - GPRIS. All rights reserved.
       </Typography>
     </Box>

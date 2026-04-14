@@ -7,12 +7,15 @@ import {
   DialogContentText, InputAdornment, Grid, Autocomplete,
 } from '@mui/material';
 import { DataGrid } from "@mui/x-data-grid";
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, PersonAdd as PersonAddIcon, Settings as SettingsIcon, Lock as LockIcon, LockReset as LockResetIcon, Block as BlockIcon, CheckCircle as CheckCircleIcon, Search as SearchIcon, Clear as ClearIcon, Visibility as VisibilityIcon, VisibilityOff as VisibilityOffIcon, AccountTree as AccountTreeIcon, ExpandMore as ExpandMoreIcon, ViewList as ViewListIcon, Hub as HubIcon, AdminPanelSettings as AdminPanelSettingsIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, PersonAdd as PersonAddIcon, Settings as SettingsIcon, Lock as LockIcon, LockReset as LockResetIcon, Block as BlockIcon, CheckCircle as CheckCircleIcon, Search as SearchIcon, Clear as ClearIcon, Visibility as VisibilityIcon, VisibilityOff as VisibilityOffIcon, AccountTree as AccountTreeIcon, ExpandMore as ExpandMoreIcon, ViewList as ViewListIcon, Hub as HubIcon, AdminPanelSettings as AdminPanelSettingsIcon, TableChart as ExcelIcon } from '@mui/icons-material';
+import * as XLSX from 'xlsx';
 import { useSearchParams } from 'react-router-dom';
 import apiService from '../api/userService';
 import apiServiceMain from '../api';
+import axiosInstance from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext.jsx';
 import { tokens } from "./dashboard/theme";
+import { isSuperAdminUser } from '../utils/roleUtils';
 
 
 // --- Utility function for case conversion (Copied from ProjectDetailsPage for consistency) ---
@@ -53,14 +56,38 @@ function organizationScopesToSearchStrings(scopes) {
   return parts;
 }
 
-/** Primary organization bucket for grouping (profile fields, then first scope row). */
-function getUserOrgGroupInfo(user) {
+/** One cell-friendly summary of organizationScopes for Excel export */
+function organizationScopesToExcelString(scopes) {
+  if (!Array.isArray(scopes) || scopes.length === 0) return '';
+  return scopes
+    .map((s) => {
+      if (!s || typeof s !== 'object') return '';
+      const st = s.scopeType ?? s.scope_type ?? '';
+      const m = (s.ministry || '').trim();
+      const sd = String(s.stateDepartment ?? s.state_department ?? '').trim();
+      const an = String(s.agencyName ?? s.agency_name ?? '').trim();
+      const aid = s.agencyId ?? s.agency_id;
+      const bits = [st, m || null, sd || null, an || null, aid != null && aid !== '' ? `#${aid}` : null].filter(Boolean);
+      return bits.join(' · ');
+    })
+    .filter(Boolean)
+    .join(' | ');
+}
+
+/**
+ * Primary organization bucket for grouping (profile fields, then scope rows).
+ * @param {object} options
+ * @param {boolean} [options.excludeAgency] — If true, never group by implementing agency; use ministry/state
+ *   (and non-agency scopes, or ministry/state on AGENCY scope rows) instead. Used for "By organization" view.
+ */
+function getUserOrgGroupInfo(user, options = {}) {
+  const excludeAgency = options.excludeAgency === true;
   const agencyName = (user.agencyName || user.agency_name || '').trim();
   const ministry = (user.ministry || '').trim();
   const stateDepartment = (user.stateDepartment || user.state_department || '').trim();
   const agencyId = user.agencyId ?? user.agency_id;
 
-  if (agencyName || agencyId != null) {
+  if (!excludeAgency && (agencyName || agencyId != null)) {
     const label = agencyName || (agencyId != null ? `Agency #${agencyId}` : 'Agency');
     const subtitle = [ministry, stateDepartment].filter(Boolean).join(' · ');
     return {
@@ -86,9 +113,22 @@ function getUserOrgGroupInfo(user) {
 
   const scopes = user.organizationScopes;
   if (Array.isArray(scopes) && scopes.length > 0) {
-    const s = scopes[0];
+    const s = excludeAgency
+      ? (scopes.find((x) => (x.scopeType || x.scope_type) !== 'AGENCY') || scopes[0])
+      : scopes[0];
     const st = s.scopeType || s.scope_type;
     if (st === 'AGENCY') {
+      if (excludeAgency) {
+        const m = (s.ministry || '').trim();
+        const sd = String(s.stateDepartment || s.state_department || '').trim();
+        if (m && sd) {
+          return { key: `scope-sd:${m}|${sd}`, label: `${m} / ${sd} (org access)`, sortTier: 1 };
+        }
+        if (m) {
+          return { key: `scope-m:${m}`, label: `${m} (org access)`, sortTier: 2 };
+        }
+        return { key: 'unassigned', label: 'No organization assigned', sortTier: 99 };
+      }
       const an = (s.agencyName || s.agency_name || '').trim();
       const aid = s.agencyId ?? s.agency_id;
       const label = an || (aid != null ? `Agency #${aid}` : 'Agency (scope)');
@@ -111,7 +151,7 @@ function getUserOrgGroupInfo(user) {
 
 function UserManagementPage() {
   const { user, logout, hasPrivilege } = useAuth();
-  const isSuperAdmin = String(user?.role || user?.roleName || '').trim().toLowerCase() === 'super admin';
+  const isSuperAdmin = isSuperAdminUser(user);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -124,7 +164,8 @@ function UserManagementPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  
+  const [exportingExcel, setExportingExcel] = useState(false);
+
   // Global search state
   const [globalSearch, setGlobalSearch] = useState('');
   /** 'all' | 'byOrganization' */
@@ -153,10 +194,14 @@ function UserManagementPage() {
     password: false,
     confirmPassword: false,
   });
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const usernameCheckSeqRef = useRef(0);
   const [agencies, setAgencies] = useState([]);
   const [filteredAgencies, setFilteredAgencies] = useState([]);
   const [filteredStateDepartments, setFilteredStateDepartments] = useState([]);
   const [ministries, setMinistries] = useState([]);
+  /** GET /ministries?withDepartments=1 — ministry + departments for cascading dropdowns */
+  const [ministriesHierarchy, setMinistriesHierarchy] = useState([]);
   const [loadingAgencies, setLoadingAgencies] = useState(false);
 
   /** Effective organization access (many rows: agency / whole ministry / whole state dept). */
@@ -357,17 +402,25 @@ function UserManagementPage() {
   }, [hasPrivilege]);
 
 
-  // Fetch agencies
+  const fetchMinistriesCatalog = useCallback(async () => {
+    try {
+      const { data } = await axiosInstance.get('/ministries', { params: { withDepartments: '1' } });
+      const list = Array.isArray(data) ? data : [];
+      setMinistriesHierarchy(list);
+      setMinistries(list.map((m) => m.name).filter(Boolean).sort((a, b) => a.localeCompare(b)));
+    } catch (err) {
+      console.error('Error fetching ministries catalog:', err);
+      setMinistriesHierarchy([]);
+    }
+  }, []);
+
+  // Fetch agencies (implementing agency dropdown still filtered by ministry + state department)
   const fetchAgencies = useCallback(async () => {
     setLoadingAgencies(true);
     try {
       const response = await apiServiceMain.agencies.getAllAgencies();
       const agenciesList = Array.isArray(response) ? response : [];
       setAgencies(agenciesList);
-      
-      // Extract unique ministries
-      const uniqueMinistries = [...new Set(agenciesList.map(agency => agency.ministry).filter(Boolean))].sort();
-      setMinistries(uniqueMinistries);
     } catch (err) {
       console.error('Error fetching agencies:', err);
     } finally {
@@ -375,39 +428,47 @@ function UserManagementPage() {
     }
   }, []);
 
-  // Filter state departments when ministry changes
+  const normalizeOrgText = (v) => String(v || '').trim().toLowerCase();
+
+  // State departments from ministries + departments tables (cascade from selected ministry)
   useEffect(() => {
-    if (userFormData.ministry) {
-      const filtered = agencies
-        .filter(agency => 
-          agency.ministry && agency.ministry.toLowerCase() === userFormData.ministry.toLowerCase()
-        )
-        .map(agency => agency.state_department || agency.stateDepartment)
+    const selectedMinistry = String(userFormData.ministry || '').trim();
+    if (selectedMinistry) {
+      const selectedMinistryNorm = normalizeOrgText(selectedMinistry);
+      const row = ministriesHierarchy.find((m) =>
+        normalizeOrgText(m?.name) === selectedMinistryNorm ||
+        normalizeOrgText(m?.alias) === selectedMinistryNorm
+      );
+
+      let names = (row?.departments || [])
+        .map((d) => String(d?.name || d?.departmentName || '').trim())
         .filter(Boolean);
-      const uniqueStateDepartments = [...new Set(filtered)].sort();
-      setFilteredStateDepartments(uniqueStateDepartments);
-      
-      // Clear state department and agency if current selection doesn't match the ministry
-      if (userFormData.stateDepartment) {
-        const selectedAgency = agencies.find(a => 
-          (a.state_department || a.stateDepartment)?.toLowerCase() === userFormData.stateDepartment.toLowerCase() &&
-          a.ministry?.toLowerCase() === userFormData.ministry.toLowerCase()
-        );
-        if (!selectedAgency) {
-          setUserFormData(prev => ({ ...prev, stateDepartment: '', agencyId: '' }));
-        }
+
+      // Fallback: if hierarchy row has no departments, derive from agency records.
+      if (names.length === 0) {
+        names = agencies
+          .filter((a) => normalizeOrgText(a?.ministry) === selectedMinistryNorm)
+          .map((a) => String(a?.state_department || a?.stateDepartment || '').trim())
+          .filter(Boolean);
       }
+
+      names = [...new Set(names)].sort((a, b) => a.localeCompare(b));
+      if (userFormData.stateDepartment && !names.includes(userFormData.stateDepartment)) {
+        names = [...names, userFormData.stateDepartment].sort((a, b) => a.localeCompare(b));
+      }
+      setFilteredStateDepartments(names);
+
       if (userFormData.agencyId) {
-        const selectedAgency = agencies.find(a => (a.id === userFormData.agencyId || a.agencyId === userFormData.agencyId));
-        if (!selectedAgency || selectedAgency.ministry?.toLowerCase() !== userFormData.ministry.toLowerCase()) {
-          setUserFormData(prev => ({ ...prev, agencyId: '' }));
+        const selectedAgency = agencies.find((a) => a.id === userFormData.agencyId || a.agencyId === userFormData.agencyId);
+        if (!selectedAgency || normalizeOrgText(selectedAgency.ministry) !== selectedMinistryNorm) {
+          setUserFormData((prev) => ({ ...prev, agencyId: '' }));
         }
       }
     } else {
       setFilteredStateDepartments([]);
-      setUserFormData(prev => ({ ...prev, stateDepartment: '', agencyId: '' }));
+      setUserFormData((prev) => ({ ...prev, stateDepartment: '', agencyId: '' }));
     }
-  }, [userFormData.ministry, agencies]);
+  }, [userFormData.ministry, userFormData.stateDepartment, ministriesHierarchy, agencies]);
 
   // Filter agencies when state department changes
   useEffect(() => {
@@ -447,6 +508,7 @@ function UserManagementPage() {
       fetchRoles();
       fetchPrivileges();
       fetchAgencies();
+      fetchMinistriesCatalog();
       fetchVoidedUsers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -483,8 +545,66 @@ function UserManagementPage() {
       agencyId: '',
     });
     setUserFormErrors({});
+    setIsCheckingUsername(false);
     setOpenStandaloneOrgDialog(false);
     setOpenUserDialog(true);
+  };
+
+  const handleExportUsersToExcel = async () => {
+    if (!isSuperAdmin) {
+      setSnackbar({ open: true, message: 'Only Super Admin can export users.', severity: 'error' });
+      return;
+    }
+    setExportingExcel(true);
+    try {
+      const res = await apiService.getUsersForExcelExport();
+      const list = Array.isArray(res?.data) ? res.data : [];
+      if (list.length === 0) {
+        setSnackbar({ open: true, message: 'No users to export.', severity: 'warning' });
+        return;
+      }
+      const dataToExport = list.map((u) => {
+        const created = u.createdAt || u.created_at;
+        const updated = u.updatedAt || u.updated_at;
+        const roleName =
+          [u.role, u.roleName, u.role_name].find((x) => x != null && String(x).trim() !== '') ?? '';
+        return {
+          'User ID': u.userId ?? '',
+          Username: u.username ?? '',
+          Email: u.email ?? '',
+          Phone: u.phoneNumber ?? u.phone ?? '',
+          'First name': u.firstName ?? u.first_name ?? '',
+          'Last name': u.lastName ?? u.last_name ?? '',
+          'ID number': u.idNumber ?? u.id_number ?? '',
+          'Employee number': u.employeeNumber ?? u.employee_number ?? '',
+          Role: roleName,
+          Active: u.isActive === true || u.isActive === 1 ? 'Yes' : (u.isActive === false || u.isActive === 0 ? 'No' : ''),
+          Ministry: u.ministry ?? '',
+          'State department': u.stateDepartment ?? u.state_department ?? '',
+          'Agency ID': u.agencyId ?? u.agency_id ?? '',
+          'Agency name': u.agencyName ?? u.agency_name ?? '',
+          'Organization access': organizationScopesToExcelString(u.organizationScopes),
+          'Created at': created ? new Date(created).toLocaleString() : '',
+          'Updated at': updated ? new Date(updated).toLocaleString() : '',
+        };
+      });
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Users');
+      const dateStr = new Date().toISOString().split('T')[0];
+      XLSX.writeFile(workbook, `users_export_${dateStr}.xlsx`);
+      setSnackbar({
+        open: true,
+        message: `Exported ${list.length} user${list.length !== 1 ? 's' : ''} to Excel.`,
+        severity: 'success',
+      });
+    } catch (err) {
+      console.error('Export users failed:', err);
+      const msg = err?.error || err?.message || (typeof err === 'string' ? err : 'Failed to export users.');
+      setSnackbar({ open: true, message: msg, severity: 'error' });
+    } finally {
+      setExportingExcel(false);
+    }
   };
 
   const handleOpenEditUserDialog = async (userItem) => {
@@ -515,6 +635,7 @@ function UserManagementPage() {
       agencyId: userItem.agencyId || userItem.agency_id || '',
     });
     setUserFormErrors({});
+    setIsCheckingUsername(false);
     setOpenUserDialog(true);
     try {
       const full = await apiService.getUserById(userItem.userId);
@@ -650,6 +771,8 @@ function UserManagementPage() {
     setUserFormErrors({});
     setOrganizationScopes([]);
     setShowUserFormPasswords({ password: false, confirmPassword: false });
+    setIsCheckingUsername(false);
+    usernameCheckSeqRef.current += 1;
   };
 
   const toggleUserFormPasswordVisibility = (field) => {
@@ -748,8 +871,55 @@ function UserManagementPage() {
     setUserFormData(prev => ({ ...prev, [name]: value }));
     if (name === 'phoneNumber') {
       setUserFormErrors((prev) => ({ ...prev, phoneNumber: '' }));
+      return;
+    }
+    if (name === 'username') {
+      setUserFormErrors((prev) => ({ ...prev, username: '' }));
+      setIsCheckingUsername(false);
     }
   };
+
+  useEffect(() => {
+    if (!openUserDialog || !currentUserToEdit || !isSuperAdmin) return;
+    const typed = String(userFormData.username || '').trim();
+    const original = String(currentUserToEdit.username || '').trim();
+    if (!typed || typed.toLowerCase() === original.toLowerCase()) {
+      setIsCheckingUsername(false);
+      setUserFormErrors((prev) => {
+        if (!prev.username) return prev;
+        const { username, ...rest } = prev;
+        return rest;
+      });
+      return;
+    }
+
+    const seq = ++usernameCheckSeqRef.current;
+    setIsCheckingUsername(true);
+    const t = setTimeout(async () => {
+      try {
+        const result = await apiService.checkUsernameAvailability(typed, currentUserToEdit.userId);
+        if (seq !== usernameCheckSeqRef.current) return;
+        setUserFormErrors((prev) => ({
+          ...prev,
+          username: result?.available ? '' : 'This username is already taken.',
+        }));
+      } catch (_err) {
+        if (seq !== usernameCheckSeqRef.current) return;
+        setUserFormErrors((prev) => ({
+          ...prev,
+          username: 'Could not verify username availability right now.',
+        }));
+      } finally {
+        if (seq === usernameCheckSeqRef.current) {
+          setIsCheckingUsername(false);
+        }
+      }
+    }, 450);
+
+    return () => {
+      clearTimeout(t);
+    };
+  }, [openUserDialog, currentUserToEdit, isSuperAdmin, userFormData.username]);
 
   const validateUserForm = () => {
     let errors = {};
@@ -789,6 +959,28 @@ function UserManagementPage() {
       setSnackbar({ open: true, message: 'Please correct the form errors.', severity: 'error' });
       return;
     }
+    if (isCheckingUsername) {
+      setSnackbar({ open: true, message: 'Please wait for username validation to finish.', severity: 'warning' });
+      return;
+    }
+    if (currentUserToEdit && isSuperAdmin) {
+      const typed = String(userFormData.username || '').trim();
+      const original = String(currentUserToEdit.username || '').trim();
+      if (typed && typed.toLowerCase() !== original.toLowerCase()) {
+        try {
+          const result = await apiService.checkUsernameAvailability(typed, currentUserToEdit.userId);
+          if (!result?.available) {
+            setUserFormErrors((prev) => ({ ...prev, username: 'This username is already taken.' }));
+            setSnackbar({ open: true, message: 'Username is already taken.', severity: 'error' });
+            return;
+          }
+        } catch (_err) {
+          setUserFormErrors((prev) => ({ ...prev, username: 'Could not verify username availability right now.' }));
+          setSnackbar({ open: true, message: 'Unable to verify username availability. Try again.', severity: 'error' });
+          return;
+        }
+      }
+    }
 
     setLoading(true);
     try {
@@ -824,6 +1016,10 @@ function UserManagementPage() {
       if (currentUserToEdit && !isSuperAdmin) {
         delete dataToSend.ministry;
         delete dataToSend.state_department;
+        delete dataToSend.agency_id;
+      }
+      // Agency is not editable in Edit User, so never send it on update.
+      if (currentUserToEdit) {
         delete dataToSend.agency_id;
       }
 
@@ -1450,7 +1646,7 @@ function UserManagementPage() {
   const usersByOrganization = useMemo(() => {
     const groups = new Map();
     for (const u of filteredUsers) {
-      const { key, label, sortTier } = getUserOrgGroupInfo(u);
+      const { key, label, sortTier } = getUserOrgGroupInfo(u, { excludeAgency: true });
       if (!groups.has(key)) {
         groups.set(key, { key, label, sortTier, users: [] });
       }
@@ -1978,6 +2174,28 @@ function UserManagementPage() {
                     Privileges
                   </Button>
                 )}
+                {isSuperAdmin && userListView !== 'voided' && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={exportingExcel ? <CircularProgress size={14} color="inherit" /> : <ExcelIcon sx={{ fontSize: '1rem' }} />}
+                    disabled={exportingExcel}
+                    onClick={handleExportUsersToExcel}
+                    sx={{
+                      borderColor: colors.blueAccent[500],
+                      color: colors.blueAccent[500],
+                      '&:hover': { backgroundColor: colors.blueAccent[700], color: 'white', borderColor: colors.blueAccent[700] },
+                      fontWeight: 600,
+                      borderRadius: '8px',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                      px: 1.25,
+                      py: 0.5,
+                      fontSize: '0.8125rem',
+                    }}
+                  >
+                    {exportingExcel ? 'Exporting…' : 'Export Excel'}
+                  </Button>
+                )}
               </Stack>
             </Grid>
           </Grid>
@@ -2030,7 +2248,7 @@ function UserManagementPage() {
           <Typography variant="caption" sx={{ color: colors.grey[400], display: 'block', mb: 1 }}>
             {userListView === 'byRole'
               ? 'Expand a role to see users assigned to it. Search above still filters this list.'
-              : 'Expand a section to see users in that organization. Search above still filters this list.'}
+              : 'Grouped by ministry and state department (agency is not used as a section). Expand a section to see users. Search above still filters this list.'}
           </Typography>
           {(userListView === 'byRole' ? usersByRole : usersByOrganization).map((g, index) => (
             <Accordion
@@ -2508,7 +2726,7 @@ function UserManagementPage() {
         >
           <Alert severity="info" icon={<AccountTreeIcon />} sx={{ mb: 2 }}>
             <strong>Organization access</strong> is configured below (scroll down) or use the purple tree icon in the user table for a dedicated window.
-            Empty list on create uses the primary agency as the only scope.
+            Empty list on create uses the primary state department as the only scope.
           </Alert>
           <TextField 
             autoFocus 
@@ -2521,8 +2739,8 @@ function UserManagementPage() {
             value={userFormData.username} 
             onChange={handleUserFormChange} 
             error={!!userFormErrors.username} 
-            helperText={userFormErrors.username} 
-            disabled={!!currentUserToEdit} 
+            helperText={userFormErrors.username || (currentUserToEdit && isCheckingUsername ? 'Checking username availability...' : '')} 
+            disabled={!!currentUserToEdit && !isSuperAdmin} 
             sx={{ 
               mb: 2, 
               '& .MuiOutlinedInput-root': {
@@ -2859,37 +3077,39 @@ function UserManagementPage() {
               />
             )}
           />
-          <Autocomplete
-            fullWidth
-            options={filteredAgencies}
-            value={filteredAgencies.find(agency => 
-              (agency.id === userFormData.agencyId || agency.agencyId === userFormData.agencyId)
-            ) || null}
-            getOptionLabel={(option) => option.agency_name || option.agencyName || ''}
-            onChange={(event, newValue) => {
-              const agencyId = newValue ? (newValue.id || newValue.agencyId) : '';
-              setUserFormData(prev => ({ ...prev, agencyId }));
-              setUserFormErrors(prev => ({ ...prev, agencyId: '' }));
-            }}
-            loading={loadingAgencies}
-            disabled={(!!currentUserToEdit && !isSuperAdmin) || !userFormData.ministry || !userFormData.stateDepartment}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                margin="dense"
-                label="Agency (optional)"
-                error={!!userFormErrors.agencyId}
-                helperText={userFormErrors.agencyId || (userFormData.ministry && userFormData.stateDepartment ? 'Select the agency if applicable' : 'Please select a ministry and state department first')}
-                sx={{ 
-                  mb: 2,
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#ffffff',
-                    borderRadius: 1.5,
-                  },
-                }}
-              />
-            )}
-          />
+          {!currentUserToEdit && (
+            <Autocomplete
+              fullWidth
+              options={filteredAgencies}
+              value={filteredAgencies.find(agency => 
+                (agency.id === userFormData.agencyId || agency.agencyId === userFormData.agencyId)
+              ) || null}
+              getOptionLabel={(option) => option.agency_name || option.agencyName || ''}
+              onChange={(event, newValue) => {
+                const agencyId = newValue ? (newValue.id || newValue.agencyId) : '';
+                setUserFormData(prev => ({ ...prev, agencyId }));
+                setUserFormErrors(prev => ({ ...prev, agencyId: '' }));
+              }}
+              loading={loadingAgencies}
+              disabled={!userFormData.ministry || !userFormData.stateDepartment}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  margin="dense"
+                  label="Agency (optional)"
+                  error={!!userFormErrors.agencyId}
+                  helperText={userFormErrors.agencyId || (userFormData.ministry && userFormData.stateDepartment ? 'Select the agency if applicable' : 'Please select a ministry and state department first')}
+                  sx={{ 
+                    mb: 2,
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: '#ffffff',
+                      borderRadius: 1.5,
+                    },
+                  }}
+                />
+              )}
+            />
+          )}
 
           <Typography id="user-org-scope-section" variant="subtitle2" sx={{ color: colors.blueAccent[300], fontWeight: 700, mb: 1, mt: 1 }}>
             Organization access (projects &amp; directories)

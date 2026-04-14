@@ -3,6 +3,100 @@ const router = express.Router();
 const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
 const orgScope = require('../services/organizationScopeService');
+const { isSuperAdminRequester } = require('../utils/roleUtils');
+
+/**
+ * Active (non-voided) users with role/agency joins; optional org scopes on PostgreSQL.
+ * Does not select password or password hash columns.
+ */
+async function fetchActiveNonVoidedUsers() {
+    const DB_TYPE = process.env.DB_TYPE || 'mysql';
+    let query;
+
+    if (DB_TYPE === 'postgresql') {
+        let hasPhoneNumber = false;
+        try {
+            const colResult = await pool.query(`
+                SELECT 1 
+                FROM information_schema.columns 
+                WHERE table_name = 'users' 
+                  AND column_name = 'phone_number'
+                LIMIT 1
+            `);
+            hasPhoneNumber = Array.isArray(colResult.rows) ? colResult.rows.length > 0 : !!colResult.rows;
+        } catch (colErr) {
+            console.warn('Warning: Failed to check for phone_number column on users table:', colErr.message);
+        }
+
+        query = `
+            SELECT 
+                u.userid AS "userId", 
+                u.username, 
+                u.email${hasPhoneNumber ? ', u.phone_number AS "phoneNumber"' : ''}, 
+                u.firstname AS "firstName", 
+                u.lastname AS "lastName", 
+                u.id_number AS "idNumber", 
+                u.employee_number AS "employeeNumber",
+                u.createdat AS "createdAt", 
+                u.updatedat AS "updatedAt", 
+                u.isactive AS "isActive", 
+                u.roleid AS "roleId", 
+                r.name AS role,
+                u.ministry, 
+                u.state_department AS "stateDepartment", 
+                u.agency_id AS "agencyId", 
+                a.agency_name AS "agencyName"
+            FROM users u
+            LEFT JOIN roles r ON u.roleid = r.roleid
+            LEFT JOIN agencies a ON u.agency_id = a.id
+            WHERE u.voided = false
+            ORDER BY u.createdat DESC
+        `;
+    } else {
+        query = `
+            SELECT 
+                u.userId, 
+                u.username, 
+                u.email,
+                u.firstName, 
+                u.lastName, 
+                u.idNumber, 
+                u.employeeNumber,
+                u.createdAt, 
+                u.updatedAt, 
+                u.isActive, 
+                u.roleId, 
+                r.roleName AS role,
+                u.ministry, 
+                u.state_department AS stateDepartment, 
+                u.agency_id AS agencyId, 
+                a.agency_name AS agencyName
+            FROM users u
+            LEFT JOIN roles r ON u.roleId = r.roleId
+            LEFT JOIN agencies a ON u.agency_id = a.id
+            WHERE u.voided = 0
+            ORDER BY u.createdAt DESC
+        `;
+    }
+
+    const result = await pool.query(query);
+    const rows = DB_TYPE === 'postgresql' ? (result.rows || result) : (Array.isArray(result) ? result[0] : result);
+    let payload = Array.isArray(rows) ? rows : [];
+
+    if (DB_TYPE === 'postgresql' && payload.length > 0 && (await orgScope.organizationScopeTableExists())) {
+        try {
+            const scopeMap = await orgScope.fetchOrganizationScopesForUsers(payload.map((u) => u.userId));
+            payload = payload.map((u) => ({
+                ...u,
+                organizationScopes: scopeMap.get(parseInt(String(u.userId), 10)) || [],
+            }));
+        } catch (scopeErr) {
+            console.warn('User list: could not attach organization scopes:', scopeErr.message);
+        }
+    }
+
+    return payload;
+}
 
 // --- CRUD Operations for users ---
 
@@ -12,97 +106,84 @@ const orgScope = require('../services/organizationScopeService');
  */
 router.get('/users', async (req, res) => {
     try {
-        const DB_TYPE = process.env.DB_TYPE || 'mysql';
-        let query;
-        
-        if (DB_TYPE === 'postgresql') {
-            // PostgreSQL: base users listing, optionally include phone_number if column exists
-            let hasPhoneNumber = false;
-            try {
-                const colResult = await pool.query(`
-                    SELECT 1 
-                    FROM information_schema.columns 
-                    WHERE table_name = 'users' 
-                      AND column_name = 'phone_number'
-                    LIMIT 1
-                `);
-                hasPhoneNumber = Array.isArray(colResult.rows) ? colResult.rows.length > 0 : !!colResult.rows;
-            } catch (colErr) {
-                console.warn('Warning: Failed to check for phone_number column on users table:', colErr.message);
-            }
-
-            query = `
-                SELECT 
-                    u.userid AS "userId", 
-                    u.username, 
-                    u.email${hasPhoneNumber ? ', u.phone_number AS "phoneNumber"' : ''}, 
-                    u.firstname AS "firstName", 
-                    u.lastname AS "lastName", 
-                    u.id_number AS "idNumber", 
-                    u.employee_number AS "employeeNumber",
-                    u.createdat AS "createdAt", 
-                    u.updatedat AS "updatedAt", 
-                    u.isactive AS "isActive", 
-                    u.roleid AS "roleId", 
-                    r.name AS role,
-                    u.ministry, 
-                    u.state_department AS "stateDepartment", 
-                    u.agency_id AS "agencyId", 
-                    a.agency_name AS "agencyName"
-                FROM users u
-                LEFT JOIN roles r ON u.roleid = r.roleid
-                LEFT JOIN agencies a ON u.agency_id = a.id
-                WHERE u.voided = false
-                ORDER BY u.createdat DESC
-            `;
-        } else {
-            // MySQL users listing
-            query = `
-                SELECT 
-                    u.userId, 
-                    u.username, 
-                    u.email,
-                    u.firstName, 
-                    u.lastName, 
-                    u.idNumber, 
-                    u.employeeNumber,
-                    u.createdAt, 
-                    u.updatedAt, 
-                    u.isActive, 
-                    u.roleId, 
-                    r.roleName AS role,
-                    u.ministry, 
-                    u.state_department AS stateDepartment, 
-                    u.agency_id AS agencyId, 
-                    a.agency_name AS agencyName
-                FROM users u
-                LEFT JOIN roles r ON u.roleId = r.roleId
-                LEFT JOIN agencies a ON u.agency_id = a.id
-                WHERE u.voided = 0
-                ORDER BY u.createdAt DESC
-            `;
-        }
-        
-        const result = await pool.query(query);
-        const rows = DB_TYPE === 'postgresql' ? (result.rows || result) : (Array.isArray(result) ? result[0] : result);
-        let payload = Array.isArray(rows) ? rows : [];
-
-        if (DB_TYPE === 'postgresql' && payload.length > 0 && (await orgScope.organizationScopeTableExists())) {
-            try {
-                const scopeMap = await orgScope.fetchOrganizationScopesForUsers(payload.map((u) => u.userId));
-                payload = payload.map((u) => ({
-                    ...u,
-                    organizationScopes: scopeMap.get(parseInt(String(u.userId), 10)) || [],
-                }));
-            } catch (scopeErr) {
-                console.warn('User list: could not attach organization scopes:', scopeErr.message);
-            }
-        }
-
+        const payload = await fetchActiveNonVoidedUsers();
         res.status(200).json(payload);
     } catch (error) {
         console.error('Error fetching users:', error);
         res.status(500).json({ message: 'Error fetching users', error: error.message });
+    }
+});
+
+/**
+ * @route GET /api/users/users/export/excel
+ * @description Super Admin only: export all active (non-voided) users (no passwords).
+ */
+router.get('/users/export/excel', async (req, res) => {
+    try {
+        if (!isSuperAdminRequester(req.user)) {
+            return res.status(403).json({ error: 'Only Super Admin can export users.' });
+        }
+        const payload = await fetchActiveNonVoidedUsers();
+        res.status(200).json({ data: payload });
+    } catch (error) {
+        console.error('Error exporting users:', error);
+        res.status(500).json({ message: 'Error exporting users', error: error.message });
+    }
+});
+
+/**
+ * @route GET /api/users/users/check-username
+ * @description Super Admin only: check if a username is available.
+ */
+router.get('/users/check-username', async (req, res) => {
+    if (!isSuperAdminRequester(req.user)) {
+        return res.status(403).json({ error: 'Only Super Admin can check username availability.' });
+    }
+
+    const username = String(req.query.username || '').trim();
+    const excludeRaw = req.query.excludeUserId;
+    const excludeUserId = excludeRaw !== undefined && excludeRaw !== null && String(excludeRaw).trim() !== ''
+        ? Number(excludeRaw)
+        : null;
+
+    if (!username) {
+        return res.status(400).json({ error: 'username query parameter is required.' });
+    }
+    if (excludeUserId !== null && Number.isNaN(excludeUserId)) {
+        return res.status(400).json({ error: 'excludeUserId must be a valid number when provided.' });
+    }
+
+    const DB_TYPE = process.env.DB_TYPE || 'mysql';
+    try {
+        let rows;
+        if (DB_TYPE === 'postgresql') {
+            let query = 'SELECT userid FROM users WHERE LOWER(username) = LOWER($1)';
+            const params = [username];
+            if (excludeUserId !== null) {
+                query += ' AND userid <> $2';
+                params.push(excludeUserId);
+            }
+            const result = await pool.query(query, params);
+            rows = result.rows || [];
+        } else {
+            let query = 'SELECT userId FROM users WHERE LOWER(username) = LOWER(?)';
+            const params = [username];
+            if (excludeUserId !== null) {
+                query += ' AND userId <> ?';
+                params.push(excludeUserId);
+            }
+            const result = await pool.query(query, params);
+            rows = Array.isArray(result) ? result[0] : result;
+        }
+
+        const available = !Array.isArray(rows) || rows.length === 0;
+        return res.json({
+            available,
+            message: available ? 'Username is available.' : 'Username is already taken.',
+        });
+    } catch (error) {
+        console.error('Error checking username availability:', error);
+        return res.status(500).json({ error: 'Failed to check username availability.' });
     }
 });
 
@@ -393,8 +474,7 @@ router.put('/users/:id', async (req, res) => {
             return res.status(400).json({ error: 'Invalid phone number format. Use 07XXXXXXXX or +2547XXXXXXXX.' });
         }
     }
-    const requesterRole = String(req.user?.roleName || req.user?.role || '').trim().toLowerCase();
-    const isSuperAdmin = requesterRole === 'super admin';
+    const isSuperAdmin = isSuperAdminRequester(req.user);
     const orgProfileFields = ['ministry', 'stateDepartment', 'state_department', 'agencyId', 'agency_id'];
     const attemptedOrgProfileEdit = orgProfileFields.some((f) =>
         Object.prototype.hasOwnProperty.call(otherFieldsToUpdate, f)
@@ -413,6 +493,13 @@ router.put('/users/:id', async (req, res) => {
     }
     delete otherFieldsToUpdate.userId;
 
+    const normalizedUsername = otherFieldsToUpdate.username !== undefined
+        ? String(otherFieldsToUpdate.username || '').trim()
+        : null;
+    const normalizedEmail = otherFieldsToUpdate.email !== undefined
+        ? String(otherFieldsToUpdate.email || '').trim()
+        : null;
+
     let previousIsActive = null;
     if (DB_TYPE === 'postgresql') {
         try {
@@ -426,6 +513,54 @@ router.put('/users/:id', async (req, res) => {
     }
 
     try {
+        if (normalizedUsername !== null || normalizedEmail !== null) {
+            if (DB_TYPE === 'postgresql') {
+                const checks = [];
+                const params = [];
+                let idx = 1;
+                if (normalizedUsername !== null && normalizedUsername !== '') {
+                    checks.push(`LOWER(username) = LOWER($${idx++})`);
+                    params.push(normalizedUsername);
+                }
+                if (normalizedEmail !== null && normalizedEmail !== '') {
+                    checks.push(`LOWER(email) = LOWER($${idx++})`);
+                    params.push(normalizedEmail);
+                }
+                if (checks.length > 0) {
+                    params.push(id);
+                    const exists = await pool.query(
+                        `SELECT userid FROM users WHERE (${checks.join(' OR ')}) AND userid <> $${idx} LIMIT 1`,
+                        params
+                    );
+                    if (exists.rows?.length) {
+                        return res.status(400).json({ error: 'Another user with that username or email already exists.' });
+                    }
+                }
+            } else {
+                const checks = [];
+                const params = [];
+                if (normalizedUsername !== null && normalizedUsername !== '') {
+                    checks.push('LOWER(username) = LOWER(?)');
+                    params.push(normalizedUsername);
+                }
+                if (normalizedEmail !== null && normalizedEmail !== '') {
+                    checks.push('LOWER(email) = LOWER(?)');
+                    params.push(normalizedEmail);
+                }
+                if (checks.length > 0) {
+                    params.push(id);
+                    const existsRes = await pool.query(
+                        `SELECT userId FROM users WHERE (${checks.join(' OR ')}) AND userId <> ? LIMIT 1`,
+                        params
+                    );
+                    const rows = Array.isArray(existsRes) ? existsRes[0] : existsRes;
+                    if (Array.isArray(rows) && rows.length > 0) {
+                        return res.status(400).json({ error: 'Another user with that username or email already exists.' });
+                    }
+                }
+            }
+        }
+
         let result;
         if (DB_TYPE === 'postgresql') {
             // PostgreSQL: Build UPDATE query dynamically
@@ -609,8 +744,7 @@ router.delete('/users/:id', async (req, res) => {
  */
 router.get('/users/voided/list', async (req, res) => {
     try {
-        const requesterRole = String(req.user?.roleName || req.user?.role || '').trim().toLowerCase();
-        if (requesterRole !== 'super admin') {
+        if (!isSuperAdminRequester(req.user)) {
             return res.status(403).json({ error: 'Only Super Admin can view voided users.' });
         }
 
@@ -684,8 +818,7 @@ router.get('/users/voided/list', async (req, res) => {
 router.put('/users/:id/restore', async (req, res) => {
     const { id } = req.params;
     try {
-        const requesterRole = String(req.user?.roleName || req.user?.role || '').trim().toLowerCase();
-        if (requesterRole !== 'super admin') {
+        if (!isSuperAdminRequester(req.user)) {
             return res.status(403).json({ error: 'Only Super Admin can restore voided users.' });
         }
 

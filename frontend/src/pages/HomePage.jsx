@@ -220,7 +220,6 @@ const HomePage = () => {
   // Notifications and pending approvals
   const [pendingUsers, setPendingUsers] = useState([]);
   const [pendingProjects, setPendingProjects] = useState([]);
-  const [recentUserApprovals, setRecentUserApprovals] = useState([]);
   const [projectsPendingReview, setProjectsPendingReview] = useState([]);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
 
@@ -294,7 +293,7 @@ const HomePage = () => {
                 const dateB = new Date(b?.updatedAt || b?.createdAt || b?.startDate || b?.start_date || 0);
                 return dateB - dateA;
               })
-              .slice(0, 5)
+              .slice(0, 3)
               .map(p => ({
                 id: p.id,
                 projectName: p.projectName || p.project_name || 'Untitled Project',
@@ -387,7 +386,7 @@ const HomePage = () => {
         setProjectStats({ ...stats, loading: false });
         setAllProjects(projects);
         
-        // Get recent projects (last 5)
+        // Get recent projects (latest 3 by activity date)
         const recent = projects
           .filter(p => p?.id)
           .sort((a, b) => {
@@ -395,7 +394,7 @@ const HomePage = () => {
             const dateB = new Date(b?.updatedAt || b?.createdAt || b?.startDate || b?.start_date || 0);
             return dateB - dateA;
           })
-          .slice(0, 5)
+          .slice(0, 3)
           .map(p => ({
             id: p.id,
             projectName: p.projectName || p.project_name || 'Untitled Project',
@@ -427,7 +426,6 @@ const HomePage = () => {
         if (isMounted) {
           setPendingUsers([]);
           setPendingProjects([]);
-          setRecentUserApprovals([]);
           setProjectsPendingReview([]);
           setLoadingNotifications(false);
         }
@@ -478,22 +476,8 @@ const HomePage = () => {
           promises.push(Promise.resolve([]));
           promises.push(Promise.resolve([]));
         }
-        
-        // Fetch recent user approvals
-        if (canApproveUsers) {
-          promises.push(
-            apiService.users.getApprovedUsersSummary({ 
-              limit: 5
-            }).catch(err => {
-              console.error('Error fetching recent user approvals:', err);
-              return [];
-            })
-          );
-        } else {
-          promises.push(Promise.resolve([]));
-        }
 
-        const [usersData, projectsPendingApprovalData, projectsPendingReviewData, recentApprovalsData] = await Promise.all(promises);
+        const [usersData, projectsPendingApprovalData, projectsPendingReviewData] = await Promise.all(promises);
         
         if (!isMounted) return;
         
@@ -538,24 +522,11 @@ const HomePage = () => {
         });
         
         setProjectsPendingReview(review.slice(0, 5));
-        
-        // Handle recent user approvals
-        let recentApprovals = [];
-        if (Array.isArray(recentApprovalsData)) {
-          recentApprovals = recentApprovalsData;
-        } else if (recentApprovalsData?.users) {
-          recentApprovals = recentApprovalsData.users;
-        } else if (recentApprovalsData?.data) {
-          recentApprovals = recentApprovalsData.data;
-        }
-        
-        setRecentUserApprovals(recentApprovals.slice(0, 5));
       } catch (error) {
         console.error('Error fetching notifications:', error);
         if (isMounted) {
           setPendingUsers([]);
           setPendingProjects([]);
-          setRecentUserApprovals([]);
           setProjectsPendingReview([]);
         }
       } finally {
@@ -575,7 +546,7 @@ const HomePage = () => {
 
 
 
-  // Prepare notification items - Always show the three sections
+  // Prepare notification cards (role-dependent)
   const notificationItems = [];
   
   // Pending User Approvals (show first)
@@ -593,22 +564,7 @@ const HomePage = () => {
     });
   }
 
-  // Recent User Approvals
-  if (canApproveUsers) {
-    notificationItems.push({
-      type: 'recent-approvals',
-      title: 'Recent User Approvals',
-      count: recentUserApprovals.length,
-      icon: <CheckCircleIcon />,
-      color: '#4caf50',
-      route: ROUTES.USER_MANAGEMENT,
-      description: recentUserApprovals.length > 0 
-        ? `${recentUserApprovals.length} user${recentUserApprovals.length > 1 ? 's' : ''} recently approved`
-        : 'No recent approvals',
-    });
-  }
-  
-  // Projects Pending Approval
+  // Projects Pending Approval → Public Approval page, Approval filter: Pending
   if (canManageProjects) {
     notificationItems.push({
       type: 'projects-pending-approval',
@@ -616,14 +572,14 @@ const HomePage = () => {
       count: pendingProjects.length,
       icon: <PendingActionsIcon />,
       color: '#ff9800',
-      route: ROUTES.PROJECTS,
+      route: `${ROUTES.PUBLIC_APPROVAL}?approval=pending`,
       description: pendingProjects.length > 0
         ? `${pendingProjects.length} project${pendingProjects.length > 1 ? 's' : ''} waiting for approval`
         : 'No projects pending approval',
     });
   }
   
-  // Projects Pending Review
+  // Projects Pending Review → Public Approval page, Approval filter: Revision
   if (canManageProjects) {
     notificationItems.push({
       type: 'projects-pending-review',
@@ -631,7 +587,7 @@ const HomePage = () => {
       count: projectsPendingReview.length,
       icon: <AssignmentIndIcon />,
       color: '#2196f3',
-      route: ROUTES.PROJECTS,
+      route: `${ROUTES.PUBLIC_APPROVAL}?approval=revision`,
       description: projectsPendingReview.length > 0
         ? `${projectsPendingReview.length} project${projectsPendingReview.length > 1 ? 's' : ''} under review`
         : 'No projects pending review',

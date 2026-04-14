@@ -16,10 +16,31 @@ import {
     Checkbox,
     FormControlLabel,
     FormHelperText,
-    Autocomplete
+    Autocomplete,
+    IconButton,
+    InputAdornment,
 } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import apiService from '../api';
 import AppFooter from './AppFooter.jsx';
+import gprisLogo from '../assets/gpris.png';
+
+/** Match Login.jsx — ICT.go.ke palette */
+const micde = {
+    brand: '#005a9a',
+    brandHover: '#00477d',
+    brandMuted: '#5a92c4',
+    brandDark: '#003559',
+    pageBgTop: '#e8f4fc',
+    pageBgMid: '#f8fafc',
+    pageBgBottom: '#f0f4f8',
+    textPrimary: '#1c1917',
+    textSecondary: '#44403c',
+    textMuted: '#78716c',
+    borderLight: 'rgba(0, 90, 154, 0.14)',
+    inputBg: '#fafafa',
+    inputBgHover: '#f4f4f5',
+};
 
 const Register = () => {
     const phoneRegex = /^(?:07\d{8}|\+2547\d{8})$/;
@@ -34,185 +55,70 @@ const Register = () => {
         employeeNumber: '',
         ministry: '',
         stateDepartment: '',
-        agencyId: '',
     });
     const [consentGiven, setConsentGiven] = useState(false);
     const [emailError, setEmailError] = useState('');
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [loading, setLoading] = useState(false);
-    const [loadingAgencies, setLoadingAgencies] = useState(false);
-    const [agencies, setAgencies] = useState([]);
-    const [filteredAgencies, setFilteredAgencies] = useState([]);
+    const [loadingOrg, setLoadingOrg] = useState(false);
+    /** Full GET /public/ministries?withDepartments=1 payload */
+    const [ministriesHierarchy, setMinistriesHierarchy] = useState([]);
+    const [ministryNames, setMinistryNames] = useState([]);
     const [filteredStateDepartments, setFilteredStateDepartments] = useState([]);
-    const [ministries, setMinistries] = useState([]);
     const [formErrors, setFormErrors] = useState({});
+    const [showPassword, setShowPassword] = useState(false);
+    const [logoFailed, setLogoFailed] = useState(false);
     const navigate = useNavigate();
+    const fontStack = '"Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif';
 
-    // Fetch agencies on component mount
+    // Ministries + state departments from catalog (PostgreSQL seed tables)
     useEffect(() => {
-        const fetchAgencies = async () => {
-            setLoadingAgencies(true);
+        const fetchOrg = async () => {
+            setLoadingOrg(true);
             try {
-                // Use public endpoint for registration form (no auth required)
-                const response = await axiosInstance.get('/public/agencies');
-                console.log('Agencies API response:', response); // Debug log
-                
-                // Handle different response structures - public endpoint returns {data: [...], total: number}
-                let agenciesList = [];
-                if (response && response.data) {
-                    if (Array.isArray(response.data)) {
-                        agenciesList = response.data;
-                    } else if (response.data.data && Array.isArray(response.data.data)) {
-                        agenciesList = response.data.data;
-                    } else if (Array.isArray(response.data)) {
-                        agenciesList = response.data;
-                    }
-                } else if (Array.isArray(response)) {
-                    agenciesList = response;
-                }
-                
-                console.log('Agencies list:', agenciesList); // Debug log
-                console.log('Number of agencies:', agenciesList.length); // Debug log
-                
-                if (agenciesList.length === 0) {
-                    console.warn('No agencies found in response');
-                    setError('No agencies found. Please contact administrator.');
-                }
-                
-                setAgencies(agenciesList);
-                
-                // Extract unique ministries - handle both snake_case and camelCase
-                const ministriesList = agenciesList
-                    .map(agency => {
-                        // Try multiple possible field names
-                        return agency.ministry || agency.ministryName || agency.ministry_name || '';
-                    })
-                    .filter(Boolean);
-                
-                const uniqueMinistries = [...new Set(ministriesList)].sort();
-                console.log('Unique ministries:', uniqueMinistries); // Debug log
-                console.log('Number of unique ministries:', uniqueMinistries.length); // Debug log
-                
-                if (uniqueMinistries.length === 0 && agenciesList.length > 0) {
-                    console.warn('No ministries found in agencies. Sample agency:', agenciesList[0]);
-                }
-                
-                setMinistries(uniqueMinistries);
-            } catch (err) {
-                console.error('Error fetching agencies:', err);
-                console.error('Error details:', {
-                    message: err.message,
-                    response: err.response?.data,
-                    status: err.response?.status,
-                    statusText: err.response?.statusText,
-                    config: {
-                        url: err.config?.url,
-                        method: err.config?.method,
-                        baseURL: err.config?.baseURL
-                    },
-                    code: err.code,
-                    request: err.request
+                const response = await axiosInstance.get('/public/ministries', {
+                    params: { withDepartments: '1' },
                 });
-                
-                // Show more specific error message
-                let errorMessage = 'Failed to load agencies. ';
-                
-                if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
-                    errorMessage += 'Request timed out. Please check your connection and try again.';
-                } else if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
-                    errorMessage += 'Network error. Please check your internet connection.';
-                } else if (err.response?.status === 401) {
-                    errorMessage += 'Authentication required. Please try again or contact support.';
-                } else if (err.response?.status === 403) {
-                    errorMessage += 'Access denied. Please contact support.';
-                } else if (err.response?.status === 404) {
-                    errorMessage += 'Agencies endpoint not found. Please contact support.';
-                } else if (err.response?.status >= 500) {
-                    errorMessage += 'Server error. Please try again later.';
-                } else if (err.response?.data?.message) {
-                    errorMessage += err.response.data.message;
-                } else if (err.message) {
-                    errorMessage += err.message;
-                } else {
-                    errorMessage += 'Unknown error. Please check the browser console for details.';
+                const list = Array.isArray(response.data) ? response.data : [];
+                setMinistriesHierarchy(list);
+                const names = list.map((m) => m.name).filter(Boolean).sort((a, b) => a.localeCompare(b));
+                setMinistryNames(names);
+                if (names.length === 0) {
+                    setError('Organization directory is not available. Please contact an administrator.');
                 }
-                
-                setError(errorMessage);
+            } catch (err) {
+                console.error('Error fetching ministries:', err);
+                const msg =
+                    err?.response?.data?.message ||
+                    err?.response?.data?.error ||
+                    err?.message ||
+                    'Failed to load ministries.';
+                setError(
+                    err?.response?.status === 501
+                        ? 'Ministry directory requires PostgreSQL on the server.'
+                        : msg
+                );
             } finally {
-                setLoadingAgencies(false);
+                setLoadingOrg(false);
             }
         };
-        fetchAgencies();
+        fetchOrg();
     }, []);
 
-    // Filter state departments when ministry changes
     useEffect(() => {
-        if (formData.ministry) {
-            const filtered = agencies
-                .filter(agency => {
-                    const agencyMinistry = agency.ministry || agency.ministryName;
-                    return agencyMinistry && agencyMinistry.toLowerCase() === formData.ministry.toLowerCase();
-                })
-                .map(agency => agency.state_department || agency.stateDepartment)
-                .filter(Boolean);
-            const uniqueStateDepartments = [...new Set(filtered)].sort();
-            setFilteredStateDepartments(uniqueStateDepartments);
-            
-            // Clear state department and agency if current selection doesn't match the ministry
-            if (formData.stateDepartment) {
-                const selectedAgency = agencies.find(a => {
-                    const agencyMinistry = a.ministry || a.ministryName;
-                    const agencyStateDept = a.state_department || a.stateDepartment;
-                    return agencyStateDept?.toLowerCase() === formData.stateDepartment.toLowerCase() &&
-                           agencyMinistry?.toLowerCase() === formData.ministry.toLowerCase();
-                });
-                if (!selectedAgency) {
-                    setFormData(prev => ({ ...prev, stateDepartment: '', agencyId: '' }));
-                }
-            }
-            if (formData.agencyId) {
-                const selectedAgency = agencies.find(a => a.id === formData.agencyId || a.agencyId === formData.agencyId);
-                const agencyMinistry = selectedAgency?.ministry || selectedAgency?.ministryName;
-                if (!selectedAgency || agencyMinistry?.toLowerCase() !== formData.ministry.toLowerCase()) {
-                    setFormData(prev => ({ ...prev, agencyId: '' }));
-                }
-            }
-        } else {
+        if (!formData.ministry) {
             setFilteredStateDepartments([]);
-            setFormData(prev => ({ ...prev, stateDepartment: '', agencyId: '' }));
+            return;
         }
-    }, [formData.ministry, agencies]);
-
-    // Filter agencies when state department changes
-    useEffect(() => {
-        if (formData.ministry && formData.stateDepartment) {
-            const filtered = agencies.filter(agency => {
-                const agencyMinistry = agency.ministry || agency.ministryName;
-                const agencyStateDept = agency.state_department || agency.stateDepartment;
-                return agencyMinistry && agencyMinistry.toLowerCase() === formData.ministry.toLowerCase() &&
-                       agencyStateDept && agencyStateDept.toLowerCase() === formData.stateDepartment.toLowerCase();
-            });
-            setFilteredAgencies(filtered);
-            
-            // Clear agency if current selection doesn't match the state department
-            if (formData.agencyId) {
-                const selectedAgency = agencies.find(a => a.id === formData.agencyId || a.agencyId === formData.agencyId);
-                const agencyMinistry = selectedAgency?.ministry || selectedAgency?.ministryName;
-                const agencyStateDept = selectedAgency?.state_department || selectedAgency?.stateDepartment;
-                if (!selectedAgency || 
-                    agencyMinistry?.toLowerCase() !== formData.ministry.toLowerCase() ||
-                    agencyStateDept?.toLowerCase() !== formData.stateDepartment.toLowerCase()) {
-                    setFormData(prev => ({ ...prev, agencyId: '' }));
-                }
-            }
-        } else {
-            setFilteredAgencies([]);
-            if (!formData.stateDepartment) {
-                setFormData(prev => ({ ...prev, agencyId: '' }));
-            }
+        const row = ministriesHierarchy.find((m) => m.name === formData.ministry);
+        let depts = (row?.departments || []).map((d) => d.name).filter(Boolean);
+        depts = [...new Set(depts)].sort((a, b) => a.localeCompare(b));
+        if (formData.stateDepartment && !depts.includes(formData.stateDepartment)) {
+            depts = [...depts, formData.stateDepartment].sort((a, b) => a.localeCompare(b));
         }
-    }, [formData.ministry, formData.stateDepartment, agencies]);
+        setFilteredStateDepartments(depts);
+    }, [formData.ministry, formData.stateDepartment, ministriesHierarchy]);
 
     // Email validation function
     const validateEmail = (email) => {
@@ -295,10 +201,18 @@ const Register = () => {
         try {
             // Call the register API endpoint using axiosInstance
             const response = await axiosInstance.post('/auth/register', {
-                ...formData,
+                username: formData.username,
+                email: formData.email,
+                password: formData.password,
+                phoneNumber: formData.phoneNumber,
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                idNumber: formData.idNumber,
+                employeeNumber: formData.employeeNumber,
+                ministry: formData.ministry,
                 consentGiven: consentGiven,
-                agency_id: formData.agencyId || null,
-                state_department: formData.stateDepartment
+                agency_id: null,
+                state_department: formData.stateDepartment,
             });
             const data = response.data;
             
@@ -316,10 +230,10 @@ const Register = () => {
                 employeeNumber: '',
                 ministry: '',
                 stateDepartment: '',
-                agencyId: '',
             });
             setConsentGiven(false);
             setFormErrors({});
+            setShowPassword(false);
             
             // Redirect to login page after a delay to let user read the message
             setTimeout(() => {
@@ -344,87 +258,99 @@ const Register = () => {
 
     return (
         <>
-        <Container 
-            maxWidth="sm" 
-            sx={{ 
-                minHeight: '100vh', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                background: 'linear-gradient(135deg, #2196f3 0%, #42a5f5 25%, #1976d2 50%, #1e88e5 75%, #2196f3 100%)',
-                py: 4,
-                pb: 9,
+        <Box
+            sx={{
+                minHeight: '100vh',
+                display: 'flex',
+                flexDirection: 'column',
+                background: `linear-gradient(165deg, ${micde.pageBgTop} 0%, ${micde.pageBgMid} 42%, ${micde.pageBgBottom} 100%)`,
+                pt: 0,
+                pb: 3,
             }}
         >
-            <Card 
-                sx={{ 
-                    width: '100%', 
+        <Container
+            maxWidth="sm"
+            sx={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                py: 3,
+                pb: 6,
+            }}
+        >
+            <Card
+                elevation={0}
+                sx={{
+                    width: '100%',
                     maxWidth: 480,
-                    p: 4,
-                    borderRadius: 4,
-                    background: 'rgba(255, 255, 255, 0.98)',
-                    backdropFilter: 'blur(15px)',
-                    border: '1px solid rgba(59, 130, 246, 0.1)',
-                    boxShadow: '0 12px 40px rgba(30, 58, 138, 0.15), 0 4px 16px rgba(30, 58, 138, 0.1)',
-                    transform: 'translateY(0)',
-                    transition: 'all 0.3s ease-in-out',
-                    '&:hover': {
-                        transform: 'translateY(-6px)',
-                        boxShadow: '0 20px 60px rgba(30, 58, 138, 0.2), 0 8px 24px rgba(30, 58, 138, 0.15)'
-                    }
+                    p: { xs: 2.25, sm: 3 },
+                    borderRadius: 2,
+                    background: '#ffffff',
+                    border: `1px solid ${micde.borderLight}`,
+                    boxShadow: '0 4px 24px rgba(0, 90, 154, 0.08), 0 1px 3px rgba(0,0,0,0.06)',
                 }}
             >
                 <CardContent sx={{ p: 0 }}>
-                    {/* Logo and Title Section */}
-                    <Box sx={{ textAlign: 'center', mb: 4 }}>
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                mb: 2
-                            }}
-                        >
-                            <Typography 
-                                variant="h4" 
-                                sx={{ 
-                                    fontSize: '2.5rem',
-                                    fontWeight: 700,
-                                    background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 50%, #64b5f6 100%)',
-                                    backgroundClip: 'text',
-                                    WebkitBackgroundClip: 'text',
-                                    WebkitTextFillColor: 'transparent',
-                                    letterSpacing: '-0.02em',
-                                    mb: 0.5,
-                                    fontFamily: '"Montserrat", "Roboto", "Helvetica", "Arial", sans-serif'
-                                }}
-                            >
-                                GPRIS
-                            </Typography>
-                            <Typography 
-                                variant="subtitle1" 
-                                sx={{ 
-                                    fontSize: '0.875rem',
+                    <Box sx={{ textAlign: 'center', mb: 2.5 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 1.5 }}>
+                            {!logoFailed ? (
+                                <Box
+                                    component="img"
+                                    src={gprisLogo}
+                                    alt="GPRIS — Government Projects Reporting Information System"
+                                    onError={() => setLogoFailed(true)}
+                                    sx={{
+                                        maxWidth: '100%',
+                                        width: 'auto',
+                                        height: 'auto',
+                                        maxHeight: { xs: 76, sm: 92 },
+                                        objectFit: 'contain',
+                                        mb: 1.25,
+                                        display: 'block',
+                                    }}
+                                />
+                            ) : (
+                                <Typography
+                                    variant="h5"
+                                    component="h1"
+                                    sx={{
+                                        fontFamily: fontStack,
+                                        fontWeight: 800,
+                                        color: micde.textPrimary,
+                                        letterSpacing: '-0.02em',
+                                        mb: 1.25,
+                                    }}
+                                >
+                                    GPRIS
+                                </Typography>
+                            )}
+                            <Typography
+                                variant="body2"
+                                component="p"
+                                sx={{
+                                    fontSize: '0.8125rem',
                                     fontWeight: 500,
-                                    color: '#64748b',
-                                    letterSpacing: '0.05em',
-                                    textTransform: 'none'
+                                    color: micde.textSecondary,
+                                    fontFamily: fontStack,
+                                    lineHeight: 1.45,
+                                    maxWidth: 360,
+                                    mx: 'auto',
                                 }}
                             >
-                                Government Projects Reporting Platform
+                                Government Projects Reporting Information System
                             </Typography>
                         </Box>
-                        <Typography 
-                            variant="body2" 
-                            sx={{ 
-                                fontSize: '0.85rem', 
-                                mt: 0.5,
-                                fontStyle: 'italic',
-                                color: '#6b7280'
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                fontSize: '0.8125rem',
+                                mt: 0.75,
+                                color: micde.textMuted,
+                                fontFamily: fontStack,
                             }}
                         >
-                            Create Your Account
+                            Create your account
                         </Typography>
                     </Box>
 
@@ -680,12 +606,26 @@ const Register = () => {
                             label="Password"
                             id="password"
                             name="password"
-                            type="password"
+                            type={showPassword ? 'text' : 'password'}
                             value={formData.password}
                             onChange={handleChange}
                             required
                             disabled={loading}
                             helperText="Must be at least 6 characters"
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            edge="end"
+                                            onClick={() => setShowPassword((prev) => !prev)}
+                                            disabled={loading}
+                                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                        >
+                                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
                             sx={{ 
                                 mb: 2,
                                 '& .MuiOutlinedInput-root': {
@@ -715,18 +655,17 @@ const Register = () => {
 
                         <Autocomplete
                             fullWidth
-                            options={ministries}
+                            options={ministryNames}
                             value={formData.ministry || null}
                             onChange={(event, newValue) => {
                                 setFormData(prev => ({ 
                                     ...prev, 
                                     ministry: newValue || '',
-                                    stateDepartment: '', // Clear state department when ministry changes
-                                    agencyId: '' // Clear agency when ministry changes
+                                    stateDepartment: '',
                                 }));
-                                setFormErrors(prev => ({ ...prev, ministry: '', stateDepartment: '', agencyId: '' }));
+                                setFormErrors(prev => ({ ...prev, ministry: '', stateDepartment: '' }));
                             }}
-                            loading={loadingAgencies}
+                            loading={loadingOrg}
                             disabled={loading}
                             renderInput={(params) => (
                                 <TextField
@@ -769,11 +708,10 @@ const Register = () => {
                                 setFormData(prev => ({ 
                                     ...prev, 
                                     stateDepartment: newValue || '',
-                                    agencyId: '' // Clear agency when state department changes
                                 }));
-                                setFormErrors(prev => ({ ...prev, stateDepartment: '', agencyId: '' }));
+                                setFormErrors(prev => ({ ...prev, stateDepartment: '' }));
                             }}
-                            loading={loadingAgencies}
+                            loading={loadingOrg}
                             disabled={loading || !formData.ministry}
                             renderInput={(params) => (
                                 <TextField
@@ -782,55 +720,6 @@ const Register = () => {
                                     required
                                     error={!!formErrors.stateDepartment}
                                     helperText={formErrors.stateDepartment || (formData.ministry ? 'Select your state department' : 'Please select a ministry first')}
-                                    sx={{ 
-                                        mb: 2,
-                                        '& .MuiOutlinedInput-root': {
-                                            borderRadius: 2,
-                                            backgroundColor: '#f8fafc',
-                                            transition: 'all 0.3s ease-in-out',
-                                            '&:hover': {
-                                                backgroundColor: '#f1f5f9',
-                                                '& .MuiOutlinedInput-notchedOutline': {
-                                                    borderColor: '#3b82f6',
-                                                    borderWidth: 2
-                                                }
-                                            },
-                                            '&.Mui-focused': {
-                                                backgroundColor: 'white',
-                                                '& .MuiOutlinedInput-notchedOutline': {
-                                                    borderColor: '#1e3a8a',
-                                                    borderWidth: 2
-                                                }
-                                            }
-                                        }
-                                    }}
-                                />
-                            )}
-                        />
-
-                        <Autocomplete
-                            fullWidth
-                            options={filteredAgencies}
-                            value={filteredAgencies.find(agency => 
-                                (agency.id === formData.agencyId || agency.agencyId === formData.agencyId)
-                            ) || null}
-                            getOptionLabel={(option) => {
-                                const name = option.agency_name || option.agencyName || option.name || '';
-                                return name;
-                            }}
-                            onChange={(event, newValue) => {
-                                const agencyId = newValue ? (newValue.id || newValue.agencyId) : '';
-                                setFormData(prev => ({ ...prev, agencyId }));
-                                setFormErrors(prev => ({ ...prev, agencyId: '' }));
-                            }}
-                            loading={loadingAgencies}
-                            disabled={loading || !formData.ministry || !formData.stateDepartment}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label="Agency (optional)"
-                                    error={!!formErrors.agencyId}
-                                    helperText={formErrors.agencyId || (formData.ministry && formData.stateDepartment ? 'Select your agency if applicable' : 'Please select a ministry and state department first')}
                                     sx={{ 
                                         mb: 2,
                                         '& .MuiOutlinedInput-root': {
@@ -866,10 +755,8 @@ const Register = () => {
                                         disabled={loading}
                                         required
                                         sx={{
-                                            color: '#3b82f6',
-                                            '&.Mui-checked': {
-                                                color: '#1e3a8a',
-                                            },
+                                            color: micde.brand,
+                                            '&.Mui-checked': { color: micde.brand },
                                         }}
                                     />
                                 }
@@ -903,26 +790,25 @@ const Register = () => {
                             fullWidth
                             variant="contained"
                             disabled={loading}
-                            sx={{ 
-                                py: 1.8,
-                                fontSize: '1.1rem',
-                                fontWeight: 'bold',
-                                borderRadius: 3,
+                            sx={{
+                                py: 1.15,
+                                fontSize: '1rem',
+                                fontWeight: 700,
+                                borderRadius: 1,
                                 textTransform: 'none',
-                                background: 'linear-gradient(45deg, #1e3a8a 30%, #3b82f6 90%)',
-                                boxShadow: '0 4px 12px rgba(30, 58, 138, 0.3)',
-                                transition: 'all 0.3s ease-in-out',
+                                fontFamily: fontStack,
+                                bgcolor: micde.brand,
+                                color: '#fff',
+                                boxShadow: 'none',
                                 mb: 2,
                                 '&:hover': {
-                                    background: 'linear-gradient(45deg, #1e40af 30%, #2563eb 90%)',
-                                    boxShadow: '0 6px 16px rgba(30, 58, 138, 0.4)',
-                                    transform: 'translateY(-2px)'
+                                    bgcolor: micde.brandHover,
+                                    boxShadow: '0 4px 14px rgba(0, 90, 154, 0.35)',
                                 },
                                 '&:disabled': {
-                                    background: 'linear-gradient(45deg, #bdbdbd 30%, #e0e0e0 90%)',
-                                    boxShadow: 'none',
-                                    transform: 'none'
-                                }
+                                    bgcolor: '#a8a29e',
+                                    color: '#f5f5f4',
+                                },
                             }}
                         >
                             {loading ? (
@@ -936,31 +822,30 @@ const Register = () => {
                         </Button>
                         
                         {/* Login Link */}
-                        <Box sx={{ textAlign: 'center', mt: 2 }}>
-                            <Typography variant="body2" sx={{ color: '#6b7280', mb: 1 }}>
+                        <Box sx={{ textAlign: 'center', mt: 2, pt: 2, borderTop: `1px solid ${micde.borderLight}` }}>
+                            <Typography variant="body2" sx={{ color: micde.textMuted, mb: 0.5, fontSize: '0.8125rem', fontFamily: fontStack }}>
                                 Already have an account?
                             </Typography>
-                            <Link 
+                            <Link
                                 component={RouterLink}
                                 to="/login"
-                                sx={{ 
+                                sx={{
                                     fontSize: '0.9rem',
                                     textDecoration: 'none',
-                                    color: '#3b82f6',
-                                    fontWeight: 600,
-                                    '&:hover': { 
-                                        textDecoration: 'underline',
-                                        color: '#1e3a8a'
-                                    }
+                                    color: micde.brand,
+                                    fontWeight: 700,
+                                    fontFamily: fontStack,
+                                    '&:hover': { textDecoration: 'underline', color: micde.brandDark },
                                 }}
                             >
-                                Login here
+                                Sign in
                             </Link>
                         </Box>
                     </Box>
                 </CardContent>
             </Card>
         </Container>
+        </Box>
         <AppFooter variant="fixed" />
         </>
     );

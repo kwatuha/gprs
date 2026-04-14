@@ -19,12 +19,38 @@ const userService = {
     }
   },
 
+  /** Super Admin only: all active (non-voided) users for Excel export (no passwords). */
+  getUsersForExcelExport: async () => {
+    try {
+      const response = await axiosInstance.get('/users/users/export/excel');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching users for Excel export:', error);
+      throw error;
+    }
+  },
+
   getUserById: async (userId) => {
     try {
       const response = await axiosInstance.get(`/users/users/${userId}`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching user with ID ${userId}:`, error);
+      throw error;
+    }
+  },
+
+  checkUsernameAvailability: async (username, excludeUserId = null) => {
+    try {
+      const response = await axiosInstance.get('/users/users/check-username', {
+        params: {
+          username,
+          ...(excludeUserId != null ? { excludeUserId } : {}),
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error checking username availability:', error);
       throw error;
     }
   },

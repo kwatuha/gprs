@@ -76,6 +76,7 @@ import JobCategoriesPage from './pages/JobCategoriesPage';
 import KenyaWardsPage from './pages/KenyaWardsPage';
 // ✨ NEW: Import the Agencies page
 import AgenciesPage from './pages/AgenciesPage';
+import MinistriesManagementPage from './pages/MinistriesManagementPage';
 // ✨ NEW: Import the Sectors page
 import SectorsPage from './pages/SectorsPage';
 // ✨ NEW: Import specialized dashboards
@@ -302,6 +303,10 @@ const router = createBrowserRouter([
       {
         path: 'agencies',
         element: <AgenciesPage />,
+      },
+      {
+        path: 'ministries-management',
+        element: <MinistriesManagementPage />,
       },
       {
         path: 'help-support',

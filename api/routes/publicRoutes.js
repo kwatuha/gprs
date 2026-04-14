@@ -2046,5 +2046,57 @@ router.get('/agencies', async (req, res) => {
     }
 });
 
+/**
+ * @route GET /api/public/ministries
+ * @description Ministries and optional state departments (for self-registration; no auth).
+ * @query withDepartments=1 — nest departments under each ministry (same shape as GET /api/ministries)
+ */
+router.get('/ministries', async (req, res) => {
+    try {
+        const withDeps = req.query.withDepartments === '1' || req.query.withDepartments === 'true';
+        const tableCheck = await pool.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables
+                WHERE table_schema = 'public'
+                  AND table_name = 'ministries'
+            );
+        `);
+        if (!tableCheck.rows[0]?.exists) {
+            return res.status(200).json(withDeps ? [] : []);
+        }
+        if ((process.env.DB_TYPE || 'postgresql') !== 'postgresql') {
+            return res.status(501).json({ message: 'Ministries catalog requires PostgreSQL.' });
+        }
+        const r = await pool.query(
+            `SELECT "ministryId", name, alias, voided, "createdAt", "updatedAt", "userId"
+             FROM ministries
+             WHERE voided = false
+             ORDER BY name`
+        );
+        const ministries = r.rows || [];
+        if (!withDeps) {
+            return res.status(200).json(ministries);
+        }
+        const dr = await pool.query(
+            `SELECT d."departmentId", d.name, d.alias, d."ministryId", d.voided, d."createdAt", d."updatedAt"
+             FROM departments d
+             WHERE (d.voided IS NULL OR d.voided = false)
+             ORDER BY d.name`
+        );
+        const depts = dr.rows || [];
+        const byMin = new Map();
+        ministries.forEach((m) => byMin.set(m.ministryId, { ...m, departments: [] }));
+        depts.forEach((d) => {
+            if (d.ministryId != null && byMin.has(d.ministryId)) {
+                byMin.get(d.ministryId).departments.push(d);
+            }
+        });
+        return res.status(200).json(Array.from(byMin.values()));
+    } catch (error) {
+        console.error('Error fetching public ministries:', error);
+        res.status(500).json({ error: 'Failed to fetch ministries', details: error.message });
+    }
+});
+
 module.exports = router;
 

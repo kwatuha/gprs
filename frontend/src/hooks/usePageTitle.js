@@ -44,6 +44,7 @@ const routeTitles = {
   '/approval-levels-management': { title: 'Approval Levels', subtitle: 'Approval Configuration' },
   '/feedback-management': { title: 'Feedback Management', subtitle: 'Citizen Feedback' },
   '/metadata-management': { title: 'Metadata Management', subtitle: 'Data Configuration' },
+  '/ministries-management': { title: 'Ministries', subtitle: 'Ministries & State Departments' },
   '/contractor-management': { title: 'Contractor Management', subtitle: 'Contractor Administration' },
   '/county-proposed-projects': { title: 'Proposed Projects', subtitle: 'Project Proposals' },
   '/project-announcements': { title: 'Project Announcements', subtitle: 'Public Announcements' },

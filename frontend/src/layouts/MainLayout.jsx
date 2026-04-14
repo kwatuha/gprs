@@ -26,6 +26,7 @@ import Topbar from "./Topbar.jsx";
 import Sidebar from "./Sidebar.jsx";
 import FloatingChatButton from "../components/chat/FloatingChatButton.jsx";
 import RibbonMenu from "./RibbonMenu.jsx";
+import gprisLogo from '../assets/gpris.png';
 
 const expandedSidebarWidth = 200; // Width with labels
 const collapsedSidebarWidth = 64; // Width with icons only
@@ -37,6 +38,7 @@ function MainLayoutContent() {
   const [mobileOpen, setMobileOpen] = useState(false);
   // Sidebar pin (expanded) state for desktop
   const [isSidebarPinnedOpen, setIsSidebarPinnedOpen] = useState(false);
+  const [headerGovLogoFailed, setHeaderGovLogoFailed] = useState(false);
   
   // Safely get auth context with error handling
   let authContext;
@@ -122,8 +124,42 @@ function MainLayoutContent() {
               <MenuIcon fontSize="small" />
             </IconButton>
             
-            <Box sx={{ display: 'flex', alignItems: 'center', minWidth: '180px' }}>
-              <Typography variant="h6" noWrap component="div" sx={{ color: 'white', fontWeight: 700, fontSize: '1.1rem', letterSpacing: '-0.01em' }}>
+            {/* Emblem before wordmark — standard gov / institutional header pattern */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: { xs: 0.875, sm: 1.125 },
+                flexShrink: 0,
+                minWidth: 0,
+                pr: { xs: 0.5, sm: 1 },
+              }}
+            >
+              {!headerGovLogoFailed && (
+                <Box
+                  component="img"
+                  src={gprisLogo}
+                  alt=""
+                  aria-hidden
+                  onError={() => setHeaderGovLogoFailed(true)}
+                  sx={{
+                    height: { xs: 28, sm: 32 },
+                    width: 'auto',
+                    maxWidth: { xs: 72, sm: 108 },
+                    objectFit: 'contain',
+                    objectPosition: 'center',
+                    display: 'block',
+                    flexShrink: 0,
+                    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+                  }}
+                />
+              )}
+              <Typography
+                variant="h6"
+                noWrap
+                component="div"
+                sx={{ color: 'white', fontWeight: 700, fontSize: '1.1rem', letterSpacing: '-0.01em' }}
+              >
                 GPRIS
               </Typography>
             </Box>

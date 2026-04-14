@@ -8,9 +8,12 @@ import {
   CardContent,
   CircularProgress,
   Container,
+  IconButton,
+  InputAdornment,
   TextField,
   Typography,
 } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext.jsx';
 import authService from '../api/authService';
 
@@ -22,6 +25,15 @@ const ForcePasswordChangePage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
+  };
 
   if (!token) return <Navigate to="/login" replace />;
   if (!mustChangePassword) return <Navigate to="/" replace />;
@@ -77,9 +89,73 @@ const ForcePasswordChangePage = () => {
           </Typography>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Box component="form" onSubmit={handleSubmit}>
-            <TextField fullWidth margin="dense" label="Current Password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
-            <TextField fullWidth margin="dense" label="New Password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-            <TextField fullWidth margin="dense" label="Confirm New Password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+            <TextField
+              fullWidth
+              margin="dense"
+              label="Current Password"
+              type={showPasswords.current ? 'text' : 'password'}
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              disabled={loading}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => togglePasswordVisibility('current')}
+                      edge="end"
+                      aria-label={showPasswords.current ? 'Hide password' : 'Show password'}
+                    >
+                      {showPasswords.current ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <TextField
+              fullWidth
+              margin="dense"
+              label="New Password"
+              type={showPasswords.new ? 'text' : 'password'}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              disabled={loading}
+              helperText="Must be at least 6 characters long"
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => togglePasswordVisibility('new')}
+                      edge="end"
+                      aria-label={showPasswords.new ? 'Hide password' : 'Show password'}
+                    >
+                      {showPasswords.new ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <TextField
+              fullWidth
+              margin="dense"
+              label="Confirm New Password"
+              type={showPasswords.confirm ? 'text' : 'password'}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={loading}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => togglePasswordVisibility('confirm')}
+                      edge="end"
+                      aria-label={showPasswords.confirm ? 'Hide password' : 'Show password'}
+                    >
+                      {showPasswords.confirm ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
             <Box sx={{ mt: 2, display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
               <Button color="inherit" onClick={logout} disabled={loading}>Logout</Button>
               <Button type="submit" variant="contained" disabled={loading}>

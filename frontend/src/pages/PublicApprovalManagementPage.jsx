@@ -61,13 +61,14 @@ import {
   Clear as ClearIcon
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axiosInstance from '../api/axiosInstance';
 
 const PublicApprovalManagementPage = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, hasPrivilege } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -143,6 +144,14 @@ const PublicApprovalManagementPage = () => {
     fetchAllData();
     fetchFilterMetadata();
   }, []);
+
+  // Deep links from Personal Dashboard (e.g. ?approval=pending | ?approval=revision)
+  useEffect(() => {
+    const approval = searchParams.get('approval');
+    if (approval === 'pending' || approval === 'revision' || approval === 'approved') {
+      setApprovalStatusFilter(approval);
+    }
+  }, [searchParams]);
 
   const fetchFilterMetadata = async () => {
     try {

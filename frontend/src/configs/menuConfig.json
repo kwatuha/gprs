@@ -253,6 +253,12 @@
           "icon": "BusinessIcon",
           "route": "AGENCIES",
           "roles": ["admin"]
+        },
+        {
+          "title": "Ministries",
+          "icon": "ApartmentIcon",
+          "route": "MINISTRIES_MANAGEMENT",
+          "roles": ["admin"]
         }
       ]
     }

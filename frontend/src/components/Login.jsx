@@ -20,12 +20,30 @@ import {
     InputAdornment,
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
-import AppFooter from './AppFooter.jsx';
+import gprisLogo from '../assets/gpris.png';
+
+/** Login page palette — ICT.go.ke top bar blue (#005a9a) and shades */
+const micde = {
+    brand: '#005a9a',
+    brandHover: '#00477d',
+    brandMuted: '#5a92c4',
+    brandDark: '#003559',
+    pageBgTop: '#e8f4fc',
+    pageBgMid: '#f8fafc',
+    pageBgBottom: '#f0f4f8',
+    textPrimary: '#1c1917',
+    textSecondary: '#44403c',
+    textMuted: '#78716c',
+    borderLight: 'rgba(0, 90, 154, 0.14)',
+    inputBg: '#fafafa',
+    inputBgHover: '#f4f4f5',
+};
 
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [logoFailed, setLogoFailed] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
@@ -63,70 +81,98 @@ const Login = () => {
         }
     };
 
+    const fontStack = '"Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif';
+
     return (
-        <>
-        <Container
-            maxWidth="sm"
+        <Box
             sx={{
                 minHeight: '100vh',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'linear-gradient(135deg, #2196f3 0%, #42a5f5 25%, #1976d2 50%, #1e88e5 75%, #2196f3 100%)',
-                py: 2,
-                pb: 7,
+                flexDirection: 'column',
+                background: `linear-gradient(165deg, ${micde.pageBgTop} 0%, ${micde.pageBgMid} 42%, ${micde.pageBgBottom} 100%)`,
+                pt: 0,
+                pb: 3,
             }}
         >
+            <Container
+                maxWidth="sm"
+                sx={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    py: 3,
+                }}
+            >
             <Card
+                elevation={0}
                 sx={{
                     width: '100%',
-                    maxWidth: 420,
-                    p: 2.5,
-                    borderRadius: 4,
-                    background: 'rgba(255, 255, 255, 0.98)',
-                    backdropFilter: 'blur(15px)',
-                    border: '1px solid rgba(59, 130, 246, 0.1)',
-                    boxShadow: '0 12px 40px rgba(30, 58, 138, 0.15), 0 4px 16px rgba(30, 58, 138, 0.1)',
-                    transform: 'translateY(0)',
-                    transition: 'all 0.3s ease-in-out',
-                    '&:hover': {
-                        transform: 'translateY(-6px)',
-                        boxShadow: '0 20px 60px rgba(30, 58, 138, 0.2), 0 8px 24px rgba(30, 58, 138, 0.15)'
-                    }
+                    maxWidth: 440,
+                    p: { xs: 2.25, sm: 3 },
+                    borderRadius: 2,
+                    background: '#ffffff',
+                    border: `1px solid ${micde.borderLight}`,
+                    boxShadow: '0 4px 24px rgba(0, 90, 154, 0.08), 0 1px 3px rgba(0,0,0,0.06)',
                 }}
             >
                 <CardContent sx={{ p: 0 }}>
-                    <Box sx={{ textAlign: 'center', mb: 3 }}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                    <Box sx={{ textAlign: 'center', mb: 2.5 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 1.5 }}>
+                            {!logoFailed ? (
+                                <Box
+                                    component="img"
+                                    src={gprisLogo}
+                                    alt="GPRIS — Government Projects Reporting Information System"
+                                    onError={() => setLogoFailed(true)}
+                                    sx={{
+                                        maxWidth: '100%',
+                                        width: 'auto',
+                                        height: 'auto',
+                                        maxHeight: { xs: 76, sm: 92 },
+                                        objectFit: 'contain',
+                                        mb: 1.25,
+                                        display: 'block',
+                                    }}
+                                />
+                            ) : (
+                                <Typography
+                                    variant="h5"
+                                    component="h1"
+                                    sx={{
+                                        fontFamily: fontStack,
+                                        fontWeight: 800,
+                                        color: micde.textPrimary,
+                                        letterSpacing: '-0.02em',
+                                        mb: 1.25,
+                                    }}
+                                >
+                                    GPRIS
+                                </Typography>
+                            )}
                             <Typography
-                                variant="h4"
+                                variant="body2"
+                                component="p"
                                 sx={{
-                                    fontSize: '2.5rem',
-                                    fontWeight: 700,
-                                    background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 50%, #64b5f6 100%)',
-                                    backgroundClip: 'text',
-                                    WebkitBackgroundClip: 'text',
-                                    WebkitTextFillColor: 'transparent',
-                                    letterSpacing: '-0.02em',
-                                    mb: 0.5,
-                                    fontFamily: '"Montserrat", "Roboto", "Helvetica", "Arial", sans-serif'
+                                    fontSize: '0.8125rem',
+                                    fontWeight: 500,
+                                    color: micde.textSecondary,
+                                    fontFamily: fontStack,
+                                    mt: 0,
+                                    lineHeight: 1.45,
+                                    maxWidth: 360,
+                                    mx: 'auto',
                                 }}
                             >
-                                GPRIS
-                            </Typography>
-                            <Typography variant="subtitle1" sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#64748b', letterSpacing: '0.05em', textTransform: 'none' }}>
                                 Government Projects Reporting Information System
                             </Typography>
                         </Box>
-                        <Typography variant="body2" sx={{ fontSize: '0.75rem', mt: 1, fontStyle: 'italic', color: '#6b7280' }}>
-                            Please Login
-                        </Typography>
                     </Box>
 
                     <Box component="form" onSubmit={handleSubmit}>
                         <TextField
                             fullWidth
-                            label="Username/Email"
+                            label="Username / Email"
                             id="username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
@@ -136,18 +182,19 @@ const Login = () => {
                             sx={{
                                 mb: 1.5,
                                 '& .MuiOutlinedInput-root': {
-                                    borderRadius: 2,
-                                    backgroundColor: '#f8fafc',
-                                    transition: 'all 0.3s ease-in-out',
+                                    borderRadius: 1,
+                                    backgroundColor: micde.inputBg,
+                                    fontFamily: fontStack,
                                     '&:hover': {
-                                        backgroundColor: '#f1f5f9',
-                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#3b82f6', borderWidth: 2 }
+                                        backgroundColor: micde.inputBgHover,
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: micde.brandMuted },
                                     },
                                     '&.Mui-focused': {
-                                        backgroundColor: 'white',
-                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#1e3a8a', borderWidth: 2 }
-                                    }
-                                }
+                                        backgroundColor: '#fff',
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: micde.brand, borderWidth: '2px' },
+                                    },
+                                },
+                                '& .MuiInputLabel-root.Mui-focused': { color: micde.brand },
                             }}
                             variant="outlined"
                         />
@@ -164,18 +211,19 @@ const Login = () => {
                             sx={{
                                 mb: 1.5,
                                 '& .MuiOutlinedInput-root': {
-                                    borderRadius: 2,
-                                    backgroundColor: '#f8fafc',
-                                    transition: 'all 0.3s ease-in-out',
+                                    borderRadius: 1,
+                                    backgroundColor: micde.inputBg,
+                                    fontFamily: fontStack,
                                     '&:hover': {
-                                        backgroundColor: '#f1f5f9',
-                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#3b82f6', borderWidth: 2 }
+                                        backgroundColor: micde.inputBgHover,
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: micde.brandMuted },
                                     },
                                     '&.Mui-focused': {
-                                        backgroundColor: 'white',
-                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: '#1e3a8a', borderWidth: 2 }
-                                    }
-                                }
+                                        backgroundColor: '#fff',
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: micde.brand, borderWidth: '2px' },
+                                    },
+                                },
+                                '& .MuiInputLabel-root.Mui-focused': { color: micde.brand },
                             }}
                             variant="outlined"
                             InputProps={{
@@ -196,17 +244,17 @@ const Login = () => {
 
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
                             <FormControlLabel
-                                control={<Checkbox size="small" />}
+                                control={<Checkbox size="small" sx={{ color: micde.brand, '&.Mui-checked': { color: micde.brand } }} />}
                                 label="Remember me"
-                                sx={{ fontSize: '0.8rem', '& .MuiFormControlLabel-label': { fontSize: '0.8rem' } }}
+                                sx={{ fontSize: '0.8rem', '& .MuiFormControlLabel-label': { fontSize: '0.8rem', color: micde.textSecondary, fontFamily: fontStack } }}
                             />
-                            <Link href="#" sx={{ fontSize: '0.8rem', textDecoration: 'none', color: '#3b82f6', fontWeight: 500, '&:hover': { textDecoration: 'underline', color: '#1e3a8a' } }}>
-                                Forgot Password?
+                            <Link href="#" sx={{ fontSize: '0.8rem', textDecoration: 'none', color: micde.brand, fontWeight: 600, fontFamily: fontStack, '&:hover': { textDecoration: 'underline', color: micde.brandDark } }}>
+                                Forgot password?
                             </Link>
                         </Box>
 
                         {error && (
-                            <Alert severity="error" sx={{ mb: 1.5, fontSize: '0.8rem', py: 0.5 }}>
+                            <Alert severity="error" sx={{ mb: 1.5, fontSize: '0.8rem', py: 0.5, fontFamily: fontStack }}>
                                 {error}
                             </Alert>
                         )}
@@ -217,50 +265,48 @@ const Login = () => {
                             variant="contained"
                             disabled={loading}
                             sx={{
-                                py: 1.2,
+                                py: 1.15,
                                 fontSize: '1rem',
-                                fontWeight: 'bold',
-                                borderRadius: 3,
+                                fontWeight: 700,
+                                borderRadius: 1,
                                 textTransform: 'none',
-                                background: 'linear-gradient(45deg, #1e3a8a 30%, #3b82f6 90%)',
-                                boxShadow: '0 4px 12px rgba(30, 58, 138, 0.3)',
-                                transition: 'all 0.3s ease-in-out',
+                                fontFamily: fontStack,
+                                bgcolor: micde.brand,
+                                color: '#fff',
+                                boxShadow: 'none',
                                 '&:hover': {
-                                    background: 'linear-gradient(45deg, #1e40af 30%, #2563eb 90%)',
-                                    boxShadow: '0 6px 16px rgba(30, 58, 138, 0.4)',
-                                    transform: 'translateY(-2px)'
+                                    bgcolor: micde.brandHover,
+                                    boxShadow: '0 4px 14px rgba(0, 90, 154, 0.35)',
                                 },
                                 '&:disabled': {
-                                    background: 'linear-gradient(45deg, #bdbdbd 30%, #e0e0e0 90%)',
-                                    boxShadow: 'none',
-                                    transform: 'none'
-                                }
+                                    bgcolor: '#a8a29e',
+                                    color: '#f5f5f4',
+                                },
                             }}
                         >
                             {loading ? (
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <CircularProgress size={18} color="inherit" />
-                                    Logging In...
+                                    Signing in…
                                 </Box>
                             ) : (
-                                'Login'
+                                'Sign in'
                             )}
                         </Button>
 
-                        <Box sx={{ textAlign: 'center', mt: 2 }}>
-                            <Typography variant="body2" sx={{ color: '#6b7280', mb: 0.5, fontSize: '0.85rem' }}>
-                                Don't have an account?
+                        <Box sx={{ textAlign: 'center', mt: 2.5, pt: 2, borderTop: `1px solid ${micde.borderLight}` }}>
+                            <Typography variant="body2" sx={{ color: micde.textMuted, mb: 0.5, fontSize: '0.8125rem', fontFamily: fontStack }}>
+                                Need an account?
                             </Typography>
-                            <Link component={RouterLink} to="/register" sx={{ fontSize: '0.9rem', textDecoration: 'none', color: '#3b82f6', fontWeight: 600, '&:hover': { textDecoration: 'underline', color: '#1e3a8a' } }}>
-                                Register here
+                            <Link component={RouterLink} to="/register" sx={{ fontSize: '0.9rem', textDecoration: 'none', color: micde.brand, fontWeight: 700, fontFamily: fontStack, '&:hover': { textDecoration: 'underline', color: micde.brandDark } }}>
+                                Register
                             </Link>
                         </Box>
                     </Box>
                 </CardContent>
             </Card>
-        </Container>
-        <AppFooter variant="fixed" />
-        </>
+            </Container>
+        </Box>
     );
 };
 

@@ -86,6 +86,7 @@ export const ROUTES = {
     SECTORS: '/sectors', // ✨ NEW: Sectors management route
     KENYA_WARDS: '/kenya-wards', // ✨ NEW: Kenya Wards management route
     AGENCIES: '/agencies', // ✨ NEW: Agencies management route
+    MINISTRIES_MANAGEMENT: '/ministries-management',
 
     // Sub-routes with dynamic parameters
     PROJECT_DETAILS: '/projects/:projectId',

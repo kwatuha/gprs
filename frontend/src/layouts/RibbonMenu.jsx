@@ -17,11 +17,37 @@ import BusinessIcon from '@mui/icons-material/Business';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import AnnouncementIcon from '@mui/icons-material/Announcement';
 import PublicIcon from '@mui/icons-material/Public';
+import ApartmentIcon from '@mui/icons-material/Apartment';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ROUTES } from '../configs/appConfig.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getFilteredMenuCategories, hasConfiguredRole } from '../configs/menuConfigUtils.js';
 import { useMenuCategory } from '../context/MenuCategoryContext.jsx';
+
+/** First sidebar destination when switching ribbon tab (menuConfig `route` keys). */
+const DEFAULT_ROUTE_KEY_BY_CATEGORY = {
+  dashboard: 'PROJECT_BY_STATUS_DASHBOARD',
+  reporting: 'PROJECTS',
+  management: 'CENTRAL_IMPORT',
+  public: 'PUBLIC_APPROVAL',
+  admin: 'USER_MANAGEMENT',
+};
+
+/** Which ribbon category owns this pathname (first match in menu order). */
+function findCategoryIdForPath(pathname, menuCategories) {
+  for (const cat of menuCategories) {
+    if (!cat.submenus?.length) continue;
+    for (const sub of cat.submenus) {
+      const route = sub.route && ROUTES[sub.route] ? ROUTES[sub.route] : sub.to;
+      if (!route) continue;
+      const routePath = String(route).split('?')[0];
+      if (pathname === routePath || pathname.startsWith(`${routePath}/`)) {
+        return cat.id;
+      }
+    }
+  }
+  return null;
+}
 
 // Icon mapping for Material-UI icons
 const ICON_MAP = {
@@ -42,6 +68,7 @@ const ICON_MAP = {
   AssignmentIcon,
   AnnouncementIcon,
   PublicIcon,
+  ApartmentIcon,
 };
 
 // Simple ribbon-like top menu with grouped actions - Click-based only, no hover switching
@@ -65,53 +92,6 @@ export default function RibbonMenu({ isAdmin = false }) {
     return index >= 0 ? index : (isAdmin ? 3 : 0);
   }, [selectedCategoryId, menuCategories, isAdmin]);
   
-  // Set initial category based on route - only when route changes, not when category is manually selected
-  useEffect(() => {
-    // Skip auto-detection if user just manually selected a category
-    if (manualSelectionRef.current) {
-      // Don't reset the flag here - let the auto-navigation effect handle it
-      // This prevents the route-based detection from overriding manual selection
-      return;
-    }
-    
-    const currentPath = location.pathname;
-    
-    // Check if current path matches any submenu in the currently selected category
-    const currentCategory = menuCategories.find(cat => cat.id === selectedCategoryId);
-    if (currentCategory && currentCategory.submenus) {
-      const matchesCurrentCategory = currentCategory.submenus.some(sub => {
-        const route = sub.route && ROUTES[sub.route] ? ROUTES[sub.route] : sub.to;
-        if (!route) return false;
-        const routePath = String(route).split('?')[0];
-        // Check for exact match or if current path starts with route path
-        return currentPath === routePath || currentPath.startsWith(routePath + '/');
-      });
-      
-      // If current path matches the selected category, don't change it
-      if (matchesCurrentCategory) {
-        return;
-      }
-    }
-    
-    // Only update category if we find a match in a different category
-    // This prevents resetting to dashboard when navigating within the same category
-    for (const category of menuCategories) {
-      if (category.submenus && category.id !== selectedCategoryId) {
-        const matchingSubmenu = category.submenus.find(sub => {
-          const route = sub.route && ROUTES[sub.route] ? ROUTES[sub.route] : sub.to;
-          if (!route) return false;
-          const routePath = String(route).split('?')[0];
-          // Check for exact match or if current path starts with route path
-          return currentPath === routePath || currentPath.startsWith(routePath + '/');
-        });
-        if (matchingSubmenu) {
-          setSelectedCategoryId(category.id);
-          break;
-        }
-      }
-    }
-  }, [location.pathname, menuCategories, setSelectedCategoryId, selectedCategoryId]);
-
   const go = (to) => () => navigate(to);
 
   // Only collapse the primary menu bar height on scroll
@@ -131,77 +111,55 @@ export default function RibbonMenu({ isAdmin = false }) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Define default routes for each category
-  // Special cases: Admin should default to User Management, Projects (reporting) should default to Projects Registry
   const getDefaultRouteForCategory = (categoryId) => {
-    const category = menuCategories.find(cat => cat.id === categoryId);
+    const category = menuCategories.find((cat) => cat.id === categoryId);
     if (!category || !category.submenus) return null;
-    
-    // Special case: Admin category defaults to User Management
-    if (categoryId === 'admin') {
-      const userManagementSubmenu = category.submenus.find(s => 
-        s.route === 'USER_MANAGEMENT' || s.to === ROUTES.USER_MANAGEMENT
-      );
-      if (userManagementSubmenu && !userManagementSubmenu.hidden) {
-        // Check if user has access
-        const hasPermission = !userManagementSubmenu.permission || (hasPrivilege && hasPrivilege(userManagementSubmenu.permission));
-        const hasRole = !userManagementSubmenu.roles || hasConfiguredRole(user, userManagementSubmenu.roles);
+
+    const preferredKey = DEFAULT_ROUTE_KEY_BY_CATEGORY[categoryId];
+    if (preferredKey) {
+      const submenu = category.submenus.find((s) => s.route === preferredKey);
+      if (submenu && !submenu.hidden) {
+        const hasPermission =
+          !submenu.permission || (hasPrivilege && hasPrivilege(submenu.permission));
+        const hasRole = !submenu.roles || hasConfiguredRole(user, submenu.roles);
         if (hasPermission && hasRole) {
-          return ROUTES.USER_MANAGEMENT;
+          if (submenu.route && ROUTES[submenu.route]) return ROUTES[submenu.route];
+          if (submenu.to) return submenu.to;
         }
       }
     }
-    
-    // Special case: Projects (reporting) category defaults to Projects Registry
-    if (categoryId === 'reporting') {
-      const projectsRegistrySubmenu = category.submenus.find(s => 
-        s.route === 'PROJECTS' || s.to === ROUTES.PROJECTS
-      );
-      if (projectsRegistrySubmenu && !projectsRegistrySubmenu.hidden) {
-        // Check if user has access
-        const hasPermission = !projectsRegistrySubmenu.permission || (hasPrivilege && hasPrivilege(projectsRegistrySubmenu.permission));
-        const hasRole = !projectsRegistrySubmenu.roles || hasConfiguredRole(user, projectsRegistrySubmenu.roles);
-        if (hasPermission && hasRole) {
-          return ROUTES.PROJECTS;
-        }
-      }
-    }
-    
-    // For other categories, get the first visible, accessible submenu as default
+
     for (const submenu of category.submenus) {
-      // Skip hidden items
       if (submenu.hidden) continue;
-      
-      // Check permissions
       if (submenu.permission && hasPrivilege && !hasPrivilege(submenu.permission)) continue;
-      
-      // Check roles
       if (submenu.roles && user && !hasConfiguredRole(user, submenu.roles)) continue;
-      
-      // Return the route for the first accessible submenu
-      if (submenu.route && ROUTES[submenu.route]) {
-        return ROUTES[submenu.route];
-      }
-      if (submenu.to) {
-        return submenu.to;
-      }
+      if (submenu.route && ROUTES[submenu.route]) return ROUTES[submenu.route];
+      if (submenu.to) return submenu.to;
     }
     return null;
   };
 
-  // Auto-navigate to default sidebar menu when a category is selected
+  // Sync ribbon category from URL + navigate to default when switching tabs (same tick as stale category was the flicker bug)
   useEffect(() => {
     if (!selectedCategoryId) return;
-    
+
     const currentPath = location.pathname;
     const standaloneAllowedRoutes = new Set([ROUTES.HELP_SUPPORT]);
     if (standaloneAllowedRoutes.has(currentPath)) {
       manualSelectionRef.current = false;
       return;
     }
-    
+
+    const categoryForPath = findCategoryIdForPath(currentPath, menuCategories);
+    // In-app navigation (sidebar, quick actions, notifications) updates URL before React state; align ribbon and do not redirect away
+    if (!manualSelectionRef.current && categoryForPath && categoryForPath !== selectedCategoryId) {
+      setSelectedCategoryId(categoryForPath);
+      manualSelectionRef.current = false;
+      return;
+    }
+
     // Get all routes for the selected category
-    const category = menuCategories.find(cat => cat.id === selectedCategoryId);
+    const category = menuCategories.find((cat) => cat.id === selectedCategoryId);
     if (!category || !category.submenus) return;
     
     const categoryRoutes = category.submenus
@@ -217,31 +175,17 @@ export default function RibbonMenu({ isAdmin = false }) {
       return currentPath === routePath || currentPath.startsWith(routePath + '/');
     });
     
-    // Check if current path belongs to ANY category (to prevent redirecting when navigating to valid routes)
-    const belongsToAnyCategory = menuCategories.some(cat => {
-      if (!cat.submenus) return false;
-      return cat.submenus.some(s => {
-        const route = s.route && ROUTES[s.route] ? ROUTES[s.route] : s.to;
-        if (!route) return false;
-        const routePath = String(route).split('?')[0];
-        return currentPath === routePath || currentPath.startsWith(routePath + '/');
-      });
-    });
-    
-    // If not on a category route, navigate to the default
-    // BUT: Only redirect if the current path doesn't belong to any category
-    // This prevents redirecting when user navigates to a valid route from Quick Actions
-    if (!isOnCategoryRoute && !belongsToAnyCategory) {
+    // If current URL is not under the selected ribbon category, go to that category's default screen.
+    // (Do not skip navigation just because the path matches a *different* category — that blocked tab switches before.)
+    if (!isOnCategoryRoute) {
       const defaultRoute = getDefaultRouteForCategory(selectedCategoryId);
       if (defaultRoute) {
-        // Reset manual selection flag after navigation is triggered
-        // This allows the route-based detection to work normally after navigation completes
         manualSelectionRef.current = false;
         navigate(defaultRoute);
+      } else {
+        manualSelectionRef.current = false;
       }
     } else {
-      // If we're already on a category route, reset the manual selection flag
-      // This allows normal route-based detection to work
       manualSelectionRef.current = false;
     }
   }, [selectedCategoryId, menuCategories, navigate, location.pathname, hasPrivilege, user]);

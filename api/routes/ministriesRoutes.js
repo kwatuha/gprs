@@ -170,16 +170,70 @@ router.post('/:ministryId/departments', async (req, res) => {
       return res.status(409).json({ message: 'A department with this name already exists' });
     }
 
-    const r = await pool.query(
-      `INSERT INTO departments (name, alias, "ministryId", voided, "userId")
-       VALUES ($1, $2, $3, false, $4)
-       RETURNING "departmentId", name, alias, "ministryId", "createdAt", "updatedAt"`,
-      [name.trim(), alias?.trim() || name.trim(), ministryId, req.user?.userId || req.user?.id || null]
-    );
-    res.status(201).json(r.rows[0]);
+    // Some environments may have slight schema drift on departments (e.g. missing userId column).
+    // Build the INSERT dynamically to keep add-state-department working reliably.
+    const colRes = await pool.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'departments'
+    `);
+    const colRows = colRes.rows || [];
+    const colSet = new Set(colRows.map((r) => String(r.column_name)));
+    const hasUserId = colSet.has('userId');
+    const deptIdMeta = colRows.find((r) => String(r.column_name) === 'departmentId');
+    const hasDeptIdDefault = !!String(deptIdMeta?.column_default || '').trim();
+
+    const insertCols = ['name', 'alias', '"ministryId"', 'voided'];
+    const insertVals = [name.trim(), alias?.trim() || name.trim(), ministryId, false];
+
+    // Some databases have "departmentId" PK without default nextval; set it explicitly in that case.
+    if (colSet.has('departmentId') && !hasDeptIdDefault) {
+      const nextIdRes = await pool.query(
+        `SELECT COALESCE(MAX("departmentId"), 0) + 1 AS "nextId" FROM departments`
+      );
+      const nextId = Number(nextIdRes.rows?.[0]?.nextId || 1);
+      insertCols.unshift('"departmentId"');
+      insertVals.unshift(nextId);
+    }
+    if (hasUserId) {
+      insertCols.push('"userId"');
+      insertVals.push(req.user?.userId || req.user?.id || null);
+    }
+    const placeholders = insertVals.map((_, i) => `$${i + 1}`).join(', ');
+
+    let r;
+    try {
+      r = await pool.query(
+        `INSERT INTO departments (${insertCols.join(', ')})
+         VALUES (${placeholders})
+         RETURNING "departmentId", name, alias, "ministryId"`,
+        insertVals
+      );
+    } catch (retErr) {
+      // Fallback for older schemas where RETURNING projected columns may differ.
+      const ins = await pool.query(
+        `INSERT INTO departments (${insertCols.join(', ')})
+         VALUES (${placeholders})
+         RETURNING *`,
+        insertVals
+      );
+      r = {
+        rows: [{
+          departmentId: ins.rows?.[0]?.departmentId ?? ins.rows?.[0]?.departmentid ?? ins.rows?.[0]?.id,
+          name: ins.rows?.[0]?.name,
+          alias: ins.rows?.[0]?.alias,
+          ministryId: ins.rows?.[0]?.ministryId ?? ins.rows?.[0]?.ministryid,
+        }],
+      };
+    }
+    res.status(201).json(r.rows?.[0] || null);
   } catch (e) {
     console.error('POST ministry department', e);
-    res.status(500).json({ message: 'Failed to create state department', error: e.message });
+    res.status(500).json({
+      message: 'Failed to create state department',
+      error: e.message,
+      code: e.code || null,
+    });
   }
 });
 

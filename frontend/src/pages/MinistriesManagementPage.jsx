@@ -196,10 +196,19 @@ export default function MinistriesManagementPage() {
       setSnackbar({ open: true, message: 'State department name is required', severity: 'error' });
       return;
     }
-    const mid = deptDialog.ministry.ministryId;
+    const mid = deptDialog.ministry.ministryId ?? deptDialog.ministry.id;
+    if (!mid) {
+      setSnackbar({ open: true, message: 'Invalid ministry selected. Re-open dialog and try again.', severity: 'error' });
+      return;
+    }
     try {
       if (deptDialog.editing) {
-        await axiosInstance.put(`/ministries/${mid}/departments/${deptDialog.editing.departmentId}`, {
+        const departmentId = deptDialog.editing.departmentId ?? deptDialog.editing.id;
+        if (!departmentId) {
+          setSnackbar({ open: true, message: 'Invalid state department selected.', severity: 'error' });
+          return;
+        }
+        await axiosInstance.put(`/ministries/${mid}/departments/${departmentId}`, {
           name: deptForm.name.trim(),
           alias: deptForm.alias?.trim() || null,
         });
@@ -216,7 +225,7 @@ export default function MinistriesManagementPage() {
     } catch (e) {
       setSnackbar({
         open: true,
-        message: e?.response?.data?.message || 'Save failed',
+        message: e?.response?.data?.message || e?.response?.data?.error || e?.message || 'Save failed',
         severity: 'error',
       });
     }
@@ -415,7 +424,7 @@ export default function MinistriesManagementPage() {
                         </TableRow>
                       ) : (
                         m.departments.map((d) => (
-                          <TableRow key={d.departmentId}>
+                          <TableRow key={d.departmentId ?? d.id}>
                             <TableCell>{d.name}</TableCell>
                             <TableCell>{d.alias || '—'}</TableCell>
                             <TableCell align="right">
@@ -433,8 +442,8 @@ export default function MinistriesManagementPage() {
                                 color="error"
                                 onClick={() =>
                                   setDeleteDept({
-                                    ministryId: m.ministryId,
-                                    departmentId: d.departmentId,
+                                    ministryId: m.ministryId ?? m.id,
+                                    departmentId: d.departmentId ?? d.id,
                                     name: d.name,
                                   })
                                 }

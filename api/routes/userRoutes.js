@@ -3,7 +3,56 @@ const router = express.Router();
 const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
 const orgScope = require('../services/organizationScopeService');
-const { isSuperAdminRequester } = require('../utils/roleUtils');
+const { isSuperAdminRequester, normalizeRoleForCompare } = require('../utils/roleUtils');
+
+const ALLOWED_ASSIGNMENT_ROLES_FOR_MDA_ICT_ADMIN = new Set([
+    'data entry officer',
+    'data approver',
+    'viewer',
+]);
+
+function isMdaIctAdminRequester(reqUser) {
+    const raw = reqUser?.roleName ?? reqUser?.role ?? '';
+    return normalizeRoleForCompare(raw) === 'mda ict admin';
+}
+
+async function getRoleNameById(roleId, DB_TYPE) {
+    if (DB_TYPE === 'postgresql') {
+        const r = await pool.query(
+            'SELECT name AS "roleName" FROM roles WHERE roleid = $1 AND voided = false',
+            [roleId]
+        );
+        return r.rows?.[0]?.roleName || null;
+    }
+    const r = await pool.query('SELECT roleName FROM roles WHERE roleId = ? AND voided = 0', [roleId]);
+    const rows = Array.isArray(r) ? r[0] : r;
+    return rows?.[0]?.roleName || null;
+}
+
+async function enforceRoleAssignmentPermission(reqUser, targetRoleId, DB_TYPE) {
+    const roleIdNum = parseInt(String(targetRoleId), 10);
+    if (!Number.isFinite(roleIdNum)) {
+        return { ok: false, status: 400, error: 'Invalid roleId.' };
+    }
+    if (isSuperAdminRequester(reqUser)) {
+        return { ok: true };
+    }
+    if (!isMdaIctAdminRequester(reqUser)) {
+        return { ok: true };
+    }
+    const targetRoleName = await getRoleNameById(roleIdNum, DB_TYPE);
+    if (!targetRoleName) {
+        return { ok: false, status: 400, error: 'Selected role does not exist.' };
+    }
+    if (!ALLOWED_ASSIGNMENT_ROLES_FOR_MDA_ICT_ADMIN.has(normalizeRoleForCompare(targetRoleName))) {
+        return {
+            ok: false,
+            status: 403,
+            error: 'MDA ICT Admin can only assign Data Entry Officer, Data Approver, or Viewer roles.',
+        };
+    }
+    return { ok: true };
+}
 
 /**
  * Active (non-voided) users with role/agency joins; optional org scopes on PostgreSQL.
@@ -313,6 +362,10 @@ router.post('/users', async (req, res) => {
 
     try {
         const DB_TYPE = process.env.DB_TYPE || 'mysql';
+        const roleGuard = await enforceRoleAssignmentPermission(req.user, roleId, DB_TYPE);
+        if (!roleGuard.ok) {
+            return res.status(roleGuard.status).json({ error: roleGuard.error });
+        }
         
         // Check for existing users
         let checkQuery;
@@ -486,6 +539,12 @@ router.put('/users/:id', async (req, res) => {
     }
 
     const DB_TYPE = process.env.DB_TYPE || 'mysql';
+    if (Object.prototype.hasOwnProperty.call(otherFieldsToUpdate, 'roleId')) {
+        const roleGuard = await enforceRoleAssignmentPermission(req.user, otherFieldsToUpdate.roleId, DB_TYPE);
+        if (!roleGuard.ok) {
+            return res.status(roleGuard.status).json({ error: roleGuard.error });
+        }
+    }
     
     if (password && password.trim() !== '') {
         const salt = await bcrypt.genSalt(10);

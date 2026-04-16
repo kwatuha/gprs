@@ -15,7 +15,7 @@ import apiServiceMain from '../api';
 import axiosInstance from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext.jsx';
 import { tokens } from "./dashboard/theme";
-import { isSuperAdminUser } from '../utils/roleUtils';
+import { isSuperAdminUser, normalizeRoleForCompare } from '../utils/roleUtils';
 
 
 // --- Utility function for case conversion (Copied from ProjectDetailsPage for consistency) ---
@@ -152,6 +152,7 @@ function getUserOrgGroupInfo(user, options = {}) {
 function UserManagementPage() {
   const { user, logout, hasPrivilege } = useAuth();
   const isSuperAdmin = isSuperAdminUser(user);
+  const isMdaIctAdmin = normalizeRoleForCompare(user?.role || user?.roleName) === 'mda ict admin';
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -259,6 +260,15 @@ function UserManagementPage() {
   });
   const [roleFormErrors, setRoleFormErrors] = useState({});
   const [initialRolePrivilegeIds, setInitialRolePrivilegeIds] = useState([]);
+
+  const assignableRoles = useMemo(() => {
+    if (isSuperAdmin) return roles;
+    if (isMdaIctAdmin) {
+      const allowed = new Set(['data entry officer', 'data approver', 'viewer']);
+      return roles.filter((role) => allowed.has(normalizeRoleForCompare(role.roleName)));
+    }
+    return roles;
+  }, [isSuperAdmin, isMdaIctAdmin, roles]);
 
   // Privilege Management States
   const [openPrivilegeManagementDialog, setOpenPrivilegeManagementDialog] = useState(false);
@@ -985,7 +995,7 @@ function UserManagementPage() {
     setLoading(true);
     try {
       // Convert role name to roleId for backend
-      const selectedRole = roles.find(role => role.roleName === userFormData.role);
+      const selectedRole = assignableRoles.find(role => role.roleName === userFormData.role) || roles.find(role => role.roleName === userFormData.role);
       const dataToSend = {
         ...userFormData,
         roleId: selectedRole ? selectedRole.roleId : null,
@@ -3007,7 +3017,7 @@ function UserManagementPage() {
               value={userFormData.role}
               onChange={handleUserFormChange}
             >
-              {roles.map(role => (
+              {assignableRoles.map(role => (
                 <MenuItem key={role.roleId} value={role.roleName}>{role.roleName}</MenuItem>
               ))}
             </Select>

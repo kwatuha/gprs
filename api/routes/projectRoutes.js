@@ -8,6 +8,7 @@ const multer = require('multer');
 const xlsx = require('xlsx');
 const { addStatusFilter } = require('../utils/statusFilterHelper');
 const privilege = require('../middleware/privilegeMiddleware');
+const { isSuperAdminRequester } = require('../utils/roleUtils');
 
 const getScopeUserId = (user) => user?.id ?? user?.userId ?? user?.actualUserId ?? null;
 
@@ -3192,7 +3193,6 @@ router.get('/', async (req, res) => {
         let fromAndJoinClauses = DB_TYPE === 'postgresql' ? `
             FROM
                 projects p
-            LEFT JOIN categories cat ON p.category_id = cat."categoryId" AND (cat.voided IS NULL OR cat.voided = false)
             LEFT JOIN (
                 SELECT project_id, COUNT(*) AS site_count
                 FROM project_sites
@@ -3225,7 +3225,7 @@ router.get('/', async (req, res) => {
 
         const authUserId = getScopeUserId(req.user);
         const authPrivileges = req.user?.privileges || [];
-        if (DB_TYPE === 'postgresql' && authUserId && !orgScope.userHasOrganizationBypass(authPrivileges)) {
+        if (DB_TYPE === 'postgresql' && authUserId && !isSuperAdminRequester(req.user) && !orgScope.userHasOrganizationBypass(authPrivileges)) {
             if (await orgScope.organizationScopeTableExists()) {
                 whereConditions.push(orgScope.buildProjectListScopeFragment('p'));
                 queryParams = [...orgScope.projectScopeParamTriple(authUserId), ...queryParams];
@@ -4395,7 +4395,7 @@ router.get('/:id', async (req, res) => {
 
                const authUserId = getScopeUserId(req.user);
         const authPrivileges = req.user?.privileges || [];
-        if (DB_TYPE === 'postgresql' && authUserId && !orgScope.userHasOrganizationBypass(authPrivileges)) {
+        if (DB_TYPE === 'postgresql' && authUserId && !isSuperAdminRequester(req.user) && !orgScope.userHasOrganizationBypass(authPrivileges)) {
             if (await orgScope.organizationScopeTableExists()) {
                 query = orgScope.appendSingleProjectScopeWhereClause(query);
                 params = orgScope.singleProjectScopeParams(id, authUserId);

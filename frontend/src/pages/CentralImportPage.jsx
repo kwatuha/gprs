@@ -542,6 +542,32 @@ function CentralImportPage() {
 
     setLoading(true);
     try {
+      // For projects, prefer static template first to avoid noisy API 404s
+      // when backend template file is not deployed but fallback assets exist.
+      if (currentImportType.id === 'projects') {
+        const staticPath = STATIC_TEMPLATE_PATHS[currentImportType.id];
+        if (staticPath) {
+          try {
+            const res = await fetch(staticPath);
+            if (res.ok) {
+              const blob = await res.blob();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `${currentImportType.name.toLowerCase().replace(' ', '_')}_import_template.xlsx`;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              window.URL.revokeObjectURL(url);
+              setSnackbar({ open: true, message: 'Template downloaded from static assets.', severity: 'success' });
+              return;
+            }
+          } catch (_staticErr) {
+            // Fall through to API + existing fallback behavior.
+          }
+        }
+      }
+
       let response;
       
       // Route to appropriate template endpoint

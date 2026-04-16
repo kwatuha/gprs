@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# GPRS Application Deployment Script to Remote Server
+# GPRIS production deployment script (login.gpris.go.ke)
 # Server: 102.210.149.119
 # User: fortress
 
@@ -10,6 +10,7 @@ SERVER_IP="102.210.149.119"
 SERVER_PATH="/home/fortress/gprs"
 SSH_KEY="$HOME/.ssh/id_gprs_server"
 APP_DOMAIN="login.gpris.go.ke"
+COMPOSE_PROJECT_NAME="gpris"
 
 # To copy PostgreSQL data from this server to your laptop for analysis (e.g. organization scopes),
 # deployment does not run pg_dump. Use the same SSH_* values as above:
@@ -120,7 +121,8 @@ create_server_directory() {
 }
 
 # Sync files to server
-# Note: public-dashboard is excluded as it's no longer used. To re-enable:
+# Note (GPRIS): public dashboard is intentionally excluded because login.gpris.go.ke
+# serves only the authenticated portal from this deploy path. To re-enable:
 # 1. Remove '--exclude public-dashboard' from rsync commands below
 # 2. Uncomment public-dashboard service in docker-compose.prod.yml
 sync_files() {
@@ -225,6 +227,7 @@ deploy_on_server() {
             DOCKER_COMPOSE_CMD="docker-compose"
         fi
         COMPOSE_FILE="docker-compose.prod.yml"
+        COMPOSE_PROJECT="gpris"
 
         # Stop and remove public dashboard container if it exists (no longer needed)
         print_status "Stopping and removing public dashboard container (if exists)..."
@@ -236,7 +239,7 @@ deploy_on_server() {
         docker stop gov_react_frontend gov_node_api gov_nginx_proxy 2>/dev/null || true
         docker rm gov_react_frontend gov_node_api gov_nginx_proxy 2>/dev/null || true
 
-        \$DOCKER_COMPOSE_CMD -f \$COMPOSE_FILE down --remove-orphans 2>/dev/null || true
+        \$DOCKER_COMPOSE_CMD -p \$COMPOSE_PROJECT -f \$COMPOSE_FILE down --remove-orphans 2>/dev/null || true
         
         # Verify docker-compose.prod.yml was synced
         if [ ! -f \$COMPOSE_FILE ]; then
@@ -251,10 +254,10 @@ deploy_on_server() {
         # Use Docker layer cache for faster, less resource-intensive deploys.
         # If you need a clean rebuild, run manually on server:
         #   docker compose -f docker-compose.prod.yml build --no-cache
-        \$DOCKER_COMPOSE_CMD -f \$COMPOSE_FILE build
+        \$DOCKER_COMPOSE_CMD -p \$COMPOSE_PROJECT -f \$COMPOSE_FILE build
         
         print_status "Starting services..."
-        \$DOCKER_COMPOSE_CMD -f \$COMPOSE_FILE up -d
+        \$DOCKER_COMPOSE_CMD -p \$COMPOSE_PROJECT -f \$COMPOSE_FILE up -d
         
         # Wait for containers to be fully started
         print_status "Waiting for containers to start..."
@@ -278,7 +281,7 @@ deploy_on_server() {
                     sed -i "s|http://[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}:80|http://\$FRONTEND_IP:80|g" ./nginx/nginx-production.conf
                     # Restart nginx_proxy to pick up the new config
                     print_status "Restarting nginx_proxy to apply new frontend IP..."
-                    \$DOCKER_COMPOSE_CMD -f \$COMPOSE_FILE restart nginx_proxy
+                    \$DOCKER_COMPOSE_CMD -p \$COMPOSE_PROJECT -f \$COMPOSE_FILE restart nginx_proxy
                     sleep 3
                     print_success "Nginx config updated with frontend IP: \$FRONTEND_IP"
                 else
@@ -294,17 +297,17 @@ deploy_on_server() {
         
         # Restart API to reconnect to database (in case of configuration changes)
         print_status "Restarting API to reconnect to database..."
-        \$DOCKER_COMPOSE_CMD -f \$COMPOSE_FILE restart api
+        \$DOCKER_COMPOSE_CMD -p \$COMPOSE_PROJECT -f \$COMPOSE_FILE restart api
         
         # Restart frontend to pick up latest code changes
         print_status "Restarting frontend to load latest changes..."
-        \$DOCKER_COMPOSE_CMD -f \$COMPOSE_FILE restart frontend
+        \$DOCKER_COMPOSE_CMD -p \$COMPOSE_PROJECT -f \$COMPOSE_FILE restart frontend
         
         sleep 3
         
         # Check status
         print_status "Checking container status..."
-        \$DOCKER_COMPOSE_CMD -f \$COMPOSE_FILE ps
+        \$DOCKER_COMPOSE_CMD -p \$COMPOSE_PROJECT -f \$COMPOSE_FILE ps
         
         # NOTE: PostgreSQL password reset cron jobs have been removed
         # The app now connects to localhost PostgreSQL, not a Docker container

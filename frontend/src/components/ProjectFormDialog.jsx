@@ -300,69 +300,6 @@ const ProjectFormDialog = ({
             Project Details
           </Typography>
           <Grid container spacing={1.5}>
-            {/* Project Type - determines which site fields are shown */}
-            <Grid item xs={12} sm={6}>
-              <FormControl 
-                fullWidth 
-                variant="outlined" 
-                size="small" 
-                error={!!formErrors.categoryId}
-                sx={{ minWidth: 200 }}
-              >
-                <InputLabel sx={{ color: colorMode === 'dark' ? colors.grey[100] : colors.grey[200], fontWeight: 'bold' }}>
-                  Project Type (optional)
-                </InputLabel>
-                <Select 
-                  name="categoryId" 
-                  label="Project Type (optional)"
-                  value={formData.categoryId ? String(formData.categoryId) : ''} 
-                  onChange={handleChange}
-                  autoFocus
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': {
-                        borderColor: formErrors.categoryId ? colors.redAccent[500] : colors.blueAccent[600],
-                        borderWidth: '2px',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: formErrors.categoryId ? colors.redAccent[600] : colors.blueAccent[500],
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: formErrors.categoryId ? colors.redAccent[500] : colors.greenAccent[500],
-                        borderWidth: '2px',
-                      },
-                    },
-                  }}
-                >
-                  <MenuItem value="">
-                    <em>None</em>
-                  </MenuItem>
-                  {(() => {
-                    const fromMetadata = allMetadata?.projectCategories;
-                    const categories = (fromMetadata && Array.isArray(fromMetadata) && fromMetadata.length > 0)
-                      ? fromMetadata
-                      : projectCategoriesFallback;
-                    if (!categories || categories.length === 0) {
-                      return (
-                        <MenuItem disabled value="">
-                          {loadingProjectCategories ? 'Loading project types...' : 'No project types available. Please add project types first.'}
-                        </MenuItem>
-                      );
-                    }
-                    return categories.map((category) => (
-                      <MenuItem key={category.categoryId} value={String(category.categoryId)}>
-                        {category.categoryName}
-                      </MenuItem>
-                    ));
-                  })()}
-                </Select>
-                {formErrors.categoryId && (
-                  <Typography variant="caption" sx={{ color: colors.redAccent[500], mt: 0.5, ml: 1.75 }}>
-                    {formErrors.categoryId}
-                  </Typography>
-                )}
-              </FormControl>
-            </Grid>
             {/* Sector Field */}
             <Grid item xs={12} sm={6}>
               <Autocomplete

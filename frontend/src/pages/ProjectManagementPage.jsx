@@ -66,7 +66,7 @@ function ProjectManagementPage() {
   const {
     projects, loading, error, snackbar,
     setSnackbar, allMetadata, fetchProjects,
-  } = useProjectData(user, authLoading, emptyFilterState);
+  } = useProjectData(user, authLoading, emptyFilterState, { fetchMetadata: false });
 
   // State to track if all projects are loaded (vs initial limited load)
   const [allProjectsLoaded, setAllProjectsLoaded] = useState(false);

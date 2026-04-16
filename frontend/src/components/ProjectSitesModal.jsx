@@ -64,6 +64,9 @@ const ProjectSitesModal = ({ open, onClose, projectId, projectName }) => {
   // Site updates history state
   const [updatesDialogOpen, setUpdatesDialogOpen] = useState(false);
   const [updatesSite, setUpdatesSite] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [siteToDelete, setSiteToDelete] = useState(null);
+  const [deletingSite, setDeletingSite] = useState(false);
 
   useEffect(() => {
     if (open && projectId) {
@@ -209,20 +212,31 @@ const ProjectSitesModal = ({ open, onClose, projectId, projectName }) => {
     }
   };
 
-  const handleDeleteSite = async (site) => {
+  const handleDeleteSite = (site) => {
     if (!site || !projectId) return;
     const siteId = site.site_id || site.id;
     if (!siteId) return;
+    setSiteToDelete(site);
+    setDeleteConfirmOpen(true);
+  };
 
-    const confirmed = window.confirm('Are you sure you want to delete this site?');
-    if (!confirmed) return;
+  const confirmDeleteSite = async () => {
+    if (!siteToDelete || !projectId) return;
+    const siteId = siteToDelete.site_id || siteToDelete.id;
+    if (!siteId) return;
 
     try {
+      setDeletingSite(true);
       await axiosInstance.delete(`/projects/${projectId}/sites/${siteId}`);
+      setDeleteConfirmOpen(false);
+      setSiteToDelete(null);
       await fetchSites();
     } catch (err) {
       console.error('Failed to delete site:', err);
-      // Keep the modal usable; just log for now
+      setDeleteConfirmOpen(false);
+      setSiteToDelete(null);
+    } finally {
+      setDeletingSite(false);
     }
   };
 
@@ -714,6 +728,52 @@ const ProjectSitesModal = ({ open, onClose, projectId, projectName }) => {
             disabled={editSaving}
           >
             {editSaving ? 'Saving...' : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => {
+          if (deletingSite) return;
+          setDeleteConfirmOpen(false);
+          setSiteToDelete(null);
+        }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ color: 'error.main', fontWeight: 700 }}>
+          Delete Site?
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mt: 0.5 }}>
+            Are you sure you want to delete this site?
+          </Typography>
+          <Typography variant="subtitle2" sx={{ mt: 1.5, fontWeight: 700 }}>
+            {siteToDelete?.site_name || siteToDelete?.siteName || 'Selected site'}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setDeleteConfirmOpen(false);
+              setSiteToDelete(null);
+            }}
+            disabled={deletingSite}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={confirmDeleteSite}
+            disabled={deletingSite}
+          >
+            {deletingSite ? 'Deleting...' : 'Delete Site'}
           </Button>
         </DialogActions>
       </Dialog>

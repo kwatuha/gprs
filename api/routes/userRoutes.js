@@ -980,11 +980,34 @@ router.post('/roles', async (req, res) => {
         let insertedRoleId;
         
         if (DB_TYPE === 'postgresql') {
-            const insertResult = await pool.query(
-                'INSERT INTO roles (name, description, createdat, updatedat, voided) VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false) RETURNING roleid',
-                [roleNameValue, description || null]
-            );
-            insertedRoleId = insertResult.rows[0].roleid;
+            const insertSql = 'INSERT INTO roles (name, description, createdat, updatedat, voided) VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false) RETURNING roleid';
+            const insertParams = [roleNameValue, description || null];
+            try {
+                const insertResult = await pool.query(insertSql, insertParams);
+                insertedRoleId = insertResult.rows[0].roleid;
+            } catch (pgInsertError) {
+                const detail = String(pgInsertError.detail || pgInsertError.message || '').toLowerCase();
+                const isRoleIdDuplicate =
+                    pgInsertError.code === '23505' &&
+                    (/roleid\)=\(\d+\)\s+already exists/i.test(String(pgInsertError.detail || '')) ||
+                        (detail.includes('roleid') && detail.includes('already exists')));
+
+                if (!isRoleIdDuplicate) {
+                    throw pgInsertError;
+                }
+
+                // Auto-heal roles.roleid sequence drift, then retry once.
+                await pool.query(`
+                    SELECT setval(
+                        pg_get_serial_sequence('roles', 'roleid'),
+                        COALESCE((SELECT MAX(roleid) FROM roles), 1),
+                        true
+                    )
+                `);
+
+                const retryInsertResult = await pool.query(insertSql, insertParams);
+                insertedRoleId = retryInsertResult.rows[0].roleid;
+            }
         } else {
             const newRole = {
                 roleName: roleNameValue,
@@ -1019,7 +1042,17 @@ router.post('/roles', async (req, res) => {
     } catch (error) {
         console.error('Error creating role:', error);
         if (error.code === 'ER_DUP_ENTRY' || error.code === '23505') {
-            return res.status(400).json({ error: 'Role with that name already exists.' });
+            const detail = String(error.detail || error.message || '').toLowerCase();
+            const isRoleIdDuplicate =
+                /roleid\)=\(\d+\)\s+already exists/i.test(String(error.detail || '')) ||
+                (detail.includes('roleid') && detail.includes('already exists'));
+            return res.status(400).json({
+                error: isRoleIdDuplicate
+                    ? 'Role ID sequence is out of sync with the table (duplicate primary key).'
+                    : 'Role with that name already exists.',
+                code: isRoleIdDuplicate ? 'ROLE_ID_SEQUENCE_OUT_OF_SYNC' : 'ROLE_NAME_DUPLICATE',
+                detail: error.detail || undefined,
+            });
         }
         res.status(500).json({ message: 'Error creating role', error: error.message });
     }

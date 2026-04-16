@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const pool = require('../config/db'); // Your database connection pool
 const orgScope = require('../services/organizationScopeService');
 const authenticate = require('../middleware/authenticate');
+const { normalizeRoleForCompare, ADMIN_LIKE_ROLE_NAMES } = require('../utils/roleUtils');
 
 require('dotenv').config(); // Load environment variables
 
@@ -172,6 +173,7 @@ router.post('/register', async (req, res) => {
         
         // Get default role (usually a basic user role like 'viewer' or first available)
         let roleId = null;
+        const adminLikeRoleNamesList = Array.from(ADMIN_LIKE_ROLE_NAMES);
         
         if (DB_TYPE === 'postgresql') {
             // First try to find 'viewer' role (common default)
@@ -187,9 +189,10 @@ router.post('/register', async (req, res) => {
                     `SELECT roleid
                      FROM roles
                      WHERE voided = false
-                       AND LOWER(TRIM(name)) NOT IN ('admin', 'mda ict admin', 'super admin', 'administrator', 'ict admin')
+                       AND LOWER(TRIM(name)) NOT IN (${adminLikeRoleNamesList.map((_, idx) => `$${idx + 1}`).join(', ')})
                      ORDER BY roleid
-                     LIMIT 1`
+                     LIMIT 1`,
+                    adminLikeRoleNamesList
                 );
                 const fallbackRows = fallbackResult.rows || [];
                 roleId = fallbackRows.length > 0 ? fallbackRows[0].roleid : null;
@@ -208,9 +211,10 @@ router.post('/register', async (req, res) => {
                     `SELECT roleId
                      FROM roles
                      WHERE voided = 0
-                       AND LOWER(TRIM(roleName)) NOT IN ('admin', 'mda ict admin', 'super admin', 'administrator', 'ict admin')
+                       AND LOWER(TRIM(roleName)) NOT IN (${adminLikeRoleNamesList.map(() => '?').join(', ')})
                      ORDER BY roleId
-                     LIMIT 1`
+                     LIMIT 1`,
+                    adminLikeRoleNamesList
                 );
                 const fallbackRows = Array.isArray(fallbackResult) ? fallbackResult[0] : fallbackResult.rows || fallbackResult;
                 roleId = Array.isArray(fallbackRows) && fallbackRows.length > 0 ? fallbackRows[0].roleId : null;
@@ -420,7 +424,7 @@ router.post('/login', async (req, res) => {
                 organizationScopes,
             }
         };
-        const normalizedRole = String(user.role || '').trim().toLowerCase().replace(/[_-]+/g, ' ');
+        const normalizedRole = normalizeRoleForCompare(user.role || '');
         const isSuperAdmin = normalizedRole === 'super admin';
         const isDefaultResetPassword = String(password || '').trim() === 'reset123';
         const forcePasswordChange = isSuperAdmin || isDefaultResetPassword;

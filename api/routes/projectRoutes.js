@@ -2510,8 +2510,20 @@ router.get('/organization-distribution', async (req, res) => {
                     ${selectState},
                     ${selectAgency},
                     COUNT(p.project_id)::int AS "projectCount",
-                    COALESCE(SUM(COALESCE((p.budget->>'allocated_amount_kes')::numeric, 0)), 0) AS "allocatedBudget",
-                    COALESCE(SUM(COALESCE((p.budget->>'disbursed_amount_kes')::numeric, 0)), 0) AS "disbursedBudget"
+                    COALESCE(SUM(
+                        CASE
+                            WHEN (p.budget->>'allocated_amount_kes') ~ '^[0-9]+(\\.[0-9]+)?$'
+                            THEN (p.budget->>'allocated_amount_kes')::numeric
+                            ELSE 0
+                        END
+                    ), 0) AS "allocatedBudget",
+                    COALESCE(SUM(
+                        CASE
+                            WHEN (p.budget->>'disbursed_amount_kes') ~ '^[0-9]+(\\.[0-9]+)?$'
+                            THEN (p.budget->>'disbursed_amount_kes')::numeric
+                            ELSE 0
+                        END
+                    ), 0) AS "disbursedBudget"
                 FROM projects p
                 WHERE ${whereConditions.join(' AND ')}
                 GROUP BY ${groupByExpr}
@@ -2608,8 +2620,16 @@ router.get('/organization-projects', async (req, res) => {
                     COALESCE(NULLIF(TRIM(p.ministry), ''), 'Unassigned') AS ministry,
                     COALESCE(NULLIF(TRIM(p.state_department), ''), 'Unassigned') AS "stateDepartment",
                     COALESCE(NULLIF(TRIM(p.implementing_agency), ''), 'Unassigned') AS agency,
-                    COALESCE((p.budget->>'allocated_amount_kes')::numeric, 0) AS "allocatedBudget",
-                    COALESCE((p.budget->>'disbursed_amount_kes')::numeric, 0) AS "disbursedBudget",
+                    CASE
+                        WHEN (p.budget->>'allocated_amount_kes') ~ '^[0-9]+(\\.[0-9]+)?$'
+                        THEN (p.budget->>'allocated_amount_kes')::numeric
+                        ELSE 0
+                    END AS "allocatedBudget",
+                    CASE
+                        WHEN (p.budget->>'disbursed_amount_kes') ~ '^[0-9]+(\\.[0-9]+)?$'
+                        THEN (p.budget->>'disbursed_amount_kes')::numeric
+                        ELSE 0
+                    END AS "disbursedBudget",
                     p.updated_at AS "updatedAt"
                 FROM projects p
                 WHERE ${whereConditions.join(' AND ')}
@@ -5028,6 +5048,18 @@ router.delete('/:id', async (req, res) => {
     if (isNaN(parseInt(id))) { return res.status(400).json({ message: 'Invalid project ID' }); }
     
     try {
+        const DB_TYPE = process.env.DB_TYPE || 'mysql';
+        if (DB_TYPE === 'postgresql') {
+            const result = await pool.query(
+                'UPDATE projects SET voided = true, updated_at = CURRENT_TIMESTAMP WHERE project_id = $1 AND voided = false',
+                [id]
+            );
+            if (!result.rowCount) {
+                return res.status(404).json({ message: 'Project not found or already deleted' });
+            }
+            return res.status(200).json({ message: 'Project soft-deleted successfully' });
+        }
+
         const connection = await pool.getConnection();
         try {
             await connection.beginTransaction();
@@ -5037,7 +5069,7 @@ router.delete('/:id', async (req, res) => {
                 return res.status(404).json({ message: 'Project not found or already deleted' });
             }
             await connection.commit();
-            res.status(200).json({ message: 'Project soft-deleted successfully' });
+            return res.status(200).json({ message: 'Project soft-deleted successfully' });
         } catch (error) {
             await connection.rollback();
             throw error;

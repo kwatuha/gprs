@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import apiService from '../api';
 import { checkUserPrivilege } from '../utils/tableHelpers';
 
-const useProjectData = (user, authLoading, filterState) => {
+const useProjectData = (user, authLoading, filterState, options = {}) => {
+  const { fetchMetadata = true } = options;
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -116,9 +117,11 @@ const useProjectData = (user, authLoading, filterState) => {
   useEffect(() => {
     if (!authLoading && user) {
         fetchProjects(false); // Initial load with limit (100 projects)
-        fetchAllMetadata();
+        if (fetchMetadata) {
+          fetchAllMetadata();
+        }
     }
-  }, [authLoading, user, fetchProjects, fetchAllMetadata]);
+  }, [authLoading, user, fetchProjects, fetchAllMetadata, fetchMetadata]);
 
   return {
     projects,

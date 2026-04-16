@@ -64,10 +64,17 @@ const projectService = {
       return response.data;
     },
     downloadProjectTemplate: async () => {
-      const response = await axiosInstance.get('/projects/template', {
-        responseType: 'blob'
+      const token = localStorage.getItem('jwtToken');
+      const baseUrl = axiosInstance.defaults.baseURL || '/api';
+      const response = await fetch(`${baseUrl}/projects/template`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      return response.data;
+      if (!response.ok) {
+        const error = new Error(`Template request failed with status ${response.status}`);
+        error.status = response.status;
+        throw error;
+      }
+      return await response.blob();
     },
     
     // NEW: Function to apply a milestone template to an existing project

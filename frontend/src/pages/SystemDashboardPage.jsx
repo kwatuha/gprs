@@ -59,138 +59,11 @@ import { tokens } from './dashboard/theme';
  * High-level, system-wide dashboard that surfaces critical signals
  * from across the platform: projects, jobs created, and project sites.
  *
- * This implementation uses curated sample data that mirrors the
- * structure of the projects import template and the Jobs/Sites features,
- * so it remains informative even before real analytics APIs are wired in.
+ * Uses live analytics/project data from backend APIs.
  */
 
-// Sample project-level data (aligned with projects_import_template.xlsx headers)
-// Enhanced with all template fields: directorate, sub-county, budgetSource, percentageComplete, etc.
-const SAMPLE_PROJECTS = [
-  {
-    projectName: 'Level 4 Hospital Upgrade',
-    Status: 'In Progress',
-    budget: 120_000_000,
-    Disbursed: 72_000_000,
-    financialYear: '2024/2025',
-    department: 'Health',
-    directorate: 'Medical Services',
-    County: 'Kitui',
-    'sub-county': 'Kitui Central',
-    Constituency: 'Kitui Central',
-    ward: 'Miambani',
-    Contracted: 'Yes',
-    StartDate: '2024-01-15',
-    EndDate: '2025-06-30',
-    sector: 'Health',
-    agency: 'County Government',
-    budgetSource: 'County Revenue',
-    percentageComplete: 60,
-  },
-  {
-    projectName: 'Market Sheds Construction',
-    Status: 'Not Started',
-    budget: 30_000_000,
-    Disbursed: 0,
-    financialYear: '2024/2025',
-    department: 'Trade',
-    directorate: 'Trade & Commerce',
-    County: 'Kitui',
-    'sub-county': 'Kitui West',
-    Constituency: 'Kitui West',
-    ward: 'Kwa Mutonga',
-    Contracted: 'No',
-    StartDate: '2025-02-01',
-    EndDate: '2025-12-31',
-    sector: 'Trade',
-    agency: 'County Government',
-    budgetSource: 'CDF',
-    percentageComplete: 0,
-  },
-  {
-    projectName: 'Rural Water Pan Program',
-    Status: 'Ongoing',
-    budget: 55_000_000,
-    Disbursed: 40_000_000,
-    financialYear: '2023/2024',
-    department: 'Water',
-    directorate: 'Water & Sanitation',
-    County: 'Kitui',
-    'sub-county': 'Kitui Rural',
-    Constituency: 'Kitui Rural',
-    ward: 'Kanyangi',
-    Contracted: 'Yes',
-    StartDate: '2023-09-01',
-    EndDate: '2024-09-30',
-    sector: 'Water',
-    agency: 'National CDF',
-    budgetSource: 'National Government',
-    percentageComplete: 73,
-  },
-  {
-    projectName: 'ECDE Classrooms',
-    Status: 'Completed',
-    budget: 18_000_000,
-    Disbursed: 18_000_000,
-    financialYear: '2022/2023',
-    department: 'Education',
-    directorate: 'Early Childhood Development',
-    County: 'Kitui',
-    'sub-county': 'Kitui East',
-    Constituency: 'Kitui East',
-    ward: 'Zombe/Mwitika',
-    Contracted: 'Yes',
-    StartDate: '2022-01-10',
-    EndDate: '2023-03-30',
-    sector: 'Education',
-    agency: 'County Government',
-    budgetSource: 'County Revenue',
-    percentageComplete: 100,
-  },
-  {
-    projectName: 'Road Tarmacking - Kitui Town',
-    Status: 'In Progress',
-    budget: 85_000_000,
-    Disbursed: 45_000_000,
-    financialYear: '2024/2025',
-    department: 'Infrastructure',
-    directorate: 'Roads & Infrastructure',
-    County: 'Kitui',
-    'sub-county': 'Kitui Central',
-    Constituency: 'Kitui Central',
-    ward: 'Kitui Town',
-    Contracted: 'Yes',
-    StartDate: '2024-03-01',
-    EndDate: '2025-08-31',
-    sector: 'Infrastructure',
-    agency: 'KeNHA',
-    budgetSource: 'National Government',
-    percentageComplete: 53,
-  },
-  {
-    projectName: 'Agricultural Extension Services',
-    Status: 'Ongoing',
-    budget: 25_000_000,
-    Disbursed: 15_000_000,
-    financialYear: '2024/2025',
-    department: 'Agriculture',
-    directorate: 'Crop Development',
-    County: 'Kitui',
-    'sub-county': 'Kitui South',
-    Constituency: 'Kitui South',
-    ward: 'Kisasi',
-    Contracted: 'Yes',
-    StartDate: '2024-06-01',
-    EndDate: '2025-05-31',
-    sector: 'Agriculture',
-    agency: 'County Government',
-    budgetSource: 'County Revenue',
-    percentageComplete: 60,
-  },
-];
-
 // Sample jobs summary aligned with ProjectJobsModal structure (Direct/Indirect instead of Youth)
-const SAMPLE_JOBS_SUMMARY = {
+const DEFAULT_JOBS_SUMMARY = {
   totalJobs: 186,
   totalMale: 104,
   totalFemale: 56,
@@ -204,34 +77,6 @@ const SAMPLE_JOBS_BY_CATEGORY = [
   { category_name: 'Supervisory / Technical', jobs_count: 28 },
 ];
 
-// Sample sites information aligned with ProjectSitesSection fields
-const SAMPLE_SITES = [
-  {
-    site_name: 'Hospital Main Block',
-    county: 'Kitui',
-    ward: 'Miambani',
-    status_norm: 'In Progress',
-  },
-  {
-    site_name: 'Hospital Staff Quarters',
-    county: 'Kitui',
-    ward: 'Miambani',
-    status_norm: 'Not Started',
-  },
-  {
-    site_name: 'Kwa Mutonga Market',
-    county: 'Kitui',
-    ward: 'Kwa Mutonga',
-    status_norm: 'In Progress',
-  },
-  {
-    site_name: 'Rural Water Pan – Kanyangi',
-    county: 'Kitui',
-    ward: 'Kanyangi',
-    status_norm: 'Completed',
-  },
-];
-
 const STATUS_COLORS = {
   'Completed': '#16a34a',
   'In Progress': '#2563eb',
@@ -242,12 +87,10 @@ const STATUS_COLORS = {
 };
 
 const formatCurrency = (value) =>
-  new Intl.NumberFormat('en-KE', {
-    style: 'currency',
-    currency: 'KES',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value || 0);
+  `KES ${((Number(value) || 0) / 1_000_000).toLocaleString('en-KE', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })}M`;
 
 const STATUS_COUNT_UP_MS = 500;
 
@@ -297,8 +140,9 @@ const SystemDashboardPage = () => {
   });
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [sectors, setSectors] = useState([]);
+  const [allProjects, setAllProjects] = useState([]);
   const [jobsSnapshot, setJobsSnapshot] = useState({
-    summary: SAMPLE_JOBS_SUMMARY,
+    summary: DEFAULT_JOBS_SUMMARY,
     byCategory: SAMPLE_JOBS_BY_CATEGORY.map((row) => ({
       name: row.category_name,
       value: row.jobs_count,
@@ -315,6 +159,37 @@ const SystemDashboardPage = () => {
       }
     };
     fetchSectors();
+  }, []);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const data = await projectService.analytics.getProjectsForOrganization({ limit: 5000 });
+        const rows = Array.isArray(data) ? data : [];
+        const normalized = rows.map((p) => ({
+          ...p,
+          projectName: p.projectName || p.project_name || 'Untitled Project',
+          Status: p.status || p.Status || 'Unknown',
+          budget: Number(p.budget ?? p.costOfProject ?? p.allocatedBudget ?? 0),
+          Disbursed: Number(p.Disbursed ?? p.paidOut ?? p.disbursedBudget ?? 0),
+          financialYear: p.financialYear || p.financialYearName || 'Unknown',
+          department: p.department || p.departmentName || p.ministry || 'Unknown',
+          directorate: p.directorate || p.directorateName || p.agency || 'Unknown',
+          County: p.County || p.county || p.countyNames || 'Unknown',
+          Constituency: p.Constituency || p.constituency || p.constituencyNames || 'Unknown',
+          ward: p.ward || p.wardNames || 'Unknown',
+          sector: p.sector || p.categoryName || p.department || p.ministry || 'Unknown',
+          budgetSource: p.budgetSource || p.source || 'Unknown',
+          percentageComplete: Number(p.percentageComplete ?? p.overallProgress ?? 0),
+          StartDate: p.StartDate || p.startDate || '',
+        }));
+        setAllProjects(normalized);
+      } catch (error) {
+        console.error('Error fetching summary statistics projects:', error);
+        setAllProjects([]);
+      }
+    };
+    fetchProjects();
   }, []);
 
   useEffect(() => {
@@ -341,14 +216,14 @@ const SystemDashboardPage = () => {
   }, []);
 
   const filteredProjects = useMemo(() => {
-    return SAMPLE_PROJECTS.filter((p) => {
+    return allProjects.filter((p) => {
       if (filters.department && p.department !== filters.department) return false;
       if (filters.directorate && p.directorate !== filters.directorate) return false;
       if (filters.financialYear && p.financialYear !== filters.financialYear) return false;
       if (filters.status && p.Status !== filters.status) return false;
       return true;
     });
-  }, [filters]);
+  }, [allProjects, filters]);
 
   const {
     kpis,
@@ -377,7 +252,7 @@ const SystemDashboardPage = () => {
       departments: distinctDepartments.size,
       wards: distinctWards.size,
       jobs: jobsSnapshot.summary.totalJobs,
-      sites: SAMPLE_SITES.length,
+      sites: filteredProjects.length,
     };
 
     // Projects by status
@@ -432,10 +307,10 @@ const SystemDashboardPage = () => {
       color: ['#3b82f6', '#22c55e', '#f97316'][index % 3],
     }));
 
-    // Sites by normalized status
+    // Sites by normalized status (derived from live projects list)
     const siteStatusMap = new Map();
-    SAMPLE_SITES.forEach((s) => {
-      const key = (s.status_norm || 'Unknown').trim();
+    filteredProjects.forEach((s) => {
+      const key = (s.Status || 'Unknown').trim();
       siteStatusMap.set(key, (siteStatusMap.get(key) || 0) + 1);
     });
     const sitesChart = Array.from(siteStatusMap.entries()).map(([name, value]) => ({
@@ -527,6 +402,16 @@ const SystemDashboardPage = () => {
       projectsByTimeline: timelineChart,
     };
   }, [filteredProjects, sectors, jobsSnapshot]);
+
+  const recentFootprintSites = useMemo(
+    () => filteredProjects.slice(0, 8).map((p) => ({
+      site_name: p.projectName,
+      county: p.County || 'Unknown',
+      ward: p.ward || 'Unknown',
+      status_norm: p.Status || 'Unknown',
+    })),
+    [filteredProjects]
+  );
 
   const executiveBrief = useMemo(() => {
     const riskStatuses = new Set(['Delayed', 'Stalled', 'Suspended']);
@@ -784,7 +669,7 @@ const SystemDashboardPage = () => {
                     sx={{ fontSize: '0.8rem', height: '32px' }}
                   >
                     <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Departments</MenuItem>
-                    {Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.department))).filter(Boolean).map((dept) => (
+                    {Array.from(new Set(allProjects.map((p) => p.department))).filter(Boolean).map((dept) => (
                       <MenuItem key={dept} value={dept} sx={{ fontSize: '0.8rem' }}>
                         {dept}
                       </MenuItem>
@@ -807,7 +692,7 @@ const SystemDashboardPage = () => {
                     sx={{ fontSize: '0.8rem', height: '32px' }}
                   >
                     <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Directorates</MenuItem>
-                    {Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.directorate))).filter(Boolean).map((dir) => (
+                    {Array.from(new Set(allProjects.map((p) => p.directorate))).filter(Boolean).map((dir) => (
                       <MenuItem key={dir} value={dir} sx={{ fontSize: '0.8rem' }}>
                         {dir}
                       </MenuItem>
@@ -830,7 +715,7 @@ const SystemDashboardPage = () => {
                     sx={{ fontSize: '0.8rem', height: '32px' }}
                   >
                     <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Years</MenuItem>
-                    {Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.financialYear))).filter(Boolean).map((fy) => (
+                    {Array.from(new Set(allProjects.map((p) => p.financialYear))).filter(Boolean).map((fy) => (
                       <MenuItem key={fy} value={fy} sx={{ fontSize: '0.8rem' }}>
                         {fy}
                       </MenuItem>
@@ -853,7 +738,7 @@ const SystemDashboardPage = () => {
                     sx={{ fontSize: '0.8rem', height: '32px' }}
                   >
                     <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Statuses</MenuItem>
-                    {Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.Status))).filter(Boolean).map((status) => (
+                    {Array.from(new Set(allProjects.map((p) => p.Status))).filter(Boolean).map((status) => (
                       <MenuItem key={status} value={status} sx={{ fontSize: '0.8rem' }}>
                         {status}
                       </MenuItem>
@@ -1443,7 +1328,7 @@ const SystemDashboardPage = () => {
                       fontSize: '0.7rem',
                     }}
                   >
-                    Allocated vs. disbursed (sample data)
+                    Allocated vs. disbursed (live data)
                   </Typography>
                 </Box>
               </Box>
@@ -1835,7 +1720,7 @@ const SystemDashboardPage = () => {
                       fontSize: '0.7rem',
                     }}
                   >
-                    Derived from sample project sites (Project Sites feature)
+                    Derived from live project statuses
                   </Typography>
                 </Box>
               </Box>
@@ -1950,7 +1835,7 @@ const SystemDashboardPage = () => {
                   overflow: 'auto',
                 }}
               >
-                {SAMPLE_SITES.map((site, index) => (
+                {recentFootprintSites.map((site, index) => (
                   <Box
                     key={index}
                     sx={{

@@ -29,6 +29,7 @@ import {
   DialogContent,
   DialogActions,
   CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   Assessment as AssessmentIcon,
@@ -63,236 +64,9 @@ import {
 import { tokens } from './dashboard/theme';
 import { useNavigate } from 'react-router-dom';
 import sectorsService from '../api/sectorsService';
+import projectService from '../api/projectService';
 import { normalizeProjectStatus } from '../utils/projectStatusNormalizer';
 import { ROUTES } from '../configs/appConfig';
-
-// Reuse sample data from SystemDashboardPage
-const SAMPLE_PROJECTS = [
-  {
-    projectName: 'Level 4 Hospital Upgrade',
-    Status: 'In Progress',
-    budget: 120_000_000,
-    Disbursed: 72_000_000,
-    financialYear: '2024/2025',
-    department: 'Health',
-    directorate: 'Medical Services',
-    County: 'Kitui',
-    'sub-county': 'Kitui Central',
-    Constituency: 'Kitui Central',
-    ward: 'Miambani',
-    percentageComplete: 60,
-    StartDate: '2024-01-15',
-    EndDate: '2025-06-30',
-  },
-  {
-    projectName: 'Market Sheds Construction',
-    Status: 'Not Started',
-    budget: 30_000_000,
-    Disbursed: 0,
-    financialYear: '2024/2025',
-    department: 'Trade',
-    directorate: 'Trade & Commerce',
-    County: 'Kitui',
-    'sub-county': 'Kitui West',
-    Constituency: 'Kitui West',
-    ward: 'Kwa Mutonga',
-    percentageComplete: 0,
-    StartDate: '2025-02-01',
-    EndDate: '2025-12-31',
-  },
-  {
-    projectName: 'Rural Water Pan Program',
-    Status: 'Ongoing',
-    budget: 55_000_000,
-    Disbursed: 40_000_000,
-    financialYear: '2023/2024',
-    department: 'Water',
-    directorate: 'Water & Sanitation',
-    County: 'Kitui',
-    'sub-county': 'Kitui Rural',
-    Constituency: 'Kitui Rural',
-    ward: 'Kanyangi',
-    percentageComplete: 73,
-    StartDate: '2023-09-01',
-    EndDate: '2024-09-30',
-  },
-  {
-    projectName: 'ECDE Classrooms',
-    Status: 'Completed',
-    budget: 18_000_000,
-    Disbursed: 18_000_000,
-    financialYear: '2022/2023',
-    department: 'Education',
-    directorate: 'Early Childhood Development',
-    County: 'Kitui',
-    'sub-county': 'Kitui East',
-    Constituency: 'Kitui East',
-    ward: 'Zombe/Mwitika',
-    percentageComplete: 100,
-    StartDate: '2022-01-10',
-    EndDate: '2023-03-30',
-  },
-  {
-    projectName: 'Road Tarmacking - Kitui Town',
-    Status: 'In Progress',
-    budget: 85_000_000,
-    Disbursed: 45_000_000,
-    financialYear: '2024/2025',
-    department: 'Infrastructure',
-    directorate: 'Roads & Infrastructure',
-    County: 'Kitui',
-    'sub-county': 'Kitui Central',
-    Constituency: 'Kitui Central',
-    ward: 'Kitui Town',
-    percentageComplete: 53,
-    StartDate: '2024-03-01',
-    EndDate: '2025-08-31',
-  },
-  {
-    projectName: 'Agricultural Extension Services',
-    Status: 'Ongoing',
-    budget: 25_000_000,
-    Disbursed: 15_000_000,
-    financialYear: '2024/2025',
-    department: 'Agriculture',
-    directorate: 'Crop Development',
-    County: 'Kitui',
-    'sub-county': 'Kitui South',
-    Constituency: 'Kitui South',
-    ward: 'Kisasi',
-    percentageComplete: 60,
-    StartDate: '2024-06-01',
-    EndDate: '2025-05-31',
-  },
-  {
-    projectName: 'Health Center Construction',
-    Status: 'Delayed',
-    budget: 45_000_000,
-    Disbursed: 20_000_000,
-    financialYear: '2023/2024',
-    department: 'Health',
-    directorate: 'Medical Services',
-    County: 'Kitui',
-    'sub-county': 'Kitui Central',
-    Constituency: 'Kitui Central',
-    ward: 'Kitui Town',
-    percentageComplete: 44,
-    StartDate: '2023-06-01',
-    EndDate: '2024-12-31',
-  },
-  {
-    projectName: 'School Infrastructure Upgrade',
-    Status: 'Stalled',
-    budget: 60_000_000,
-    Disbursed: 10_000_000,
-    financialYear: '2022/2023',
-    department: 'Education',
-    directorate: 'Early Childhood Development',
-    County: 'Kitui',
-    'sub-county': 'Kitui East',
-    Constituency: 'Kitui East',
-    ward: 'Zombe/Mwitika',
-    percentageComplete: 17,
-    StartDate: '2022-03-01',
-    EndDate: '2023-12-31',
-  },
-  {
-    projectName: 'Procurement of Medical Equipment',
-    Status: 'Under Procurement',
-    budget: 95_000_000,
-    Disbursed: 0,
-    financialYear: '2024/2025',
-    department: 'Health',
-    directorate: 'Medical Services',
-    County: 'Kitui',
-    'sub-county': 'Kitui Central',
-    Constituency: 'Kitui Central',
-    ward: 'Kitui Town',
-    percentageComplete: 0,
-    StartDate: '2024-08-01',
-    EndDate: '2025-03-31',
-  },
-  {
-    projectName: 'Suspended Road Project',
-    Status: 'Suspended',
-    budget: 150_000_000,
-    Disbursed: 30_000_000,
-    financialYear: '2023/2024',
-    department: 'Infrastructure',
-    directorate: 'Roads & Infrastructure',
-    County: 'Kitui',
-    'sub-county': 'Kitui West',
-    Constituency: 'Kitui West',
-    ward: 'Kwa Mutonga',
-    percentageComplete: 20,
-    StartDate: '2023-01-15',
-    EndDate: '2024-12-31',
-  },
-  {
-    projectName: 'Additional Completed Project',
-    Status: 'Completed',
-    budget: 42_000_000,
-    Disbursed: 42_000_000,
-    financialYear: '2023/2024',
-    department: 'Water',
-    directorate: 'Water & Sanitation',
-    County: 'Kitui',
-    'sub-county': 'Kitui Rural',
-    Constituency: 'Kitui Rural',
-    ward: 'Kanyangi',
-    percentageComplete: 100,
-    StartDate: '2023-04-01',
-    EndDate: '2024-02-28',
-  },
-  {
-    projectName: 'Another Ongoing Project',
-    Status: 'Ongoing',
-    budget: 68_000_000,
-    Disbursed: 35_000_000,
-    financialYear: '2024/2025',
-    department: 'Agriculture',
-    directorate: 'Crop Development',
-    County: 'Kitui',
-    'sub-county': 'Kitui South',
-    Constituency: 'Kitui South',
-    ward: 'Kisasi',
-    percentageComplete: 51,
-    StartDate: '2024-05-15',
-    EndDate: '2025-11-30',
-  },
-  {
-    projectName: 'Procurement Phase 2',
-    Status: 'Under Procurement',
-    budget: 75_000_000,
-    Disbursed: 0,
-    financialYear: '2024/2025',
-    department: 'Infrastructure',
-    directorate: 'Roads & Infrastructure',
-    County: 'Kitui',
-    'sub-county': 'Kitui Central',
-    Constituency: 'Kitui Central',
-    ward: 'Kitui Town',
-    percentageComplete: 0,
-    StartDate: '2024-09-01',
-    EndDate: '2025-06-30',
-  },
-  {
-    projectName: 'Another Stalled Project',
-    Status: 'Stalled',
-    budget: 38_000_000,
-    Disbursed: 8_000_000,
-    financialYear: '2022/2023',
-    department: 'Trade',
-    directorate: 'Trade & Commerce',
-    County: 'Kitui',
-    'sub-county': 'Kitui West',
-    Constituency: 'Kitui West',
-    ward: 'Kwa Mutonga',
-    percentageComplete: 21,
-    StartDate: '2022-07-01',
-    EndDate: '2023-12-31',
-  },
-];
 
 const STATUS_COLORS = {
   'Completed': '#16a34a',
@@ -320,12 +94,10 @@ const STATUS_ICONS = {
 };
 
 const formatCurrency = (value) =>
-  new Intl.NumberFormat('en-KE', {
-    style: 'currency',
-    currency: 'KES',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value || 0);
+  `KES ${((Number(value) || 0) / 1_000_000).toLocaleString('en-KE', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })}M`;
 
 const STATUS_COUNT_UP_MS = 500;
 
@@ -380,6 +152,9 @@ const ProjectByStatusDashboardPage = () => {
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [statusProjects, setStatusProjects] = useState([]);
   const [loadingStatusProjects, setLoadingStatusProjects] = useState(false);
+  const [allProjects, setAllProjects] = useState([]);
+  const [loadingProjects, setLoadingProjects] = useState(true);
+  const [projectsError, setProjectsError] = useState('');
 
   useEffect(() => {
     const fetchSectors = async () => {
@@ -393,15 +168,48 @@ const ProjectByStatusDashboardPage = () => {
     fetchSectors();
   }, []);
 
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setLoadingProjects(true);
+        setProjectsError('');
+        const data = await projectService.analytics.getProjectsForOrganization({ limit: 5000 });
+        const rows = Array.isArray(data) ? data : [];
+        const normalized = rows.map((p) => ({
+          ...p,
+          projectName: p.projectName || p.project_name || 'Untitled Project',
+          status: p.status || p.Status || 'Unknown',
+          // Map dashboard filter fields to available organization-projects fields.
+          department: p.department || p.departmentName || p.ministry || '',
+          directorate: p.directorate || p.directorateName || p.agency || '',
+          financialYear: p.financialYear || p.financialYearName || '',
+          budget: Number(p.budget ?? p.costOfProject ?? p.allocatedBudget ?? 0),
+          Disbursed: Number(p.Disbursed ?? p.paidOut ?? p.disbursedBudget ?? 0),
+        }));
+        setAllProjects(normalized);
+      } catch (error) {
+        console.error('Error fetching projects for status dashboard:', error);
+        setProjectsError(error?.response?.data?.message || error?.message || 'Failed to load projects from database.');
+        setAllProjects([]);
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
+    fetchProjects();
+  }, []);
+
   const filteredProjects = useMemo(() => {
-    return SAMPLE_PROJECTS.filter((p) => {
+    return allProjects.filter((p) => {
       if (filters.department && p.department !== filters.department) return false;
       if (filters.directorate && p.directorate !== filters.directorate) return false;
       if (filters.financialYear && p.financialYear !== filters.financialYear) return false;
-      if (filters.status && p.Status !== filters.status) return false;
+      if (filters.status) {
+        const normalized = normalizeProjectStatus(p.Status || p.status || 'Unknown');
+        if (normalized !== filters.status) return false;
+      }
       return true;
     });
-  }, [filters]);
+  }, [allProjects, filters]);
 
   const statusData = useMemo(() => {
     // Status distribution
@@ -466,11 +274,11 @@ const ProjectByStatusDashboardPage = () => {
     };
   }, [filteredProjects, sectors]);
 
-  const uniqueDepartments = Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.department))).filter(Boolean);
-  const uniqueDirectorates = Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.directorate))).filter(Boolean);
-  const uniqueFinancialYears = Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.financialYear))).filter(Boolean);
+  const uniqueDepartments = Array.from(new Set(allProjects.map((p) => p.department))).filter(Boolean);
+  const uniqueDirectorates = Array.from(new Set(allProjects.map((p) => p.directorate))).filter(Boolean);
+  const uniqueFinancialYears = Array.from(new Set(allProjects.map((p) => p.financialYear))).filter(Boolean);
   // Use normalized statuses to avoid duplicates like "In Progress" and "Ongoing"
-  const uniqueStatuses = Array.from(new Set(SAMPLE_PROJECTS.map((p) => normalizeProjectStatus(p.Status || p.status || 'Unknown')))).filter(Boolean);
+  const uniqueStatuses = Array.from(new Set(allProjects.map((p) => normalizeProjectStatus(p.Status || p.status || 'Unknown')))).filter(Boolean);
 
   const totalProjects = filteredProjects.length;
   const totalBudget = filteredProjects.reduce((sum, p) => sum + (p.budget || 0), 0);
@@ -1063,6 +871,18 @@ const ProjectByStatusDashboardPage = () => {
           </Grid>
         </Box>
       </Box>
+
+      {loadingProjects && (
+        <Box sx={{ mb: 2 }}>
+          <LinearProgress />
+        </Box>
+      )}
+
+      {!loadingProjects && projectsError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {projectsError}
+        </Alert>
+      )}
 
       {/* Charts Row — explicit flex with calc widths to avoid MUI Grid constraints */}
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 1, mb: 1, width: '100%', alignItems: 'stretch' }}>

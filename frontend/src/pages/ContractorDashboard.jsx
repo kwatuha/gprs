@@ -52,8 +52,15 @@ const fetchData = useCallback(async () => {
 
   try {
     const projectsData = await apiService.contractors.getProjectsByContractor(contractorId); 
-    
-    setProjects(projectsData);
+    const normalizedProjects = Array.isArray(projectsData)
+      ? projectsData
+      : Array.isArray(projectsData?.projects)
+        ? projectsData.projects
+        : Array.isArray(projectsData?.data)
+          ? projectsData.data
+          : [];
+
+    setProjects(normalizedProjects);
 
   } catch (err) {
     console.error('An error occurred during API calls:', err);
@@ -108,19 +115,21 @@ const fetchUserApprovalData = useCallback(async () => {
   
   // Filter projects by approval status
   const projectCategories = useMemo(() => {
+    const toBool = (v) => v === true || v === 1 || v === '1' || String(v).toLowerCase() === 'true';
+
     const pendingApproval = projects.filter(proj => {
-      const isApproved = proj.approved_for_public === 1 || proj.approved_for_public === true;
-      const needsRevision = proj.revision_requested === 1 || proj.revision_requested === true;
+      const isApproved = toBool(proj.approved_for_public);
+      const needsRevision = toBool(proj.revision_requested);
       return !isApproved && !needsRevision;
     });
 
     const approved = projects.filter(proj => {
-      const isApproved = proj.approved_for_public === 1 || proj.approved_for_public === true;
+      const isApproved = toBool(proj.approved_for_public);
       return isApproved;
     });
 
     const requestedForReview = projects.filter(proj => {
-      const needsRevision = proj.revision_requested === 1 || proj.revision_requested === true;
+      const needsRevision = toBool(proj.revision_requested);
       return needsRevision;
     });
 

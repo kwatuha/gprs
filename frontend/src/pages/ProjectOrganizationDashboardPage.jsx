@@ -101,7 +101,10 @@ export default function ProjectOrganizationDashboardPage() {
 
   const formatKes = (value) => {
     const n = Number(value || 0);
-    return `KES ${n.toLocaleString()}`;
+    return `KES ${(n / 1_000_000).toLocaleString('en-KE', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    })}M`;
   };
 
   const handleOpenProjectsModal = async (row) => {

@@ -51,40 +51,6 @@ import { useNavigate } from 'react-router-dom';
 import sectorsService from '../api/sectorsService';
 import projectService from '../api/projectService';
 
-// Sample jobs data aligned with Direct/Indirect structure
-const SAMPLE_JOBS_SUMMARY = {
-  totalJobs: 186,
-  totalMale: 104,
-  totalFemale: 56,
-  totalDirectJobs: 142,
-  totalIndirectJobs: 44,
-};
-
-const SAMPLE_JOBS_BY_CATEGORY = [
-  { category_name: 'Skilled Labour', jobs_count: 72, direct: 58, indirect: 14, male: 42, female: 30 },
-  { category_name: 'Unskilled Labour', jobs_count: 86, direct: 64, indirect: 22, male: 48, female: 38 },
-  { category_name: 'Supervisory / Technical', jobs_count: 28, direct: 20, indirect: 8, male: 14, female: 14 },
-];
-
-// Sample jobs by project
-const SAMPLE_JOBS_BY_PROJECT = [
-  { project: 'Level 4 Hospital Upgrade', direct: 45, indirect: 12, total: 57 },
-  { project: 'Road Tarmacking', direct: 38, indirect: 15, total: 53 },
-  { project: 'Rural Water Pan Program', direct: 32, indirect: 8, total: 40 },
-  { project: 'Market Sheds Construction', direct: 18, indirect: 6, total: 24 },
-  { project: 'ECDE Classrooms', direct: 9, indirect: 3, total: 12 },
-];
-
-// Sample jobs by sector
-const SAMPLE_JOBS_BY_SECTOR = [
-  { sector: 'Health', sectorDisplay: 'Health', direct: 45, indirect: 12, total: 57 },
-  { sector: 'Infrastructure', sectorDisplay: 'Infrastructure', direct: 38, indirect: 15, total: 53 },
-  { sector: 'Water', sectorDisplay: 'Water', direct: 32, indirect: 8, total: 40 },
-  { sector: 'Trade', sectorDisplay: 'Trade', direct: 18, indirect: 6, total: 24 },
-  { sector: 'Education', sectorDisplay: 'Education', direct: 9, indirect: 3, total: 12 },
-  { sector: 'Agriculture', sectorDisplay: 'Agriculture', direct: 15, indirect: 3, total: 18 },
-];
-
 const STATUS_COUNT_UP_MS = 500;
 
 function useCountUp(endValue, durationMs = STATUS_COUNT_UP_MS) {
@@ -134,6 +100,11 @@ const JobsImpactDashboardPage = () => {
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [sectors, setSectors] = useState([]);
   const [topProjects, setTopProjects] = useState([]);
+  const [jobsSummary, setJobsSummary] = useState({
+    totalJobs: 0, totalMale: 0, totalFemale: 0, totalDirectJobs: 0, totalIndirectJobs: 0,
+  });
+  const [jobsByCategory, setJobsByCategory] = useState([]);
+  const [jobsBySector, setJobsBySector] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
 
   useEffect(() => {
@@ -149,6 +120,21 @@ const JobsImpactDashboardPage = () => {
   }, []);
 
   useEffect(() => {
+    const fetchSnapshot = async () => {
+      try {
+        const snapshot = await projectService.analytics.getJobsSnapshot();
+        setJobsSummary(snapshot?.summary || {
+          totalJobs: 0, totalMale: 0, totalFemale: 0, totalDirectJobs: 0, totalIndirectJobs: 0,
+        });
+        setJobsByCategory(Array.isArray(snapshot?.byCategory) ? snapshot.byCategory : []);
+      } catch (error) {
+        console.error('Error fetching jobs snapshot:', error);
+      }
+    };
+    fetchSnapshot();
+  }, []);
+
+  useEffect(() => {
     const fetchTopProjects = async () => {
       setLoadingProjects(true);
       try {
@@ -159,13 +145,25 @@ const JobsImpactDashboardPage = () => {
           .sort((a, b) => (b.jobsCount || 0) - (a.jobsCount || 0))
           .slice(0, 10);
         setTopProjects(sortedProjects);
+
+        const sectorMap = new Map();
+        (projects || []).forEach((p) => {
+          const total = Number(p.jobsCount || 0);
+          if (total <= 0) return;
+          const direct = Number(p.directJobsCount || 0);
+          const indirect = Number(p.indirectJobsCount || Math.max(0, total - direct));
+          const sector = p.sector || p.categoryName || p.department || p.ministry || 'Unknown';
+          const current = sectorMap.get(sector) || { sector, direct: 0, indirect: 0, total: 0 };
+          current.direct += direct;
+          current.indirect += indirect;
+          current.total += total;
+          sectorMap.set(sector, current);
+        });
+        setJobsBySector(Array.from(sectorMap.values()));
       } catch (error) {
         console.error('Error fetching top projects:', error);
-        // Fallback to sample data if API fails
-        setTopProjects(SAMPLE_JOBS_BY_PROJECT.map(p => ({
-          projectName: p.project,
-          jobsCount: p.total,
-        })).slice(0, 10));
+        setTopProjects([]);
+        setJobsBySector([]);
       } finally {
         setLoadingProjects(false);
       }
@@ -176,22 +174,22 @@ const JobsImpactDashboardPage = () => {
   const chartData = useMemo(() => {
     // Direct vs Indirect comparison
     const directIndirectData = [
-      { name: 'Direct Jobs', value: SAMPLE_JOBS_SUMMARY.totalDirectJobs, color: colors.greenAccent[500] },
-      { name: 'Indirect Jobs', value: SAMPLE_JOBS_SUMMARY.totalIndirectJobs, color: colors.blueAccent[500] },
+      { name: 'Direct Jobs', value: jobsSummary.totalDirectJobs || 0, color: colors.greenAccent[500] },
+      { name: 'Indirect Jobs', value: jobsSummary.totalIndirectJobs || 0, color: colors.blueAccent[500] },
     ];
 
     // Gender distribution
     const genderData = [
-      { name: 'Male', value: SAMPLE_JOBS_SUMMARY.totalMale, color: colors.blueAccent[500] },
-      { name: 'Female', value: SAMPLE_JOBS_SUMMARY.totalFemale, color: colors.purpleAccent ? colors.purpleAccent[500] : colors.greenAccent[600] },
+      { name: 'Male', value: jobsSummary.totalMale || 0, color: colors.blueAccent[500] },
+      { name: 'Female', value: jobsSummary.totalFemale || 0, color: colors.purpleAccent ? colors.purpleAccent[500] : colors.greenAccent[600] },
     ];
 
     // Jobs by category with direct/indirect breakdown
-    const categoryChart = SAMPLE_JOBS_BY_CATEGORY.map((j, index) => ({
-      name: j.category_name,
-      direct: j.direct,
-      indirect: j.indirect,
-      total: j.jobs_count,
+    const categoryChart = jobsByCategory.map((j, index) => ({
+      name: j.name || 'Uncategorized',
+      direct: Number(j.direct || 0),
+      indirect: Number(j.indirect || 0),
+      total: Number(j.value || 0),
       color: ['#3b82f6', '#22c55e', '#f97316'][index % 3],
     }));
 
@@ -206,14 +204,14 @@ const JobsImpactDashboardPage = () => {
     });
 
     // Jobs by Sector with aliases
-    const sectorChart = SAMPLE_JOBS_BY_SECTOR.map((item) => {
+    const sectorChart = jobsBySector.map((item) => {
       const displayName = sectorAliasMap.get(item.sector) || item.sectorDisplay || item.sector;
       return {
         sector: item.sector,
         sectorDisplay: displayName,
-        direct: item.direct,
-        indirect: item.indirect,
-        total: item.total,
+        direct: Number(item.direct || 0),
+        indirect: Number(item.indirect || 0),
+        total: Number(item.total || 0),
       };
     });
 
@@ -223,7 +221,7 @@ const JobsImpactDashboardPage = () => {
       categoryChart,
       sectorChart,
     };
-  }, [colors, sectors]);
+  }, [colors, sectors, jobsSummary, jobsByCategory, jobsBySector]);
 
   const isLight = theme.palette.mode === 'light';
   const ui = {
@@ -232,21 +230,21 @@ const JobsImpactDashboardPage = () => {
       : '0 4px 20px rgba(0, 0, 0, 0.15), 0 -2px 10px rgba(0, 0, 0, 0.1)',
   };
 
-  const animTotalJobs = useCountUp(SAMPLE_JOBS_SUMMARY.totalJobs);
-  const animDirectJobs = useCountUp(SAMPLE_JOBS_SUMMARY.totalDirectJobs);
-  const animIndirectJobs = useCountUp(SAMPLE_JOBS_SUMMARY.totalIndirectJobs);
+  const animTotalJobs = useCountUp(jobsSummary.totalJobs || 0);
+  const animDirectJobs = useCountUp(jobsSummary.totalDirectJobs || 0);
+  const animIndirectJobs = useCountUp(jobsSummary.totalIndirectJobs || 0);
   const femalePct =
-    SAMPLE_JOBS_SUMMARY.totalJobs > 0
-      ? Math.round((SAMPLE_JOBS_SUMMARY.totalFemale / SAMPLE_JOBS_SUMMARY.totalJobs) * 100)
+    jobsSummary.totalJobs > 0
+      ? Math.round((jobsSummary.totalFemale / jobsSummary.totalJobs) * 100)
       : 0;
   const animFemalePct = useCountUp(femalePct);
   const directSharePct =
-    SAMPLE_JOBS_SUMMARY.totalJobs > 0
-      ? Math.round((SAMPLE_JOBS_SUMMARY.totalDirectJobs / SAMPLE_JOBS_SUMMARY.totalJobs) * 100)
+    jobsSummary.totalJobs > 0
+      ? Math.round((jobsSummary.totalDirectJobs / jobsSummary.totalJobs) * 100)
       : 0;
   const indirectSharePct =
-    SAMPLE_JOBS_SUMMARY.totalJobs > 0
-      ? Math.round((SAMPLE_JOBS_SUMMARY.totalIndirectJobs / SAMPLE_JOBS_SUMMARY.totalJobs) * 100)
+    jobsSummary.totalJobs > 0
+      ? Math.round((jobsSummary.totalIndirectJobs / jobsSummary.totalJobs) * 100)
       : 0;
 
   return (
@@ -425,9 +423,9 @@ const JobsImpactDashboardPage = () => {
                     sx={{ fontSize: '0.8rem', height: '32px' }}
                   >
                     <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Sectors</MenuItem>
-                    {SAMPLE_JOBS_BY_SECTOR.map((s) => (
+                    {chartData.sectorChart.map((s) => (
                       <MenuItem key={s.sector} value={s.sector} sx={{ fontSize: '0.8rem' }}>
-                        {s.sectorDisplay}
+                        {s.sectorDisplay || s.sector}
                       </MenuItem>
                     ))}
                   </Select>
@@ -448,15 +446,15 @@ const JobsImpactDashboardPage = () => {
                     sx={{ fontSize: '0.8rem', height: '32px' }}
                   >
                     <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Categories</MenuItem>
-                    {SAMPLE_JOBS_BY_CATEGORY.map((c) => (
-                      <MenuItem key={c.category_name} value={c.category_name} sx={{ fontSize: '0.8rem' }}>
-                        {c.category_name}
+                    {jobsByCategory.map((c) => (
+                      <MenuItem key={c.name} value={c.name} sx={{ fontSize: '0.8rem' }}>
+                        {c.name}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
                 <Chip
-                  label={`${SAMPLE_JOBS_SUMMARY.totalJobs} jobs`}
+                  label={`${jobsSummary.totalJobs || 0} jobs`}
                   size="small"
                   sx={{
                     flexShrink: 0,
@@ -710,7 +708,7 @@ const JobsImpactDashboardPage = () => {
                       {animFemalePct}%
                     </Typography>
                     <Typography variant="caption" component="div" sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.grey[300], fontWeight: 600, fontSize: '1.1rem', mt: 0.125, lineHeight: 1.2 }}>
-                      {SAMPLE_JOBS_SUMMARY.totalMale}M : {SAMPLE_JOBS_SUMMARY.totalFemale}F
+                      {jobsSummary.totalMale || 0}M : {jobsSummary.totalFemale || 0}F
                     </Typography>
                   </Box>
                   <GroupIcon sx={{ color: isLight ? 'rgba(255, 255, 255, 0.9)' : colors.redAccent[400], fontSize: '2rem', flexShrink: 0 }} />

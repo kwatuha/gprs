@@ -2512,14 +2512,14 @@ router.get('/organization-distribution', async (req, res) => {
                     COUNT(p.project_id)::int AS "projectCount",
                     COALESCE(SUM(
                         CASE
-                            WHEN (p.budget->>'allocated_amount_kes') ~ '^[0-9]+(\\.[0-9]+)?$'
+                            WHEN (p.budget->>'allocated_amount_kes') ~ '^[0-9]+(\\.[0-9]+){0,1}$'
                             THEN (p.budget->>'allocated_amount_kes')::numeric
                             ELSE 0
                         END
                     ), 0) AS "allocatedBudget",
                     COALESCE(SUM(
                         CASE
-                            WHEN (p.budget->>'disbursed_amount_kes') ~ '^[0-9]+(\\.[0-9]+)?$'
+                            WHEN (p.budget->>'disbursed_amount_kes') ~ '^[0-9]+(\\.[0-9]+){0,1}$'
                             THEN (p.budget->>'disbursed_amount_kes')::numeric
                             ELSE 0
                         END
@@ -3105,12 +3105,12 @@ router.get('/', async (req, res) => {
                 (p.timeline->>'start_date')::date AS "startDate",
                 (p.timeline->>'expected_completion_date')::date AS "endDate",
                 CASE
-                    WHEN (p.budget->>'allocated_amount_kes') ~ '^[0-9]+(\\.[0-9]+)?$'
+                    WHEN (p.budget->>'allocated_amount_kes') ~ '^[0-9]+(\\.[0-9]+){0,1}$'
                     THEN (p.budget->>'allocated_amount_kes')::numeric
                     ELSE NULL
                 END AS "costOfProject",
                 CASE
-                    WHEN (p.budget->>'disbursed_amount_kes') ~ '^[0-9]+(\\.[0-9]+)?$'
+                    WHEN (p.budget->>'disbursed_amount_kes') ~ '^[0-9]+(\\.[0-9]+){0,1}$'
                     THEN (p.budget->>'disbursed_amount_kes')::numeric
                     ELSE NULL
                 END AS "paidOut",
@@ -3160,18 +3160,18 @@ router.get('/', async (req, res) => {
                 (p.is_public->>'revision_requested_at')::timestamp AS revision_requested_at,
                 (p.is_public->>'revision_submitted_at')::timestamp AS revision_submitted_at,
                 CASE
-                    WHEN (p.progress->>'percentage_complete') ~ '^[0-9]+(\\.[0-9]+)?$'
+                    WHEN (p.progress->>'percentage_complete') ~ '^[0-9]+(\\.[0-9]+){0,1}$'
                     THEN (p.progress->>'percentage_complete')::numeric
                     ELSE NULL
                 END AS "overallProgress",
                 (p.budget->>'budget_id')::integer AS budgetId,
                 CASE
-                    WHEN (p.location->'geocoordinates'->>'lat') ~ '^[0-9.-]+(\\.[0-9]+)?$'
+                    WHEN (p.location->'geocoordinates'->>'lat') ~ '^[0-9.-]+(\\.[0-9]+){0,1}$'
                     THEN (p.location->'geocoordinates'->>'lat')::numeric
                     ELSE NULL
                 END AS "latitude",
                 CASE
-                    WHEN (p.location->'geocoordinates'->>'lng') ~ '^[0-9.-]+(\\.[0-9]+)?$'
+                    WHEN (p.location->'geocoordinates'->>'lng') ~ '^[0-9.-]+(\\.[0-9]+){0,1}$'
                     THEN (p.location->'geocoordinates'->>'lng')::numeric
                     ELSE NULL
                 END AS "longitude",

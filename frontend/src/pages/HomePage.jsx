@@ -257,15 +257,12 @@ const HomePage = () => {
           
           // Fetch only recent projects (limit to 10 for performance)
           try {
-            const response = await apiService.projects.getProjects({ limit: 10, sortBy: 'updatedAt', sortOrder: 'desc' });
-            let projects = [];
-            if (Array.isArray(response)) {
-              projects = response;
-            } else if (response?.projects) {
-              projects = response.projects;
-            } else if (response?.data) {
-              projects = response.data;
-            }
+            const response = await apiService.analytics.getProjectsForOrganization({ limit: 5000 });
+            const projects = (Array.isArray(response) ? response : []).map((p) => ({
+              ...p,
+              status: p.status || p.Status || 'Unknown',
+              projectName: p.projectName || p.project_name || 'Untitled Project',
+            }));
             
             // Calculate status stats
             const statusStatsCalc = {
@@ -278,7 +275,7 @@ const HomePage = () => {
               'Other': 0,
             };
             projects.forEach(p => {
-              const normalized = normalizeProjectStatus(p.status);
+              const normalized = normalizeProjectStatus(p.status || p.Status || 'Unknown');
               if (statusStatsCalc.hasOwnProperty(normalized)) {
                 statusStatsCalc[normalized]++;
               } else {
@@ -313,7 +310,7 @@ const HomePage = () => {
         // Fallback: Get project list for status statistics (fetch more for accuracy)
         let response;
         try {
-          response = await apiService.projects.getProjects({ limit: 500 }); // Fetch more projects for accurate status stats
+          response = await apiService.analytics.getProjectsForOrganization({ limit: 5000 }); // Stable endpoint for status stats
         } catch (authErr) {
           try {
             const publicData = await apiService.public.getProjects({ limit: 50 });
@@ -324,14 +321,11 @@ const HomePage = () => {
         }
         
         // Handle different response formats
-        let projects = [];
-        if (Array.isArray(response)) {
-          projects = response;
-        } else if (response?.projects) {
-          projects = response.projects;
-        } else if (response?.data) {
-          projects = response.data;
-        }
+        const projects = (Array.isArray(response) ? response : []).map((p) => ({
+          ...p,
+          status: p.status || p.Status || 'Unknown',
+          projectName: p.projectName || p.project_name || 'Untitled Project',
+        }));
         
         if (projects.length === 0) {
           setProjectStats({ total: 0, active: 0, completed: 0, pending: 0, loading: false });
@@ -660,7 +654,7 @@ const HomePage = () => {
     };
 
     allProjects.forEach(p => {
-      const normalized = normalizeProjectStatus(p.status);
+      const normalized = normalizeProjectStatus(p.status || p.Status || 'Unknown');
       if (stats.hasOwnProperty(normalized)) {
         stats[normalized]++;
       } else {
@@ -695,22 +689,15 @@ const HomePage = () => {
     
     try {
       // Fetch all projects with this status
-      const response = await apiService.projects.getProjects({ 
-        limit: 1000 // Get a large number to show all projects
-      });
-      
-      let projects = [];
-      if (Array.isArray(response)) {
-        projects = response;
-      } else if (response?.projects) {
-        projects = response.projects;
-      } else if (response?.data) {
-        projects = response.data;
-      }
+      const response = await apiService.analytics.getProjectsForOrganization({ limit: 5000 });
+      const projects = (Array.isArray(response) ? response : []).map((p) => ({
+        ...p,
+        status: p.status || p.Status || 'Unknown',
+      }));
       
       // Filter projects by normalized status
       const filtered = projects.filter(p => {
-        const normalized = normalizeProjectStatus(p.status);
+        const normalized = normalizeProjectStatus(p.status || p.Status || 'Unknown');
         return normalized === status;
       });
       

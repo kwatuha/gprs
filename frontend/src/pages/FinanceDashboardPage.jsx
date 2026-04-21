@@ -49,78 +49,13 @@ import {
 import { tokens } from './dashboard/theme';
 import { useNavigate } from 'react-router-dom';
 import sectorsService from '../api/sectorsService';
-
-// Sample financial data
-const SAMPLE_PROJECTS = [
-  {
-    projectName: 'Level 4 Hospital Upgrade',
-    budget: 120_000_000,
-    Disbursed: 72_000_000,
-    financialYear: '2024/2025',
-    department: 'Health',
-    sector: 'Health',
-    budgetSource: 'County Revenue',
-    absorptionRate: 60,
-  },
-  {
-    projectName: 'Market Sheds Construction',
-    budget: 30_000_000,
-    Disbursed: 0,
-    financialYear: '2024/2025',
-    department: 'Trade',
-    sector: 'Trade',
-    budgetSource: 'CDF',
-    absorptionRate: 0,
-  },
-  {
-    projectName: 'Rural Water Pan Program',
-    budget: 55_000_000,
-    Disbursed: 40_000_000,
-    financialYear: '2023/2024',
-    department: 'Water',
-    sector: 'Water',
-    budgetSource: 'National Government',
-    absorptionRate: 73,
-  },
-  {
-    projectName: 'ECDE Classrooms',
-    budget: 18_000_000,
-    Disbursed: 18_000_000,
-    financialYear: '2022/2023',
-    department: 'Education',
-    sector: 'Education',
-    budgetSource: 'County Revenue',
-    absorptionRate: 100,
-  },
-  {
-    projectName: 'Road Tarmacking - Kitui Town',
-    budget: 85_000_000,
-    Disbursed: 45_000_000,
-    financialYear: '2024/2025',
-    department: 'Infrastructure',
-    sector: 'Infrastructure',
-    budgetSource: 'National Government',
-    absorptionRate: 53,
-  },
-  {
-    projectName: 'Agricultural Extension Services',
-    budget: 25_000_000,
-    Disbursed: 15_000_000,
-    financialYear: '2024/2025',
-    department: 'Agriculture',
-    sector: 'Agriculture',
-    budgetSource: 'County Revenue',
-    absorptionRate: 60,
-  },
-];
+import projectService from '../api/projectService';
 
 const formatCurrency = (value) =>
-  new Intl.NumberFormat('en-KE', {
-    style: 'currency',
-    currency: 'KES',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value || 0);
+  `KES ${((Number(value) || 0) / 1_000_000).toLocaleString('en-KE', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })}M`;
 
 const STATUS_COUNT_UP_MS = 500;
 
@@ -170,6 +105,7 @@ const FinanceDashboardPage = () => {
   });
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [sectors, setSectors] = useState([]);
+  const [allProjects, setAllProjects] = useState([]);
 
   useEffect(() => {
     const fetchSectors = async () => {
@@ -183,15 +119,40 @@ const FinanceDashboardPage = () => {
     fetchSectors();
   }, []);
 
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const data = await projectService.analytics.getProjectsForOrganization({ limit: 5000 });
+        const rows = Array.isArray(data) ? data : [];
+        const normalized = rows.map((p) => ({
+          ...p,
+          projectName: p.projectName || p.project_name || 'Untitled Project',
+          department: p.department || p.departmentName || p.ministry || '',
+          directorate: p.directorate || p.directorateName || p.agency || '',
+          financialYear: p.financialYear || p.financialYearName || '',
+          budgetSource: p.budgetSource || p.source || 'Unknown',
+          sector: p.sector || p.categoryName || p.department || p.ministry || 'Unknown',
+          budget: Number(p.budget ?? p.costOfProject ?? p.allocatedBudget ?? 0),
+          Disbursed: Number(p.Disbursed ?? p.paidOut ?? p.disbursedBudget ?? 0),
+        }));
+        setAllProjects(normalized);
+      } catch (error) {
+        console.error('Error fetching finance dashboard projects:', error);
+        setAllProjects([]);
+      }
+    };
+    fetchProjects();
+  }, []);
+
   const filteredProjects = useMemo(() => {
-    return SAMPLE_PROJECTS.filter((p) => {
+    return allProjects.filter((p) => {
       if (filters.department && p.department !== filters.department) return false;
       if (filters.directorate && p.directorate !== filters.directorate) return false;
       if (filters.financialYear && p.financialYear !== filters.financialYear) return false;
       if (filters.budgetSource && p.budgetSource !== filters.budgetSource) return false;
       return true;
     });
-  }, [filters]);
+  }, [allProjects, filters]);
 
   const financialData = useMemo(() => {
     const totalBudget = filteredProjects.reduce((sum, p) => sum + (p.budget || 0), 0);
@@ -312,10 +273,10 @@ const FinanceDashboardPage = () => {
       ? Math.round((financialData.totalDisbursed / financialData.totalBudget) * 100)
       : 0;
 
-  const uniqueDepartments = Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.department))).filter(Boolean);
-  const uniqueDirectorates = Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.directorate))).filter(Boolean);
-  const uniqueFinancialYears = Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.financialYear))).filter(Boolean);
-  const uniqueBudgetSources = Array.from(new Set(SAMPLE_PROJECTS.map((p) => p.budgetSource))).filter(Boolean);
+  const uniqueDepartments = Array.from(new Set(allProjects.map((p) => p.department))).filter(Boolean);
+  const uniqueDirectorates = Array.from(new Set(allProjects.map((p) => p.directorate))).filter(Boolean);
+  const uniqueFinancialYears = Array.from(new Set(allProjects.map((p) => p.financialYear))).filter(Boolean);
+  const uniqueBudgetSources = Array.from(new Set(allProjects.map((p) => p.budgetSource))).filter(Boolean);
 
   return (
     <Box

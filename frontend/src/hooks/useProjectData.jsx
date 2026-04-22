@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import apiService from '../api';
-import { checkUserPrivilege } from '../utils/tableHelpers';
+import { canViewProjectsWithBackendScope } from '../utils/privilegeUtils.js';
 
 const useProjectData = (user, authLoading, filterState, options = {}) => {
   const { fetchMetadata = true } = options;
@@ -30,28 +30,14 @@ const useProjectData = (user, authLoading, filterState, options = {}) => {
       console.warn('useProjectData: No user object available');
       setProjects([]);
       setLoading(false);
-      setError("You do not have 'project.read_all' privilege to view projects.");
+      setError('You must be signed in to view projects.');
       return;
     }
-    
-    if (!user.privileges || !Array.isArray(user.privileges)) {
-      console.warn('useProjectData: User object missing privileges array', { user });
+
+    if (!canViewProjectsWithBackendScope(user)) {
       setProjects([]);
       setLoading(false);
-      setError("You do not have 'project.read_all' privilege to view projects. Please log out and log back in to refresh your token.");
-      return;
-    }
-    
-    if (!checkUserPrivilege(user, 'project.read_all')) {
-      console.warn('useProjectData: User does not have project.read_all privilege', {
-        username: user.username,
-        privilegesCount: user.privileges.length,
-        hasPrivilege: user.privileges.includes('project.read_all'),
-        firstFewPrivileges: user.privileges.slice(0, 10)
-      });
-      setProjects([]);
-      setLoading(false);
-      setError("You do not have 'project.read_all' privilege to view projects. Please log out and log back in to refresh your token.");
+      setError('You do not have permission to view projects. Please log out and sign in again if your access was updated.');
       return;
     }
 

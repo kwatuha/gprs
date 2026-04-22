@@ -62,6 +62,35 @@ const authService = {
       throw error;
     }
   },
+
+  /**
+   * Fetch client session policy (e.g., idle timeout).
+   * @returns {Promise<{idleTimeoutMinutes:number, source?:string}>}
+   */
+  getSessionPolicy: async () => {
+    try {
+      const response = await axiosInstance.get('/auth/session-policy');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching session policy:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update idle timeout session policy (admin/super admin only).
+   * @param {number} idleTimeoutMinutes
+   * @returns {Promise<Object>}
+   */
+  updateSessionPolicy: async (idleTimeoutMinutes) => {
+    try {
+      const response = await axiosInstance.put('/auth/session-policy', { idleTimeoutMinutes });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating session policy:', error);
+      throw error;
+    }
+  },
 };
 
 export default authService;

@@ -468,6 +468,122 @@ function buildProjectListScopeFragment(projectAlias = 'p') {
                             LOWER(TRIM(COALESCE(${pa}.ministry, ''))) = LOWER(TRIM(COALESCE(s.ministry, '')))
                             AND LOWER(TRIM(COALESCE(${pa}.state_department, ''))) = LOWER(TRIM(COALESCE(s.state_department, '')))
                         )
+                        OR (
+                            NULLIF(TRIM(COALESCE(s.ministry, '')), '') IS NOT NULL
+                            AND NULLIF(TRIM(COALESCE(s.state_department, '')), '') IS NOT NULL
+                            AND NULLIF(TRIM(COALESCE(${pa}.state_department, '')), '') IS NOT NULL
+                            AND (
+                                NULLIF(TRIM(COALESCE(${pa}.ministry, '')), '') IS NULL
+                                OR LOWER(TRIM(COALESCE(${pa}.ministry, ''))) = LOWER(TRIM(COALESCE(s.ministry, '')))
+                                OR regexp_replace(
+                                    regexp_replace(
+                                        regexp_replace(LOWER(TRIM(COALESCE(${pa}.ministry, ''))), '^ministry\\s+of\\s+', '', 'g'),
+                                        '\\s*\\([^)]*\\)\\s*',
+                                        '',
+                                        'g'
+                                    ),
+                                    '\\m(and|the)\\M',
+                                    '',
+                                    'g'
+                                ) = regexp_replace(
+                                    regexp_replace(
+                                        regexp_replace(LOWER(TRIM(COALESCE(s.ministry, ''))), '^ministry\\s+of\\s+', '', 'g'),
+                                        '\\s*\\([^)]*\\)\\s*',
+                                        '',
+                                        'g'
+                                    ),
+                                    '\\m(and|the)\\M',
+                                    '',
+                                    'g'
+                                )
+                                OR regexp_replace(
+                                    regexp_replace(
+                                        regexp_replace(
+                                            regexp_replace(LOWER(TRIM(COALESCE(${pa}.ministry, ''))), '^ministry\\s+of\\s+', '', 'g'),
+                                            '\\s*\\([^)]*\\)\\s*',
+                                            '',
+                                            'g'
+                                        ),
+                                        '\\m(and|the)\\M',
+                                        '',
+                                        'g'
+                                    ),
+                                    '[^a-z0-9]+',
+                                    '',
+                                    'g'
+                                ) LIKE '%' || regexp_replace(
+                                    regexp_replace(
+                                        regexp_replace(
+                                            regexp_replace(LOWER(TRIM(COALESCE(s.ministry, ''))), '^ministry\\s+of\\s+', '', 'g'),
+                                            '\\s*\\([^)]*\\)\\s*',
+                                            '',
+                                            'g'
+                                        ),
+                                        '\\m(and|the)\\M',
+                                        '',
+                                        'g'
+                                    ),
+                                    '[^a-z0-9]+',
+                                    '',
+                                    'g'
+                                ) || '%'
+                            )
+                            AND (
+                                LOWER(TRIM(COALESCE(${pa}.state_department, ''))) = LOWER(TRIM(COALESCE(s.state_department, '')))
+                                OR regexp_replace(
+                                    regexp_replace(
+                                        regexp_replace(LOWER(TRIM(COALESCE(${pa}.state_department, ''))), '^state\\s+department\\s+of\\s+', '', 'g'),
+                                        '\\s*\\([^)]*\\)\\s*',
+                                        '',
+                                        'g'
+                                    ),
+                                    '\\m(and|the)\\M',
+                                    '',
+                                    'g'
+                                ) = regexp_replace(
+                                    regexp_replace(
+                                        regexp_replace(LOWER(TRIM(COALESCE(s.state_department, ''))), '^state\\s+department\\s+of\\s+', '', 'g'),
+                                        '\\s*\\([^)]*\\)\\s*',
+                                        '',
+                                        'g'
+                                    ),
+                                    '\\m(and|the)\\M',
+                                    '',
+                                    'g'
+                                )
+                                OR regexp_replace(
+                                    regexp_replace(
+                                        regexp_replace(
+                                            regexp_replace(LOWER(TRIM(COALESCE(${pa}.state_department, ''))), '^state\\s+department\\s+of\\s+', '', 'g'),
+                                            '\\s*\\([^)]*\\)\\s*',
+                                            '',
+                                            'g'
+                                        ),
+                                        '\\m(and|the)\\M',
+                                        '',
+                                        'g'
+                                    ),
+                                    '[^a-z0-9]+',
+                                    '',
+                                    'g'
+                                ) LIKE '%' || regexp_replace(
+                                    regexp_replace(
+                                        regexp_replace(
+                                            regexp_replace(LOWER(TRIM(COALESCE(s.state_department, ''))), '^state\\s+department\\s+of\\s+', '', 'g'),
+                                            '\\s*\\([^)]*\\)\\s*',
+                                            '',
+                                            'g'
+                                        ),
+                                        '\\m(and|the)\\M',
+                                        '',
+                                        'g'
+                                    ),
+                                    '[^a-z0-9]+',
+                                    '',
+                                    'g'
+                                ) || '%'
+                            )
+                        )
                         OR EXISTS (
                             SELECT 1
                             FROM ministries m
@@ -482,6 +598,58 @@ function buildProjectListScopeFragment(projectAlias = 'p') {
                                     )
                                     OR regexp_replace(LOWER(TRIM(COALESCE(s.ministry, ''))), '[^a-z0-9]+', '', 'g')
                                        = regexp_replace(LOWER(TRIM(COALESCE(m.name, ''))), '[^a-z0-9]+', '', 'g')
+                                    OR regexp_replace(
+                                        regexp_replace(
+                                            regexp_replace(LOWER(TRIM(COALESCE(s.ministry, ''))), '^ministry\\s+of\\s+', '', 'g'),
+                                            '\\s*\\([^)]*\\)\\s*',
+                                            '',
+                                            'g'
+                                        ),
+                                        '\\m(and|the)\\M',
+                                        '',
+                                        'g'
+                                    ) = regexp_replace(
+                                        regexp_replace(
+                                            regexp_replace(LOWER(TRIM(COALESCE(m.name, ''))), '^ministry\\s+of\\s+', '', 'g'),
+                                            '\\s*\\([^)]*\\)\\s*',
+                                            '',
+                                            'g'
+                                        ),
+                                        '\\m(and|the)\\M',
+                                        '',
+                                        'g'
+                                    )
+                                    OR regexp_replace(
+                                        regexp_replace(
+                                            regexp_replace(
+                                                regexp_replace(LOWER(TRIM(COALESCE(s.ministry, ''))), '^ministry\\s+of\\s+', '', 'g'),
+                                                '\\s*\\([^)]*\\)\\s*',
+                                                '',
+                                                'g'
+                                            ),
+                                            '\\m(and|the)\\M',
+                                            '',
+                                            'g'
+                                        ),
+                                        '[^a-z0-9]+',
+                                        '',
+                                        'g'
+                                    ) LIKE '%' || regexp_replace(
+                                        regexp_replace(
+                                            regexp_replace(
+                                                regexp_replace(LOWER(TRIM(COALESCE(m.name, ''))), '^ministry\\s+of\\s+', '', 'g'),
+                                                '\\s*\\([^)]*\\)\\s*',
+                                                '',
+                                                'g'
+                                            ),
+                                            '\\m(and|the)\\M',
+                                            '',
+                                            'g'
+                                        ),
+                                        '[^a-z0-9]+',
+                                        '',
+                                        'g'
+                                    ) || '%'
                               )
                               AND (
                                     LOWER(TRIM(COALESCE(s.state_department, ''))) = LOWER(TRIM(COALESCE(d.name, '')))
@@ -492,16 +660,129 @@ function buildProjectListScopeFragment(projectAlias = 'p') {
                                     )
                                     OR regexp_replace(LOWER(TRIM(COALESCE(s.state_department, ''))), '[^a-z0-9]+', '', 'g')
                                        = regexp_replace(LOWER(TRIM(COALESCE(d.name, ''))), '[^a-z0-9]+', '', 'g')
+                                    OR regexp_replace(
+                                        regexp_replace(
+                                            regexp_replace(LOWER(TRIM(COALESCE(s.state_department, ''))), '^state\\s+department\\s+of\\s+', '', 'g'),
+                                            '\\s*\\([^)]*\\)\\s*',
+                                            '',
+                                            'g'
+                                        ),
+                                        '\\m(and|the)\\M',
+                                        '',
+                                        'g'
+                                    ) = regexp_replace(
+                                        regexp_replace(
+                                            regexp_replace(LOWER(TRIM(COALESCE(d.name, ''))), '^state\\s+department\\s+of\\s+', '', 'g'),
+                                            '\\s*\\([^)]*\\)\\s*',
+                                            '',
+                                            'g'
+                                        ),
+                                        '\\m(and|the)\\M',
+                                        '',
+                                        'g'
+                                    )
+                                    OR regexp_replace(
+                                        regexp_replace(
+                                            regexp_replace(
+                                                regexp_replace(LOWER(TRIM(COALESCE(s.state_department, ''))), '^state\\s+department\\s+of\\s+', '', 'g'),
+                                                '\\s*\\([^)]*\\)\\s*',
+                                                '',
+                                                'g'
+                                            ),
+                                            '\\m(and|the)\\M',
+                                            '',
+                                            'g'
+                                        ),
+                                        '[^a-z0-9]+',
+                                        '',
+                                        'g'
+                                    ) LIKE '%' || regexp_replace(
+                                        regexp_replace(
+                                            regexp_replace(
+                                                regexp_replace(LOWER(TRIM(COALESCE(d.name, ''))), '^state\\s+department\\s+of\\s+', '', 'g'),
+                                                '\\s*\\([^)]*\\)\\s*',
+                                                '',
+                                                'g'
+                                            ),
+                                            '\\m(and|the)\\M',
+                                            '',
+                                            'g'
+                                        ),
+                                        '[^a-z0-9]+',
+                                        '',
+                                        'g'
+                                    ) || '%'
                               )
                               AND (
-                                    LOWER(TRIM(COALESCE(${pa}.ministry, ''))) = LOWER(TRIM(COALESCE(m.name, '')))
-                                    OR EXISTS (
-                                        SELECT 1
-                                        FROM unnest(string_to_array(COALESCE(m.alias, ''), ',')) AS mb(token)
-                                        WHERE LOWER(TRIM(COALESCE(${pa}.ministry, ''))) = LOWER(TRIM(COALESCE(mb.token, '')))
+                                    (
+                                        NULLIF(TRIM(COALESCE(${pa}.ministry, '')), '') IS NOT NULL
+                                        AND (
+                                            LOWER(TRIM(COALESCE(${pa}.ministry, ''))) = LOWER(TRIM(COALESCE(m.name, '')))
+                                            OR EXISTS (
+                                                SELECT 1
+                                                FROM unnest(string_to_array(COALESCE(m.alias, ''), ',')) AS mb(token)
+                                                WHERE LOWER(TRIM(COALESCE(${pa}.ministry, ''))) = LOWER(TRIM(COALESCE(mb.token, '')))
+                                            )
+                                            OR regexp_replace(LOWER(TRIM(COALESCE(${pa}.ministry, ''))), '[^a-z0-9]+', '', 'g')
+                                               = regexp_replace(LOWER(TRIM(COALESCE(m.name, ''))), '[^a-z0-9]+', '', 'g')
+                                            OR regexp_replace(
+                                                regexp_replace(
+                                                    regexp_replace(LOWER(TRIM(COALESCE(${pa}.ministry, ''))), '^ministry\\s+of\\s+', '', 'g'),
+                                                    '\\s*\\([^)]*\\)\\s*',
+                                                    '',
+                                                    'g'
+                                                ),
+                                                '\\m(and|the)\\M',
+                                                '',
+                                                'g'
+                                            ) = regexp_replace(
+                                                regexp_replace(
+                                                    regexp_replace(LOWER(TRIM(COALESCE(m.name, ''))), '^ministry\\s+of\\s+', '', 'g'),
+                                                    '\\s*\\([^)]*\\)\\s*',
+                                                    '',
+                                                    'g'
+                                                ),
+                                                '\\m(and|the)\\M',
+                                                '',
+                                                'g'
+                                            )
+                                            OR regexp_replace(
+                                                regexp_replace(
+                                                    regexp_replace(
+                                                        regexp_replace(LOWER(TRIM(COALESCE(${pa}.ministry, ''))), '^ministry\\s+of\\s+', '', 'g'),
+                                                        '\\s*\\([^)]*\\)\\s*',
+                                                        '',
+                                                        'g'
+                                                    ),
+                                                    '\\m(and|the)\\M',
+                                                    '',
+                                                    'g'
+                                                ),
+                                                '[^a-z0-9]+',
+                                                '',
+                                                'g'
+                                            ) LIKE '%' || regexp_replace(
+                                                regexp_replace(
+                                                    regexp_replace(
+                                                        regexp_replace(LOWER(TRIM(COALESCE(m.name, ''))), '^ministry\\s+of\\s+', '', 'g'),
+                                                        '\\s*\\([^)]*\\)\\s*',
+                                                        '',
+                                                        'g'
+                                                    ),
+                                                    '\\m(and|the)\\M',
+                                                    '',
+                                                    'g'
+                                                ),
+                                                '[^a-z0-9]+',
+                                                '',
+                                                'g'
+                                            ) || '%'
+                                        )
                                     )
-                                    OR regexp_replace(LOWER(TRIM(COALESCE(${pa}.ministry, ''))), '[^a-z0-9]+', '', 'g')
-                                       = regexp_replace(LOWER(TRIM(COALESCE(m.name, ''))), '[^a-z0-9]+', '', 'g')
+                                    OR (
+                                        NULLIF(TRIM(COALESCE(${pa}.ministry, '')), '') IS NULL
+                                        AND NULLIF(TRIM(COALESCE(${pa}.state_department, '')), '') IS NOT NULL
+                                    )
                               )
                               AND (
                                     LOWER(TRIM(COALESCE(${pa}.state_department, ''))) = LOWER(TRIM(COALESCE(d.name, '')))
@@ -512,6 +793,27 @@ function buildProjectListScopeFragment(projectAlias = 'p') {
                                     )
                                     OR regexp_replace(LOWER(TRIM(COALESCE(${pa}.state_department, ''))), '[^a-z0-9]+', '', 'g')
                                        = regexp_replace(LOWER(TRIM(COALESCE(d.name, ''))), '[^a-z0-9]+', '', 'g')
+                                    OR regexp_replace(
+                                        regexp_replace(
+                                            regexp_replace(LOWER(TRIM(COALESCE(${pa}.state_department, ''))), '^state\\s+department\\s+of\\s+', '', 'g'),
+                                            '\\s*\\([^)]*\\)\\s*',
+                                            '',
+                                            'g'
+                                        ),
+                                        '\\m(and|the)\\M',
+                                        '',
+                                        'g'
+                                    ) LIKE '%' || regexp_replace(
+                                        regexp_replace(
+                                            regexp_replace(LOWER(TRIM(COALESCE(d.name, ''))), '^state\\s+department\\s+of\\s+', '', 'g'),
+                                            '\\s*\\([^)]*\\)\\s*',
+                                            '',
+                                            'g'
+                                        ),
+                                        '\\m(and|the)\\M',
+                                        '',
+                                        'g'
+                                    ) || '%'
                               )
                         )
                     ))
@@ -549,11 +851,65 @@ function buildProjectListScopeFragment(projectAlias = 'p') {
                                 WHERE COALESCE(m0.voided, false) = false
                                   AND (
                                         LOWER(TRIM(COALESCE(s0.ministry, ''))) = LOWER(TRIM(COALESCE(m0.name, '')))
-                                        OR LOWER(TRIM(COALESCE(s0.ministry, ''))) = LOWER(TRIM(COALESCE(m0.alias, '')))
+                                        OR EXISTS (
+                                            SELECT 1
+                                            FROM unnest(string_to_array(COALESCE(m0.alias, ''), ',')) AS m0a(token)
+                                            WHERE LOWER(TRIM(COALESCE(s0.ministry, ''))) = LOWER(TRIM(COALESCE(m0a.token, '')))
+                                        )
+                                        OR regexp_replace(LOWER(TRIM(COALESCE(s0.ministry, ''))), '[^a-z0-9]+', '', 'g')
+                                           = regexp_replace(LOWER(TRIM(COALESCE(m0.name, ''))), '[^a-z0-9]+', '', 'g')
+                                        OR regexp_replace(
+                                            regexp_replace(
+                                                regexp_replace(LOWER(TRIM(COALESCE(s0.ministry, ''))), '^ministry\\s+of\\s+', '', 'g'),
+                                                '\\s*\\([^)]*\\)\\s*',
+                                                '',
+                                                'g'
+                                            ),
+                                            '\\m(and|the)\\M',
+                                            '',
+                                            'g'
+                                        ) LIKE '%' || regexp_replace(
+                                            regexp_replace(
+                                                regexp_replace(LOWER(TRIM(COALESCE(m0.name, ''))), '^ministry\\s+of\\s+', '', 'g'),
+                                                '\\s*\\([^)]*\\)\\s*',
+                                                '',
+                                                'g'
+                                            ),
+                                            '\\m(and|the)\\M',
+                                            '',
+                                            'g'
+                                        ) || '%'
                                   )
                                   AND (
                                         LOWER(TRIM(COALESCE(s0.state_department, ''))) = LOWER(TRIM(COALESCE(d0.name, '')))
-                                        OR LOWER(TRIM(COALESCE(s0.state_department, ''))) = LOWER(TRIM(COALESCE(d0.alias, '')))
+                                        OR EXISTS (
+                                            SELECT 1
+                                            FROM unnest(string_to_array(COALESCE(d0.alias, ''), ',')) AS d0a(token)
+                                            WHERE LOWER(TRIM(COALESCE(s0.state_department, ''))) = LOWER(TRIM(COALESCE(d0a.token, '')))
+                                        )
+                                        OR regexp_replace(LOWER(TRIM(COALESCE(s0.state_department, ''))), '[^a-z0-9]+', '', 'g')
+                                           = regexp_replace(LOWER(TRIM(COALESCE(d0.name, ''))), '[^a-z0-9]+', '', 'g')
+                                        OR regexp_replace(
+                                            regexp_replace(
+                                                regexp_replace(LOWER(TRIM(COALESCE(s0.state_department, ''))), '^state\\s+department\\s+of\\s+', '', 'g'),
+                                                '\\s*\\([^)]*\\)\\s*',
+                                                '',
+                                                'g'
+                                            ),
+                                            '\\m(and|the)\\M',
+                                            '',
+                                            'g'
+                                        ) LIKE '%' || regexp_replace(
+                                            regexp_replace(
+                                                regexp_replace(LOWER(TRIM(COALESCE(d0.name, ''))), '^state\\s+department\\s+of\\s+', '', 'g'),
+                                                '\\s*\\([^)]*\\)\\s*',
+                                                '',
+                                                'g'
+                                            ),
+                                            '\\m(and|the)\\M',
+                                            '',
+                                            'g'
+                                        ) || '%'
                                   )
                             )
                         )

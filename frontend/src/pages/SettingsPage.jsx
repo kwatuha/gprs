@@ -7,12 +7,13 @@ import {
   Grid, useTheme, Tabs, Tab, FormControl, InputLabel, Select, MenuItem,
   InputAdornment, Chip
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, ExpandMore as ExpandMoreIcon, LocationCity as LocationCityIcon, Map as MapIcon, CalendarToday as CalendarTodayIcon, Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, ExpandMore as ExpandMoreIcon, LocationCity as LocationCityIcon, Map as MapIcon, CalendarToday as CalendarTodayIcon, Search as SearchIcon, Clear as ClearIcon, Security as SecurityIcon } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext.jsx';
 import apiService from '../api';
 import metaDataService from '../api/metaDataService';
 import useDepartmentData from '../hooks/useDepartmentData';
 import { DEFAULT_COUNTY } from '../configs/appConfig';
+import { isSuperAdminUser } from '../utils/roleUtils';
 
 // Reusable Delete Confirmation Dialog
 const DeleteConfirmDialog = ({ open, onClose, onConfirm, itemToDeleteName, itemType }) => {
@@ -1787,6 +1788,106 @@ const FinancialYearManagement = () => {
   );
 };
 
+const SessionSecuritySettings = () => {
+  const { user } = useAuth();
+  const [value, setValue] = useState(60);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const canManage = isSuperAdminUser(user);
+
+  const loadPolicy = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await apiService.auth.getSessionPolicy();
+      const mins = parseInt(String(data?.idleTimeoutMinutes), 10);
+      setValue(Number.isFinite(mins) && mins > 0 ? mins : 60);
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error?.response?.data?.error || error?.message || 'Failed to load session policy.',
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPolicy();
+  }, [loadPolicy]);
+
+  const handleSave = async () => {
+    const mins = parseInt(String(value), 10);
+    if (!Number.isFinite(mins) || mins < 1 || mins > 1440) {
+      setSnackbar({ open: true, message: 'Idle timeout must be between 1 and 1440 minutes.', severity: 'error' });
+      return;
+    }
+    setSaving(true);
+    try {
+      await apiService.auth.updateSessionPolicy(mins);
+      setSnackbar({ open: true, message: 'Idle timeout policy updated successfully.', severity: 'success' });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error?.response?.data?.error || error?.message || 'Failed to update session policy.',
+        severity: 'error',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Box sx={{ p: 3, maxWidth: 680 }}>
+      <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 1 }}>
+        Session Security
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        Configure automatic logout after user inactivity. This applies to all users.
+      </Typography>
+
+      {loading ? (
+        <CircularProgress size={24} />
+      ) : (
+        <Stack spacing={2}>
+          <TextField
+            label="Idle timeout (minutes)"
+            type="number"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            inputProps={{ min: 1, max: 1440 }}
+            helperText="Minimum 1 minute, maximum 1440 minutes (24 hours)."
+            disabled={!canManage}
+          />
+          {!canManage && (
+            <Alert severity="info">Only Super Admin can change idle timeout policy.</Alert>
+          )}
+          <Box>
+            <Button variant="contained" onClick={handleSave} disabled={!canManage || saving}>
+              {saving ? 'Saving...' : 'Save Policy'}
+            </Button>
+          </Box>
+        </Stack>
+      )}
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={5000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+      >
+        <Alert
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+};
+
 
 // Main Settings Page with Tabs
 const SettingsPage = () => {
@@ -1800,15 +1901,24 @@ const SettingsPage = () => {
   return (
     <Box sx={{ width: '100%' }}>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={currentTab} onChange={handleTabChange} aria-label="metadata management tabs">
+        <Tabs
+          value={currentTab}
+          onChange={handleTabChange}
+          aria-label="metadata management tabs"
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+        >
           <Tab icon={<LocationCityIcon />} label="Departments & Sections" iconPosition="start" />
           <Tab icon={<MapIcon />} label="Counties, Subcounties & Wards" iconPosition="start" />
           <Tab icon={<CalendarTodayIcon />} label="Financial Years" iconPosition="start" />
+          <Tab icon={<SecurityIcon />} label="Session Security" iconPosition="start" />
         </Tabs>
       </Box>
       {currentTab === 0 && <DepartmentAndSectionManagement />}
       {currentTab === 1 && <SubcountyManagement />}
       {currentTab === 2 && <FinancialYearManagement />}
+      {currentTab === 3 && <SessionSecuritySettings />}
     </Box>
   );
 };

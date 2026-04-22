@@ -13,7 +13,11 @@ const ALLOWED_ASSIGNMENT_ROLES_FOR_MDA_ICT_ADMIN = new Set([
 
 function isMdaIctAdminRequester(reqUser) {
     const raw = reqUser?.roleName ?? reqUser?.role ?? '';
-    return normalizeRoleForCompare(raw) === 'mda ict admin';
+    const normalized = normalizeRoleForCompare(raw);
+    // Support common naming variants/typos such as "MDA ICT addmin".
+    return normalized === 'mda ict admin'
+        || normalized === 'mda ict addmin'
+        || (normalized.includes('mda ict') && (normalized.includes('admin') || normalized.includes('addmin')));
 }
 
 async function getRoleNameById(roleId, DB_TYPE) {
@@ -25,6 +29,28 @@ async function getRoleNameById(roleId, DB_TYPE) {
         return r.rows?.[0]?.roleName || null;
     }
     const r = await pool.query('SELECT roleName FROM roles WHERE roleId = ? AND voided = 0', [roleId]);
+    const rows = Array.isArray(r) ? r[0] : r;
+    return rows?.[0]?.roleName || null;
+}
+
+async function getUserRoleNameByUserId(userId, DB_TYPE) {
+    if (DB_TYPE === 'postgresql') {
+        const r = await pool.query(
+            `SELECT r.name AS "roleName"
+             FROM users u
+             LEFT JOIN roles r ON u.roleid = r.roleid
+             WHERE u.userid = $1`,
+            [userId]
+        );
+        return r.rows?.[0]?.roleName || null;
+    }
+    const r = await pool.query(
+        `SELECT r.roleName
+         FROM users u
+         LEFT JOIN roles r ON u.roleId = r.roleId
+         WHERE u.userId = ?`,
+        [userId]
+    );
     const rows = Array.isArray(r) ? r[0] : r;
     return rows?.[0]?.roleName || null;
 }
@@ -51,6 +77,31 @@ async function enforceRoleAssignmentPermission(reqUser, targetRoleId, DB_TYPE) {
             error: 'MDA ICT Admin can only assign Data Entry Officer, Data Approver, or Viewer roles.',
         };
     }
+    return { ok: true };
+}
+
+async function enforceTargetUserEditPermission(reqUser, targetUserId, DB_TYPE) {
+    if (isSuperAdminRequester(reqUser)) {
+        return { ok: true };
+    }
+    if (!isMdaIctAdminRequester(reqUser)) {
+        return { ok: true };
+    }
+
+    const currentRoleName = await getUserRoleNameByUserId(targetUserId, DB_TYPE);
+    if (!currentRoleName) {
+        return { ok: false, status: 404, error: 'Target user not found.' };
+    }
+
+    const normalizedCurrentRole = normalizeRoleForCompare(currentRoleName);
+    if (!ALLOWED_ASSIGNMENT_ROLES_FOR_MDA_ICT_ADMIN.has(normalizedCurrentRole)) {
+        return {
+            ok: false,
+            status: 403,
+            error: 'MDA ICT Admin can only edit users in Data Entry Officer, Data Approver, or Viewer roles.',
+        };
+    }
+
     return { ok: true };
 }
 
@@ -539,6 +590,11 @@ router.put('/users/:id', async (req, res) => {
     }
 
     const DB_TYPE = process.env.DB_TYPE || 'mysql';
+    const targetEditGuard = await enforceTargetUserEditPermission(req.user, id, DB_TYPE);
+    if (!targetEditGuard.ok) {
+        return res.status(targetEditGuard.status).json({ error: targetEditGuard.error });
+    }
+
     if (Object.prototype.hasOwnProperty.call(otherFieldsToUpdate, 'roleId')) {
         const roleGuard = await enforceRoleAssignmentPermission(req.user, otherFieldsToUpdate.roleId, DB_TYPE);
         if (!roleGuard.ok) {

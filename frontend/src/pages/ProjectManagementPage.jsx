@@ -24,6 +24,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 import { useAuth } from '../context/AuthContext.jsx';
+import { canViewProjectsWithBackendScope } from '../utils/privilegeUtils.js';
 import { checkUserPrivilege, currencyFormatter, getProjectStatusBackgroundColor, getProjectStatusTextColor, formatStatus } from '../utils/tableHelpers';
 import { normalizeProjectStatus } from '../utils/projectStatusNormalizer';
 import projectTableColumnsConfig from '../configs/projectTableConfig';
@@ -2430,8 +2431,11 @@ function ProjectManagementPage() {
 
       {loading && (<Box display="flex" justifyContent="center" alignItems="center" height="200px"><CircularProgress /><Typography sx={{ ml: 2 }}>Loading projects...</Typography></Box>)}
       {error && (<Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>)}
-      {!loading && !error && projects.length === 0 && checkUserPrivilege(user, 'project.read_all') && (<Alert severity="info" sx={{ mt: 2 }}>No projects found. Use the search bar or column filters to find projects, or add a new project.</Alert>)}
-      {!loading && !error && projects.length === 0 && !checkUserPrivilege(user, 'project.read_all') && (<Alert severity="warning" sx={{ mt: 2 }}>You do not have the necessary permissions to view any projects.</Alert>)}
+      {!loading && !error && projects.length === 0 && canViewProjectsWithBackendScope(user) && (
+        <Alert severity="info" sx={{ mt: 2 }}>
+          No projects found within your access scope. Use the search bar or column filters, or add a new project if you have permission.
+        </Alert>
+      )}
       {!loading && !error && projects.length > 0 && searchQuery && filteredProjects.length === 0 && (
         <Alert severity="info" sx={{ mt: 2 }}>
           No projects match your search query "{searchQuery}". Try different keywords or clear the search.

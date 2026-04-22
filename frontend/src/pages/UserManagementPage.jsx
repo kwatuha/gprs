@@ -7,7 +7,7 @@ import {
   DialogContentText, InputAdornment, Grid, Autocomplete,
 } from '@mui/material';
 import { DataGrid } from "@mui/x-data-grid";
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, PersonAdd as PersonAddIcon, Settings as SettingsIcon, Lock as LockIcon, LockReset as LockResetIcon, Block as BlockIcon, CheckCircle as CheckCircleIcon, Search as SearchIcon, Clear as ClearIcon, Visibility as VisibilityIcon, VisibilityOff as VisibilityOffIcon, AccountTree as AccountTreeIcon, ExpandMore as ExpandMoreIcon, ViewList as ViewListIcon, Hub as HubIcon, AdminPanelSettings as AdminPanelSettingsIcon, TableChart as ExcelIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, PersonAdd as PersonAddIcon, Settings as SettingsIcon, Lock as LockIcon, LockReset as LockResetIcon, Block as BlockIcon, CheckCircle as CheckCircleIcon, Search as SearchIcon, Clear as ClearIcon, Visibility as VisibilityIcon, VisibilityOff as VisibilityOffIcon, AccountTree as AccountTreeIcon, ExpandMore as ExpandMoreIcon, ViewList as ViewListIcon, Hub as HubIcon, AdminPanelSettings as AdminPanelSettingsIcon, TableChart as ExcelIcon, Security as SecurityIcon } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import { useSearchParams } from 'react-router-dom';
 import apiService from '../api/userService';
@@ -286,6 +286,12 @@ function UserManagementPage() {
   const [privilegeToDeleteName, setPrivilegeToDeleteName] = useState('');
   const [privilegeFormErrors, setPrivilegeFormErrors] = useState({});
 
+  // Session Security States (idle timeout policy)
+  const [openSessionSecurityDialog, setOpenSessionSecurityDialog] = useState(false);
+  const [sessionIdleTimeoutMinutes, setSessionIdleTimeoutMinutes] = useState(60);
+  const [sessionPolicyLoading, setSessionPolicyLoading] = useState(false);
+  const [sessionPolicySaving, setSessionPolicySaving] = useState(false);
+
   // --- Fetching Data ---
 
   const fetchUsers = useCallback(async (pendingOnly = false) => {
@@ -410,6 +416,47 @@ function UserManagementPage() {
       setSnackbar({ open: true, message: `Failed to load privileges: ${err.message}`, severity: 'error' });
     }
   }, [hasPrivilege]);
+
+  const handleOpenSessionSecurityDialog = useCallback(async () => {
+    if (!isSuperAdmin) return;
+    setOpenSessionSecurityDialog(true);
+    setSessionPolicyLoading(true);
+    try {
+      const data = await apiServiceMain.auth.getSessionPolicy();
+      const mins = parseInt(String(data?.idleTimeoutMinutes), 10);
+      setSessionIdleTimeoutMinutes(Number.isFinite(mins) && mins > 0 ? mins : 60);
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err?.error || err?.message || 'Failed to load session security policy.',
+        severity: 'error',
+      });
+    } finally {
+      setSessionPolicyLoading(false);
+    }
+  }, [isSuperAdmin]);
+
+  const handleSaveSessionSecurityPolicy = useCallback(async () => {
+    const mins = parseInt(String(sessionIdleTimeoutMinutes), 10);
+    if (!Number.isFinite(mins) || mins < 1 || mins > 1440) {
+      setSnackbar({ open: true, message: 'Idle timeout must be between 1 and 1440 minutes.', severity: 'error' });
+      return;
+    }
+    setSessionPolicySaving(true);
+    try {
+      await apiServiceMain.auth.updateSessionPolicy(mins);
+      setSnackbar({ open: true, message: 'Session security policy updated.', severity: 'success' });
+      setOpenSessionSecurityDialog(false);
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err?.error || err?.message || 'Failed to update session security policy.',
+        severity: 'error',
+      });
+    } finally {
+      setSessionPolicySaving(false);
+    }
+  }, [sessionIdleTimeoutMinutes]);
 
 
   const fetchMinistriesCatalog = useCallback(async () => {
@@ -2171,6 +2218,27 @@ function UserManagementPage() {
                     }}
                   >
                     Privileges
+                  </Button>
+                )}
+                {isSuperAdmin && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<SecurityIcon sx={{ fontSize: '1rem' }} />}
+                    onClick={handleOpenSessionSecurityDialog}
+                    sx={{
+                      borderColor: colors.blueAccent[500],
+                      color: colors.blueAccent[500],
+                      '&:hover': { backgroundColor: colors.blueAccent[700], color: 'white', borderColor: colors.blueAccent[700] },
+                      fontWeight: 600,
+                      borderRadius: '8px',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                      px: 1.25,
+                      py: 0.5,
+                      fontSize: '0.8125rem'
+                    }}
+                  >
+                    Session Security
                   </Button>
                 )}
                 {isSuperAdmin && userListView !== 'voided' && (
@@ -4018,6 +4086,40 @@ function UserManagementPage() {
           <Button type="button" onClick={handleClosePrivilegeDialog} color="primary" variant="outlined" disabled={loading}>Cancel</Button>
           <Button type="button" onClick={handlePrivilegeSubmit} color="primary" variant="contained" disabled={loading}>
             {loading ? 'Saving...' : (currentPrivilegeToEdit ? 'Update Privilege' : 'Create Privilege')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openSessionSecurityDialog} onClose={() => setOpenSessionSecurityDialog(false)} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ backgroundColor: colors.blueAccent[700], color: 'white' }}>
+          Session Security
+        </DialogTitle>
+        <DialogContent dividers sx={{ backgroundColor: colors.primary[400] }}>
+          {sessionPolicyLoading ? (
+            <Box display="flex" justifyContent="center" py={2}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : (
+            <>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Configure automatic logout after user inactivity. This applies to all users.
+              </Alert>
+              <TextField
+                fullWidth
+                type="number"
+                label="Idle timeout (minutes)"
+                value={sessionIdleTimeoutMinutes}
+                onChange={(e) => setSessionIdleTimeoutMinutes(e.target.value)}
+                inputProps={{ min: 1, max: 1440 }}
+                helperText="Minimum 1 minute, maximum 1440 minutes (24 hours)."
+              />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ padding: '16px 24px', borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: colors.primary[400] }}>
+          <Button onClick={() => setOpenSessionSecurityDialog(false)} variant="outlined">Cancel</Button>
+          <Button onClick={handleSaveSessionSecurityPolicy} variant="contained" disabled={sessionPolicyLoading || sessionPolicySaving}>
+            {sessionPolicySaving ? 'Saving...' : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>

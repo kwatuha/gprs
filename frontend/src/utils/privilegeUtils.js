@@ -20,6 +20,16 @@ export const checkUserPrivilege = (user, privilegeName) => {
 };
 
 /**
+ * Whether the user may open project list/detail routes. Backend GET /api/projects and
+ * GET /api/projects/:id enforce organization scope (PostgreSQL); the client must not
+ * require project.read_all alone — many roles only have scoped access.
+ */
+export const canViewProjectsWithBackendScope = (user) => {
+  if (!user || !Array.isArray(user.privileges)) return false;
+  return true;
+};
+
+/**
  * Check if user has admin access
  * @param {object | null} user - The user object from AuthContext.
  * @returns {boolean} True if the user is an admin, false otherwise.

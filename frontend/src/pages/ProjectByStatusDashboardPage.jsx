@@ -1428,8 +1428,8 @@ const ProjectByStatusDashboardPage = () => {
         <DialogActions>
           <Button
             onClick={() => {
-              const projectId = selectedProject?.id || selectedProject?.project_id;
-              if (projectId) {
+              const projectId = selectedProject?.id ?? selectedProject?.project_id ?? selectedProject?.projectId;
+              if (projectId != null && projectId !== '') {
                 navigate(`${ROUTES.PROJECTS}/${projectId}`);
               }
             }}

@@ -64,6 +64,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axiosInstance from '../api/axiosInstance';
+import { isAdmin } from '../utils/privilegeUtils.js';
 
 const PublicApprovalManagementPage = () => {
   const theme = useTheme();
@@ -1680,7 +1681,7 @@ const PublicApprovalManagementPage = () => {
     setCategoryFilter('');
   };
 
-  if (!hasPrivilege('public_content.approve') && user?.roleName !== 'admin') {
+  if (!hasPrivilege('public_content.approve') && !isAdmin(user)) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         <Alert severity="error">You don't have permission to access this page.</Alert>

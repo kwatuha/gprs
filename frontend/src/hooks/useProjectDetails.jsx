@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import apiService from '../api';
 import { useAuth } from '../context/AuthContext.jsx';
-import { checkUserPrivilege } from '../utils/helpers';
+import { canViewProjectsWithBackendScope } from '../utils/privilegeUtils.js';
 
 const useProjectDetails = (projectId) => {
   const { user, loading: authLoading } = useAuth();
@@ -28,7 +28,7 @@ const useProjectDetails = (projectId) => {
     setLoading(true);
     setError(null);
     if (authLoading) return;
-    if (!user || !checkUserPrivilege(user, 'project.read_all')) {
+    if (!user || !canViewProjectsWithBackendScope(user)) {
       setError('You don\'t have permission to view project details.');
       setLoading(false);
       return;

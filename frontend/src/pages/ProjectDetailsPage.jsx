@@ -51,6 +51,7 @@ import {
 } from '@mui/icons-material';
 import apiService from '../api';
 import { useAuth } from '../context/AuthContext.jsx';
+import { canViewProjectsWithBackendScope } from '../utils/privilegeUtils.js';
 import ProjectDocumentsAttachments from '../components/ProjectDocumentsAttachments';
 import ProjectMapEditor from '../components/ProjectMapEditor';
 import { getProjectStatusBackgroundColor, getProjectStatusTextColor } from '../utils/projectStatusColors';
@@ -473,11 +474,9 @@ function ProjectDetailsPage() {
         if (authLoading) return;
         
         try {
-            // Admins and privileged users can view any project
-            if (checkUserPrivilege(user, 'project.read_all')) {
+            if (canViewProjectsWithBackendScope(user)) {
                 setIsAccessAllowed(true);
             } else {
-                // If not a privileged user, deny access
                 setAccessError("You do not have the necessary privileges to view this project.");
                 setIsAccessAllowed(false);
             }
@@ -565,7 +564,12 @@ function ProjectDetailsPage() {
 
         } catch (err) {
             console.error('ProjectDetailsPage: Error fetching project details:', err);
-            setError(err.message || 'Failed to load project details.');
+            const status = err.response?.status;
+            if (status === 404) {
+                setError('Project not found or you do not have access to it.');
+            } else {
+                setError(err.response?.data?.message || err.message || 'Failed to load project details.');
+            }
             if (err.response && err.response.status === 401) {
                 logout();
             }

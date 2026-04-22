@@ -6,11 +6,70 @@ const jwt = require('jsonwebtoken');
 const pool = require('../config/db'); // Your database connection pool
 const orgScope = require('../services/organizationScopeService');
 const authenticate = require('../middleware/authenticate');
-const { normalizeRoleForCompare, ADMIN_LIKE_ROLE_NAMES } = require('../utils/roleUtils');
+const { normalizeRoleForCompare, ADMIN_LIKE_ROLE_NAMES, isAdminLikeRequester } = require('../utils/roleUtils');
 
 require('dotenv').config(); // Load environment variables
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_fallback_secret_for_dev_only_change_this_asap';
+const SESSION_SETTINGS_KEY = 'session.idle_timeout_minutes';
+const DEFAULT_IDLE_TIMEOUT_MINUTES = 60;
+
+/**
+ * Read/write idle timeout in system_settings only when using PostgreSQL.
+ * Historically we checked DB_TYPE === 'postgresql' only; production often omits DB_TYPE
+ * (defaulting to 'mysql' in code) or uses "postgres", which incorrectly skipped DB and
+ * always returned 60 minutes.
+ */
+function sessionPolicyUsesPostgresStorage() {
+    const t = (process.env.DB_TYPE || '').trim().toLowerCase();
+    if (t === 'mysql' || t === 'mariadb') return false;
+    if (t === 'postgresql' || t === 'postgres') return true;
+    // Unset or unknown: this API ships with node-postgres (see config/db.js).
+    return true;
+}
+
+async function ensureSystemSettingsTableForPostgres() {
+    const existsResult = await pool.query(`SELECT to_regclass('public.system_settings') AS table_name`);
+    const exists = Boolean(existsResult.rows?.[0]?.table_name);
+    if (exists) return;
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS system_settings (
+            setting_key TEXT PRIMARY KEY,
+            setting_value TEXT NOT NULL,
+            updated_by INTEGER NULL,
+            updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+}
+
+async function getIdleTimeoutMinutesForPostgres() {
+    await ensureSystemSettingsTableForPostgres();
+    const result = await pool.query(
+        `SELECT setting_value FROM system_settings WHERE setting_key = $1 LIMIT 1`,
+        [SESSION_SETTINGS_KEY]
+    );
+    const raw = result.rows?.[0]?.setting_value;
+    const n = parseInt(String(raw || ''), 10);
+    if (!Number.isFinite(n) || n < 0) return DEFAULT_IDLE_TIMEOUT_MINUTES;
+    return n;
+}
+
+async function setIdleTimeoutMinutesForPostgres(minutes, updatedBy) {
+    await ensureSystemSettingsTableForPostgres();
+    await pool.query(
+        `
+        INSERT INTO system_settings (setting_key, setting_value, updated_by, updated_at)
+        VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+        ON CONFLICT (setting_key)
+        DO UPDATE SET
+            setting_value = EXCLUDED.setting_value,
+            updated_by = EXCLUDED.updated_by,
+            updated_at = CURRENT_TIMESTAMP
+        `,
+        [SESSION_SETTINGS_KEY, String(minutes), updatedBy || null]
+    );
+}
 
 router.post('/test-reach', (req, res) => {
     res.status(200).json({ message: 'Auth test route reached!' });
@@ -526,6 +585,67 @@ router.post('/change-password', authenticate, async (req, res) => {
     } catch (err) {
         console.error('Error changing password:', err);
         return res.status(500).json({ error: 'Server error while changing password.', details: err.message });
+    }
+});
+
+// @route   GET /auth/session-policy
+// @desc    Fetch client session policy (idle timeout minutes)
+// @access  Private
+router.get('/session-policy', authenticate, async (req, res) => {
+    try {
+        if (!sessionPolicyUsesPostgresStorage()) {
+            return res.status(200).json({
+                idleTimeoutMinutes: DEFAULT_IDLE_TIMEOUT_MINUTES,
+                source: 'default_non_postgres',
+            });
+        }
+
+        const idleTimeoutMinutes = await getIdleTimeoutMinutesForPostgres();
+        return res.status(200).json({
+            idleTimeoutMinutes,
+            source: 'system_settings',
+        });
+    } catch (err) {
+        console.error('Error fetching session policy:', err);
+        return res.status(500).json({ error: 'Failed to fetch session policy.', details: err.message });
+    }
+});
+
+// @route   PUT /auth/session-policy
+// @desc    Update idle timeout minutes (Super Admin / admin-like only)
+// @access  Private
+router.put('/session-policy', authenticate, async (req, res) => {
+    try {
+        if (!isAdminLikeRequester(req.user)) {
+            return res.status(403).json({ error: 'Only super admin/admin can update session policy.' });
+        }
+
+        const minutesRaw = req.body?.idleTimeoutMinutes;
+        const idleTimeoutMinutes = parseInt(String(minutesRaw), 10);
+        if (!Number.isFinite(idleTimeoutMinutes) || idleTimeoutMinutes < 1 || idleTimeoutMinutes > 1440) {
+            return res.status(400).json({ error: 'idleTimeoutMinutes must be between 1 and 1440.' });
+        }
+
+        if (!sessionPolicyUsesPostgresStorage()) {
+            return res.status(200).json({
+                idleTimeoutMinutes,
+                source: 'memory_only',
+                warning: 'Persistent session policy storage is not used when DB_TYPE is MySQL/MariaDB.',
+            });
+        }
+
+        const authUserId = req.user?.id ?? req.user?.userId ?? req.user?.actualUserId ?? null;
+        const updatedBy = Number.isFinite(parseInt(String(authUserId), 10)) ? parseInt(String(authUserId), 10) : null;
+        await setIdleTimeoutMinutesForPostgres(idleTimeoutMinutes, updatedBy);
+
+        return res.status(200).json({
+            success: true,
+            idleTimeoutMinutes,
+            message: 'Session idle timeout updated successfully.',
+        });
+    } catch (err) {
+        console.error('Error updating session policy:', err);
+        return res.status(500).json({ error: 'Failed to update session policy.', details: err.message });
     }
 });
 

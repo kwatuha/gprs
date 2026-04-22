@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import { Alert, Snackbar } from '@mui/material';
 import apiService from '../api';
 
 const AuthContext = createContext(null);
@@ -9,6 +10,9 @@ export const AuthProvider = ({ children }) => {
     const [mustChangePassword, setMustChangePassword] = useState(localStorage.getItem('mustChangePassword') === 'true');
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [idleTimeoutMinutes, setIdleTimeoutMinutes] = useState(60);
+    const [showIdleWarning, setShowIdleWarning] = useState(false);
+    const [showIdleLoggedOutNotice, setShowIdleLoggedOutNotice] = useState(false);
 
     const login = useCallback(async (newToken, options = {}) => {
         localStorage.setItem('jwtToken', newToken);
@@ -81,6 +85,23 @@ export const AuthProvider = ({ children }) => {
         loadUserFromToken();
     }, [logout]);
 
+    useEffect(() => {
+        const loadSessionPolicy = async () => {
+            if (!token) return;
+            try {
+                const data = await apiService.auth.getSessionPolicy();
+                const mins = parseInt(String(data?.idleTimeoutMinutes), 10);
+                if (Number.isFinite(mins) && mins > 0) {
+                    setIdleTimeoutMinutes(mins);
+                }
+            } catch (error) {
+                // Keep default if policy is unavailable.
+                console.warn('Falling back to default idle timeout policy:', error?.message || error);
+            }
+        };
+        loadSessionPolicy();
+    }, [token]);
+
     // Enforce automatic logout exactly when JWT expires (absolute session timeout).
     useEffect(() => {
         if (!token) return undefined;
@@ -108,11 +129,55 @@ export const AuthProvider = ({ children }) => {
         };
     }, [token, logout]);
 
+    // Idle timeout: if no activity is detected for configured period, auto logout.
+    useEffect(() => {
+        if (!token || !idleTimeoutMinutes || idleTimeoutMinutes < 1) return undefined;
+
+        const idleMs = idleTimeoutMinutes * 60 * 1000;
+        const warningLeadMs = 60 * 1000; // show warning 1 minute before logout
+        let timeoutId;
+        let warningTimeoutId;
+
+        const resetIdleTimer = () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            if (warningTimeoutId) clearTimeout(warningTimeoutId);
+            setShowIdleWarning(false);
+
+            if (idleMs > warningLeadMs) {
+                warningTimeoutId = setTimeout(() => {
+                    setShowIdleWarning(true);
+                }, idleMs - warningLeadMs);
+            }
+
+            timeoutId = setTimeout(() => {
+                setShowIdleWarning(false);
+                setShowIdleLoggedOutNotice(true);
+                logout();
+            }, idleMs);
+        };
+
+        const activityEvents = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];
+        activityEvents.forEach((eventName) => {
+            window.addEventListener(eventName, resetIdleTimer, { passive: true });
+        });
+
+        resetIdleTimer();
+
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            if (warningTimeoutId) clearTimeout(warningTimeoutId);
+            activityEvents.forEach((eventName) => {
+                window.removeEventListener(eventName, resetIdleTimer);
+            });
+        };
+    }, [token, idleTimeoutMinutes, logout]);
+
     const contextValue = {
         token,
         user,
         mustChangePassword,
         loading,
+        idleTimeoutMinutes,
         login,
         logout,
         completeForcedPasswordChange,
@@ -122,6 +187,36 @@ export const AuthProvider = ({ children }) => {
     return (
         <AuthContext.Provider value={contextValue}>
             {children}
+            <Snackbar
+                open={showIdleWarning}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                autoHideDuration={null}
+                onClose={() => setShowIdleWarning(false)}
+            >
+                <Alert
+                    severity="warning"
+                    variant="filled"
+                    onClose={() => setShowIdleWarning(false)}
+                    sx={{ width: '100%' }}
+                >
+                    You will be logged out in 1 minute due to inactivity.
+                </Alert>
+            </Snackbar>
+            <Snackbar
+                open={showIdleLoggedOutNotice}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                autoHideDuration={5000}
+                onClose={() => setShowIdleLoggedOutNotice(false)}
+            >
+                <Alert
+                    severity="info"
+                    variant="filled"
+                    onClose={() => setShowIdleLoggedOutNotice(false)}
+                    sx={{ width: '100%' }}
+                >
+                    You were logged out due to Inactivity
+                </Alert>
+            </Snackbar>
         </AuthContext.Provider>
     );
 };

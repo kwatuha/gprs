@@ -404,12 +404,30 @@ const SystemDashboardPage = () => {
   }, [filteredProjects, sectors, jobsSnapshot]);
 
   const recentFootprintSites = useMemo(
-    () => filteredProjects.slice(0, 8).map((p) => ({
-      site_name: p.projectName,
-      county: p.County || 'Unknown',
-      ward: p.ward || 'Unknown',
-      status_norm: p.Status || 'Unknown',
-    })),
+    () =>
+      filteredProjects.slice(0, 8).map((p) => {
+        const siteName = p.projectName || p.project_name || 'Untitled Project';
+        const ward =
+          p.ward ||
+          p.wardName ||
+          p.wardNames ||
+          p.iebc_ward_name ||
+          p.Ward ||
+          '';
+        const county =
+          p.County ||
+          p.county ||
+          p.countyName ||
+          p.countyNames ||
+          '';
+
+        return {
+          site_name: siteName,
+          county: county || 'Not specified',
+          ward: ward || 'Not specified',
+          status_norm: p.Status || p.status || 'Unknown',
+        };
+      }),
     [filteredProjects]
   );
 

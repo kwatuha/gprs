@@ -94,7 +94,7 @@ export const getFilteredMenuCategories = (isAdmin = false, hasPrivilege = null, 
     return categories;
   }
 
-  // Executive Viewer: only Dashboard category and selected dashboard views.
+  // Executive Viewer: allow dashboards plus Projects tab with Registry only.
   const allowedDashboardRoutes = [
     'SYSTEM_DASHBOARD',
     'PROJECT_BY_STATUS_DASHBOARD',
@@ -102,15 +102,23 @@ export const getFilteredMenuCategories = (isAdmin = false, hasPrivilege = null, 
     'JOBS_DASHBOARD',
   ];
   const allowedSet = new Set(allowedDashboardRoutes);
+  const allowedProjectsRoutes = new Set(['PROJECTS']);
+
   return categories
-    .filter((category) => category.id === 'dashboard')
+    .filter((category) => category.id === 'dashboard' || category.id === 'reporting')
     .map((category) => {
+      if (category.id === 'dashboard') {
+        const filteredSubmenus = (category.submenus || [])
+          .filter((submenu) => !submenu.hidden && allowedSet.has(submenu.route))
+          .sort(
+            (a, b) =>
+              allowedDashboardRoutes.indexOf(a.route) - allowedDashboardRoutes.indexOf(b.route)
+          );
+        return { ...category, submenus: filteredSubmenus };
+      }
+
       const filteredSubmenus = (category.submenus || [])
-        .filter((submenu) => !submenu.hidden && allowedSet.has(submenu.route))
-        .sort(
-          (a, b) =>
-            allowedDashboardRoutes.indexOf(a.route) - allowedDashboardRoutes.indexOf(b.route)
-        );
+        .filter((submenu) => !submenu.hidden && allowedProjectsRoutes.has(submenu.route));
       return { ...category, submenus: filteredSubmenus };
     })
     .filter((category) => (category.submenus || []).length > 0);

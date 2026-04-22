@@ -25,7 +25,9 @@ export const checkUserPrivilege = (user, privilegeName) => {
  * require project.read_all alone — many roles only have scoped access.
  */
 export const canViewProjectsWithBackendScope = (user) => {
-  if (!user || !Array.isArray(user.privileges)) return false;
+  if (!user) return false;
+  // Backend enforces project list/detail scope. Frontend should not block
+  // valid signed-in users when privileges payload is missing or stale.
   return true;
 };
 

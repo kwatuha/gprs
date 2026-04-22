@@ -911,7 +911,13 @@ function UserManagementPage() {
 
   const handleUserFormChange = (e) => {
     const { name, value } = e.target;
-    setUserFormData(prev => ({ ...prev, [name]: value }));
+    setUserFormData(prev => {
+      if (name === 'password' && currentUserToEdit) {
+        // Edit mode: keep confirm password in sync so users don't need to retype it.
+        return { ...prev, password: value, confirmPassword: value };
+      }
+      return { ...prev, [name]: value };
+    });
     if (name === 'phoneNumber') {
       setUserFormErrors((prev) => ({ ...prev, phoneNumber: '' }));
       return;
@@ -919,6 +925,10 @@ function UserManagementPage() {
     if (name === 'username') {
       setUserFormErrors((prev) => ({ ...prev, username: '' }));
       setIsCheckingUsername(false);
+      return;
+    }
+    if (name === 'password' && currentUserToEdit) {
+      setUserFormErrors((prev) => ({ ...prev, password: '', confirmPassword: '' }));
     }
   };
 

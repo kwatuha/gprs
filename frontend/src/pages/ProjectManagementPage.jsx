@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Menu, MenuItem, ListItemIcon, Checkbox, ListItemText, Box, Typography, Button, CircularProgress, IconButton,
   Snackbar, Alert, Stack, useTheme, Tooltip, Grid, Card, CardContent, TextField, InputAdornment, Chip,
@@ -44,6 +44,7 @@ import ProjectJobsModal from '../components/ProjectJobsModal';
 function ProjectManagementPage() {
   const { user, loading: authLoading, hasPrivilege } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const theme = useTheme();
   const colors = tokens(theme.palette.mode); // Initialize colors
   const isLight = theme.palette.mode === 'light';
@@ -252,6 +253,7 @@ function ProjectManagementPage() {
 
   // State for DataGrid filter model (column filters)
   const [filterModel, setFilterModel] = useState({ items: [] });
+  const appliedStatusFromQueryRef = useRef('');
 
   // State for toggling between progress and status view
   const [distributionView, setDistributionView] = useState('status'); // 'progress' or 'status'
@@ -361,6 +363,23 @@ function ProjectManagementPage() {
       }
     }
   }, [filterModel, projects]);
+
+  useEffect(() => {
+    const statusFromQuery = String(searchParams.get('status') || '').trim();
+    if (!statusFromQuery) {
+      appliedStatusFromQueryRef.current = '';
+      return;
+    }
+    if (loading || authLoading || !projects || projects.length === 0) return;
+    if (appliedStatusFromQueryRef.current === statusFromQuery) return;
+
+    appliedStatusFromQueryRef.current = statusFromQuery;
+    handleStatusFilter(statusFromQuery);
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('status');
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams, handleStatusFilter, loading, authLoading, projects]);
   
   // State for export loading
   const [exportingExcel, setExportingExcel] = useState(false);

@@ -24,11 +24,6 @@ import {
   IconButton,
   ToggleButton,
   ToggleButtonGroup,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress,
   Alert,
 } from '@mui/material';
 import {
@@ -46,7 +41,6 @@ import {
   Pause as PauseIcon,
   HourglassEmpty as HourglassIcon,
   CheckCircleOutline as CheckCircleOutlineIcon,
-  Close as CloseIcon,
 } from '@mui/icons-material';
 import {
   ResponsiveContainer,
@@ -148,12 +142,6 @@ const ProjectByStatusDashboardPage = () => {
   });
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [sectors, setSectors] = useState([]);
-  const [statusModalOpen, setStatusModalOpen] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState(null);
-  const [statusProjects, setStatusProjects] = useState([]);
-  const [loadingStatusProjects, setLoadingStatusProjects] = useState(false);
-  const [projectDetailsOpen, setProjectDetailsOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState(null);
   const [allProjects, setAllProjects] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [projectsError, setProjectsError] = useState('');
@@ -389,25 +377,11 @@ const ProjectByStatusDashboardPage = () => {
   const countUnderProcurement = useCountUp(statusStats['Under Procurement'] || 0);
   const countSuspended = useCountUp(statusStats['Suspended'] || 0);
 
-  // Handler to open modal with projects for a specific status
+  // Handler to open Registry of Projects with the selected KPI status.
   const handleStatusClick = (status) => {
-    setSelectedStatus(status);
-    setStatusModalOpen(true);
-    setLoadingStatusProjects(true);
-    
-    // Filter projects by normalized status
-    const filtered = filteredProjects.filter(p => {
-      const normalized = normalizeProjectStatus(p.Status || p.status || 'Unknown');
-      return normalized === status;
-    });
-    
-    setStatusProjects(filtered);
-    setLoadingStatusProjects(false);
-  };
-
-  const handleOpenProjectDetails = (project) => {
-    setSelectedProject(project);
-    setProjectDetailsOpen(true);
+    const params = new URLSearchParams();
+    params.set('status', status);
+    navigate(`${ROUTES.PROJECTS}?${params.toString()}`);
   };
 
   return (
@@ -1247,202 +1221,6 @@ const ProjectByStatusDashboardPage = () => {
           </Card>
       </Box>
 
-      {/* Status Projects Modal - Enhanced Styling */}
-      <Dialog
-        open={statusModalOpen}
-        onClose={() => setStatusModalOpen(false)}
-        maxWidth="lg"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            maxHeight: '90vh',
-            background: isLight 
-              ? 'linear-gradient(to bottom, #ffffff, #f8f9fa)'
-              : `linear-gradient(to bottom, ${colors.primary[500]}, ${colors.primary[600]})`,
-            boxShadow: isLight 
-              ? '0 8px 32px rgba(0,0,0,0.12)'
-              : '0 8px 32px rgba(0,0,0,0.5)',
-          }
-        }}
-      >
-        <DialogTitle
-          sx={{
-            background: isLight 
-              ? `linear-gradient(135deg, ${colors.blueAccent[50]}, ${colors.greenAccent[50]})`
-              : `linear-gradient(135deg, ${colors.blueAccent[800]}, ${colors.greenAccent[800]})`,
-            borderBottom: `2px solid ${isLight ? colors.blueAccent[200] : colors.blueAccent[600]}`,
-            pb: 2,
-          }}
-        >
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Box display="flex" alignItems="center" gap={1.5}>
-              <Box
-                sx={{
-                  p: 1,
-                  borderRadius: 2,
-                  background: isLight 
-                    ? `linear-gradient(135deg, ${colors.blueAccent[500]}, ${colors.greenAccent[500]})`
-                    : `linear-gradient(135deg, ${colors.blueAccent[600]}, ${colors.greenAccent[600]})`,
-                  color: 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  boxShadow: `0 2px 8px ${colors.blueAccent[500]}40`,
-                }}
-              >
-                <AssessmentIcon sx={{ fontSize: 20 }} />
-              </Box>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', color: isLight ? colors.grey[900] : '#fff' }}>
-                  Projects - {selectedStatus}
-                </Typography>
-                <Typography variant="caption" sx={{ color: isLight ? colors.grey[600] : colors.grey[300], fontSize: '0.75rem' }}>
-                  {statusProjects.length} project{statusProjects.length !== 1 ? 's' : ''} found
-                </Typography>
-              </Box>
-            </Box>
-            <IconButton
-              onClick={() => setStatusModalOpen(false)}
-              size="small"
-              sx={{ 
-                color: isLight ? colors.grey[600] : colors.grey[300],
-                '&:hover': {
-                  bgcolor: isLight ? colors.grey[100] : colors.grey[700],
-                }
-              }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers sx={{ p: 0 }}>
-          {loadingStatusProjects ? (
-            <Box display="flex" justifyContent="center" alignItems="center" p={6}>
-              <CircularProgress size={40} />
-            </Box>
-          ) : statusProjects.length === 0 ? (
-            <Box textAlign="center" p={6}>
-              <AssessmentIcon sx={{ fontSize: 64, color: colors.grey[400], mb: 2 }} />
-              <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-                No projects found
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                No projects found with status "{selectedStatus}"
-              </Typography>
-            </Box>
-          ) : (
-            <TableContainer sx={{ maxHeight: '60vh' }}>
-              <Table stickyHeader>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 700, bgcolor: isLight ? colors.grey[50] : colors.primary[600], color: isLight ? colors.grey[900] : colors.grey[100] }}>Project Name</TableCell>
-                    <TableCell sx={{ fontWeight: 700, bgcolor: isLight ? colors.grey[50] : colors.primary[600], color: isLight ? colors.grey[900] : colors.grey[100] }}>Status</TableCell>
-                    <TableCell sx={{ fontWeight: 700, bgcolor: isLight ? colors.grey[50] : colors.primary[600], color: isLight ? colors.grey[900] : colors.grey[100] }}>Department</TableCell>
-                    <TableCell sx={{ fontWeight: 700, bgcolor: isLight ? colors.grey[50] : colors.primary[600], color: isLight ? colors.grey[900] : colors.grey[100] }}>Directorate</TableCell>
-                    <TableCell sx={{ fontWeight: 700, bgcolor: isLight ? colors.grey[50] : colors.primary[600], color: isLight ? colors.grey[900] : colors.grey[100] }}>Budget</TableCell>
-                    <TableCell sx={{ fontWeight: 700, bgcolor: isLight ? colors.grey[50] : colors.primary[600], color: isLight ? colors.grey[900] : colors.grey[100] }}>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {statusProjects.map((project, idx) => (
-                    <TableRow key={project.id || `${project.projectName}-${idx}`} hover>
-                      <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{project.projectName || project.project_name || 'Untitled Project'}</Typography></TableCell>
-                      <TableCell><Chip label={project.Status || project.status || 'Unknown'} size="small" sx={{ bgcolor: colors.blueAccent[700], color: 'white', fontSize: '0.7rem', fontWeight: 600 }} /></TableCell>
-                      <TableCell><Typography variant="body2">{project.department || project.departmentName || project.department_name || 'N/A'}</Typography></TableCell>
-                      <TableCell><Typography variant="body2">{project.directorate || project.directorateName || project.directorate_name || 'N/A'}</Typography></TableCell>
-                      <TableCell><Typography variant="body2" sx={{ fontWeight: 500 }}>{project.budget || project.costOfProject || project.cost_of_project ? formatCurrency(project.budget || project.costOfProject || project.cost_of_project) : 'N/A'}</Typography></TableCell>
-                      <TableCell>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={() => handleOpenProjectDetails(project)}
-                          sx={{ textTransform: 'none', fontSize: '0.75rem', borderColor: colors.blueAccent[500], color: colors.blueAccent[600] }}
-                        >
-                          View Details
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ 
-          p: 2, 
-          bgcolor: isLight ? colors.grey[50] : colors.primary[600],
-          borderTop: `1px solid ${isLight ? colors.grey[200] : colors.grey[700]}`,
-        }}>
-          <Button
-            onClick={() => {
-              setStatusModalOpen(false);
-              navigate(`${ROUTES.PROJECTS}?status=${encodeURIComponent(selectedStatus || '')}`);
-            }}
-            variant="contained"
-            sx={{ 
-              textTransform: 'none',
-              bgcolor: colors.blueAccent[600],
-              '&:hover': {
-                bgcolor: colors.blueAccent[700],
-              }
-            }}
-          >
-            View All in Projects Page
-          </Button>
-          <Button
-            onClick={() => setStatusModalOpen(false)}
-            variant="outlined"
-            sx={{ 
-              textTransform: 'none',
-              borderColor: colors.grey[400],
-              color: colors.grey[700],
-            }}
-          >
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog
-        open={projectDetailsOpen}
-        onClose={() => setProjectDetailsOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle sx={{ fontWeight: 700 }}>
-          Project Details
-        </DialogTitle>
-        <DialogContent dividers>
-          {selectedProject ? (
-            <Box display="grid" gap={1.25}>
-              <Typography variant="body2"><strong>Name:</strong> {selectedProject.projectName || selectedProject.project_name || 'Untitled Project'}</Typography>
-              <Typography variant="body2"><strong>Status:</strong> {selectedProject.Status || selectedProject.status || 'Unknown'}</Typography>
-              <Typography variant="body2"><strong>Department:</strong> {selectedProject.department || selectedProject.departmentName || selectedProject.department_name || 'N/A'}</Typography>
-              <Typography variant="body2"><strong>Directorate:</strong> {selectedProject.directorate || selectedProject.directorateName || selectedProject.directorate_name || 'N/A'}</Typography>
-              <Typography variant="body2"><strong>Financial Year:</strong> {selectedProject.financialYear || selectedProject.financialYearName || 'N/A'}</Typography>
-              <Typography variant="body2"><strong>Allocated Budget:</strong> {formatCurrency(selectedProject.budget || selectedProject.costOfProject || selectedProject.cost_of_project || 0)}</Typography>
-              <Typography variant="body2"><strong>Disbursed:</strong> {formatCurrency(selectedProject.Disbursed || selectedProject.paidOut || selectedProject.disbursedBudget || 0)}</Typography>
-            </Box>
-          ) : null}
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              const projectId = selectedProject?.id ?? selectedProject?.project_id ?? selectedProject?.projectId;
-              if (projectId != null && projectId !== '') {
-                navigate(`${ROUTES.PROJECTS}/${projectId}`);
-              }
-            }}
-            variant="contained"
-            sx={{ textTransform: 'none' }}
-          >
-            Open Full Project Page
-          </Button>
-          <Button onClick={() => setProjectDetailsOpen(false)} variant="outlined" sx={{ textTransform: 'none' }}>
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };

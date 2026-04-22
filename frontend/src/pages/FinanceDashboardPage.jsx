@@ -252,6 +252,7 @@ const FinanceDashboardPage = () => {
       })
       .slice(0, 5)
       .map((p) => ({
+        id: p.id ?? p.project_id ?? p.projectId ?? null,
         name: p.projectName,
         absorption: p.budget > 0 ? Math.round((p.Disbursed / p.budget) * 100) : 0,
         budget: p.budget,
@@ -1185,7 +1186,16 @@ const FinanceDashboardPage = () => {
                       </TableHead>
                       <TableBody>
                         {financialData.underAbsorbing.map((row) => (
-                          <TableRow key={row.name} hover>
+                          <TableRow
+                            key={`${row.id ?? 'no-id'}-${row.name}`}
+                            hover
+                            onClick={() => {
+                              if (row.id != null && row.id !== '') {
+                                navigate(`${ROUTES.PROJECTS}/${row.id}`);
+                              }
+                            }}
+                            sx={{ cursor: row.id ? 'pointer' : 'default' }}
+                          >
                             <TableCell sx={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>
                               {row.name}
                             </TableCell>

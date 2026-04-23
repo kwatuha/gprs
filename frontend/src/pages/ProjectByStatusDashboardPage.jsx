@@ -1205,8 +1205,31 @@ const ProjectByStatusDashboardPage = () => {
                   </TableHead>
                   <TableBody>
                     {statusData.statusChart.map((status, index) => (
-                      <TableRow key={status.name} sx={{ backgroundColor: index % 2 === 0 ? (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)') : 'transparent' }}>
-                        <TableCell><Chip label={status.name} size="small" sx={{ bgcolor: status.color, color: 'white', fontWeight: 700 }} /></TableCell>
+                      <TableRow
+                        key={status.name}
+                        hover
+                        onClick={() => handleStatusClick(status.name)}
+                        sx={{
+                          backgroundColor: index % 2 === 0 ? (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)') : 'transparent',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <TableCell>
+                          <Chip
+                            label={status.name}
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStatusClick(status.name);
+                            }}
+                            sx={{
+                              bgcolor: status.color,
+                              color: 'white',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          />
+                        </TableCell>
                         <TableCell align="right">{status.count}</TableCell>
                         <TableCell align="right">{status.percentage}%</TableCell>
                         <TableCell align="right">{formatCurrency(status.budget)}</TableCell>

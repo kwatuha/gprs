@@ -41,6 +41,26 @@ import AssignContractorModal from '../components/AssignContractorModal.jsx';
 import ProjectSitesModal from '../components/ProjectSitesModal';
 import ProjectJobsModal from '../components/ProjectJobsModal';
 
+/** Raw status string from list API rows (handles mixed casing and JSONB progress). */
+function rawProjectStatus(p) {
+  if (!p || typeof p !== 'object') return '';
+  const top = p.status ?? p.Status;
+  if (top != null && top !== '') return String(top);
+  let prog = p.progress;
+  if (typeof prog === 'string' && prog.trim().startsWith('{')) {
+    try {
+      prog = JSON.parse(prog);
+    } catch {
+      prog = null;
+    }
+  }
+  if (prog && typeof prog === 'object') {
+    const nested = prog.status ?? prog.Status;
+    if (nested != null && nested !== '') return String(nested);
+  }
+  return '';
+}
+
 function ProjectManagementPage() {
   const { user, loading: authLoading, hasPrivilege } = useAuth();
   const navigate = useNavigate();
@@ -127,12 +147,13 @@ function ProjectManagementPage() {
 
   // Filter projects based on search query
   const filteredProjects = useMemo(() => {
+    const list = Array.isArray(projects) ? projects : [];
     if (!searchQuery.trim()) {
-      return projects || [];
+      return list;
     }
 
     const query = searchQuery.toLowerCase().trim();
-    return (projects || []).filter(project => {
+    return list.filter(project => {
       // Search in multiple fields
       const searchableFields = [
         project.projectName || '',
@@ -254,6 +275,8 @@ function ProjectManagementPage() {
   // State for DataGrid filter model (column filters)
   const [filterModel, setFilterModel] = useState({ items: [] });
   const appliedStatusFromQueryRef = useRef('');
+  const projectsRef = useRef([]);
+  projectsRef.current = Array.isArray(projects) ? projects : [];
 
   // State for toggling between progress and status view
   const [distributionView, setDistributionView] = useState('status'); // 'progress' or 'status'
@@ -297,7 +320,9 @@ function ProjectManagementPage() {
     const currentStatusFilters = filterModel.items?.filter(item => item.field === 'status') || [];
     const isCurrentlyFiltered = currentStatusFilters.length > 0 && 
       currentStatusFilters.some(filterItem => {
-        // Check if this filter's value normalizes to the selected normalized status
+        if (filterItem.operator === 'equalsNormalized') {
+          return String(filterItem.value) === String(normalizedStatus);
+        }
         return normalizeProjectStatus(filterItem.value) === normalizedStatus;
       });
     
@@ -327,9 +352,10 @@ function ProjectManagementPage() {
           // Fallback to using currently loaded projects
           if (projects && projects.length > 0) {
             projects.forEach(p => {
-              if (p.status && normalizeProjectStatus(p.status) === 'Other') {
-                if (!matchingStatuses.includes(p.status)) {
-                  matchingStatuses.push(p.status);
+              const raw = rawProjectStatus(p);
+              if (raw && normalizeProjectStatus(raw) === 'Other') {
+                if (!matchingStatuses.includes(raw)) {
+                  matchingStatuses.push(raw);
                 }
               }
             });
@@ -339,9 +365,10 @@ function ProjectManagementPage() {
         // For other statuses, use currently loaded projects
         if (projects && projects.length > 0) {
           projects.forEach(p => {
-            if (p.status && normalizeProjectStatus(p.status) === normalizedStatus) {
-              if (!matchingStatuses.includes(p.status)) {
-                matchingStatuses.push(p.status);
+            const raw = rawProjectStatus(p);
+            if (raw && normalizeProjectStatus(raw) === normalizedStatus) {
+              if (!matchingStatuses.includes(raw)) {
+                matchingStatuses.push(raw);
               }
             }
           });
@@ -360,6 +387,20 @@ function ProjectManagementPage() {
             value: status,
           }))
         });
+      } else {
+        // Initial registry load is limited (e.g. first 100 rows). Raw status values for this bucket
+        // may not appear in that slice, so raw "equals" filters would never match. Fall back to a
+        // normalized filter so deep-links from dashboards still work.
+        setFilterModel({
+          items: [
+            {
+              id: 'status-normalized',
+              field: 'status',
+              operator: 'equalsNormalized',
+              value: normalizedStatus,
+            },
+          ],
+        });
       }
     }
   }, [filterModel, projects]);
@@ -370,16 +411,86 @@ function ProjectManagementPage() {
       appliedStatusFromQueryRef.current = '';
       return;
     }
-    if (loading || authLoading || !projects || projects.length === 0) return;
+    const proj = projectsRef.current;
+    if (loading || authLoading || !proj.length) return;
     if (appliedStatusFromQueryRef.current === statusFromQuery) return;
 
     appliedStatusFromQueryRef.current = statusFromQuery;
-    handleStatusFilter(statusFromQuery);
+    const normalized = normalizeProjectStatus(statusFromQuery);
 
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.delete('status');
-    setSearchParams(nextParams, { replace: true });
-  }, [searchParams, setSearchParams, handleStatusFilter, loading, authLoading, projects]);
+    let cancelled = false;
+    (async () => {
+      const matchingStatuses = [];
+      const collectFrom = (arr) => {
+        (arr || []).forEach((p) => {
+          const raw = rawProjectStatus(p);
+          if (raw && normalizeProjectStatus(raw) === normalized) {
+            if (!matchingStatuses.includes(raw)) matchingStatuses.push(raw);
+          }
+        });
+      };
+
+      collectFrom(projectsRef.current);
+
+      if (normalized === 'Other') {
+        try {
+          const statusCounts = await apiService.analytics.getProjectStatusCounts();
+          if (statusCounts && Array.isArray(statusCounts)) {
+            statusCounts.forEach((item) => {
+              if (item.status && normalizeProjectStatus(item.status) === 'Other') {
+                if (!matchingStatuses.includes(item.status)) {
+                  matchingStatuses.push(item.status);
+                }
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching status counts for URL status filter:', error);
+          collectFrom(projectsRef.current);
+        }
+      }
+
+      if (cancelled) {
+        if (appliedStatusFromQueryRef.current === statusFromQuery) {
+          appliedStatusFromQueryRef.current = '';
+        }
+        return;
+      }
+
+      if (matchingStatuses.length > 0) {
+        setFilterModel({
+          items: matchingStatuses.map((status, idx) => ({
+            id: `status-${idx}`,
+            field: 'status',
+            operator: 'equals',
+            value: status,
+          })),
+        });
+      } else {
+        setFilterModel({
+          items: [
+            {
+              id: 'status-normalized',
+              field: 'status',
+              operator: 'equalsNormalized',
+              value: normalized,
+            },
+          ],
+        });
+      }
+
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('status');
+      setSearchParams(nextParams, { replace: true });
+    })();
+
+    return () => {
+      cancelled = true;
+      if (appliedStatusFromQueryRef.current === statusFromQuery) {
+        appliedStatusFromQueryRef.current = '';
+      }
+    };
+  }, [searchParams, setSearchParams, loading, authLoading, projects?.length ?? 0]);
   
   // State for export loading
   const [exportingExcel, setExportingExcel] = useState(false);
@@ -420,6 +531,11 @@ function ProjectManagementPage() {
     const checkFilterMatch = (projectValue, operator, value, field) => {
       if (value === null || value === undefined || value === '') {
         return true; // Empty filter means no filter
+      }
+
+      if (field === 'status' && operator === 'equalsNormalized') {
+        const raw = projectValue != null && projectValue !== '' ? String(projectValue) : '';
+        return normalizeProjectStatus(raw) === String(value);
       }
 
       // Handle numeric fields differently
@@ -533,14 +649,14 @@ function ProjectManagementPage() {
         if (field === 'status' && fieldFilters.length > 1) {
           return fieldFilters.some(filterItem => {
             const { operator, value } = filterItem;
-            const projectValue = project[field];
+            const projectValue = field === 'status' ? rawProjectStatus(project) : project[field];
             return checkFilterMatch(projectValue, operator, value, field);
           });
         }
         // For other fields or single status filter, use AND logic
         return fieldFilters.every(filterItem => {
           const { operator, value } = filterItem;
-          const projectValue = project[field];
+          const projectValue = field === 'status' ? rawProjectStatus(project) : project[field];
           return checkFilterMatch(projectValue, operator, value, field);
         });
       });
@@ -605,12 +721,12 @@ function ProjectManagementPage() {
 
     // Use normalized status for accurate categorization
     const completedProjects = projectsToUse.filter(p => {
-      const normalized = normalizeProjectStatus(p.status);
+      const normalized = normalizeProjectStatus(rawProjectStatus(p));
       return normalized === 'Completed';
     }).length;
 
     const inProgressProjects = projectsToUse.filter(p => {
-      const normalized = normalizeProjectStatus(p.status);
+      const normalized = normalizeProjectStatus(rawProjectStatus(p));
       return normalized === 'Ongoing';
     }).length;
 
@@ -654,7 +770,7 @@ function ProjectManagementPage() {
     };
 
     projectsToUse.forEach(p => {
-      const normalized = normalizeProjectStatus(p.status);
+      const normalized = normalizeProjectStatus(rawProjectStatus(p));
       if (statusStats.hasOwnProperty(normalized)) {
         statusStats[normalized]++;
       } else {
@@ -1146,6 +1262,10 @@ function ProjectManagementPage() {
         dataGridColumn.flex = 0; // Prevent flex from interfering with wrapping
         break;
       case 'status':
+        dataGridColumn.valueGetter = (params) => {
+          if (!params?.row) return '';
+          return rawProjectStatus(params.row);
+        };
         dataGridColumn.renderCell = (params) => {
           if (!params || !params.value) return null;
           
@@ -2521,7 +2641,15 @@ function ProjectManagementPage() {
           <DataGrid
             rows={dataGridFilteredProjects || []}
             columns={columns}
-            getRowId={(row) => row?.id || Math.random()}
+            getRowId={(row) => {
+              const id = row?.id ?? row?.project_id ?? row?.projectId;
+              if (id !== undefined && id !== null && id !== '') {
+                return String(id);
+              }
+              const name = String(row?.projectName || 'project').slice(0, 80);
+              const start = String(row?.startDate || row?.createdAt || '');
+              return `noid-${name}-${start}`;
+            }}
             getRowHeight={(params) => {
               // Calculate row height based on project name length (compact)
               const projectName = params.row?.projectName || '';

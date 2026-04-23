@@ -190,9 +190,9 @@ const GET_SINGLE_PROJECT_QUERY = (DB_TYPE) => {
                 p.data_sources AS "dataSources",
                 (p.timeline->>'financial_year') AS "financialYear",
                 p.implementing_agency AS "implementingAgency",
-                NULL AS "countyNames",
-                NULL AS "subcountyNames",
-                NULL AS "wardNames"
+                p.location->>'county' AS "countyNames",
+                p.location->>'constituency' AS "subcountyNames",
+                p.location->>'ward' AS "wardNames"
             FROM projects p
             WHERE p.project_id = $1 AND p.voided = false
         `;
@@ -1831,6 +1831,32 @@ router.post('/confirm-import-data', async (req, res) => {
             .toLowerCase();         // Lowercase for case-insensitive matching
     };
 
+    // Same catalog-key rules as POST /check-metadata-mapping so preview "Matched" matches confirm.
+    const normalizeCatalogKey = (v) => {
+        if (typeof v !== 'string') return '';
+        return normalizeStr(v)
+            .toLowerCase()
+            .replace(/&/g, ' and ')
+            .replace(/\([^)]*\)/g, ' ')
+            .replace(/\bministry\s+of\b/g, ' ')
+            .replace(/\bstate\s+department\b/g, ' ')
+            .replace(/\bdepartment\b/g, ' ')
+            .replace(/\bfor\b/g, ' ')
+            .replace(/\bof\b/g, ' ')
+            .replace(/\bthe\b/g, ' ')
+            .replace(/\band\b/g, ' ')
+            .replace(/[^a-z0-9\s]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    };
+
+    const buildCatalogKeys = (value) => {
+        const base = normalizeCatalogKey(value);
+        if (!base) return [];
+        const compact = base.replace(/\s+/g, '');
+        return Array.from(new Set([base, compact].filter(Boolean)));
+    };
+
     let connection;
     const batchProjectMap = new Map(); // Track projects processed in this batch to prevent duplicates
     const summary = { 
@@ -1852,23 +1878,44 @@ router.post('/confirm-import-data', async (req, res) => {
         return result.rows || [];
     };
 
-    const splitAliasValues = (aliasValue) => {
-        if (!aliasValue) return [];
-        return String(aliasValue)
-            .split(',')
-            .map((v) => normalizeStr(v))
-            .filter(Boolean)
-            .map((v) => v.toLowerCase());
-    };
-
-    const buildMetadataLookupSet = (rows, nameField = 'name', aliasField = 'alias') => {
+    const buildImportCatalogLookupSet = (rows, nameField = 'name', aliasField = 'alias') => {
         const set = new Set();
         (rows || []).forEach((r) => {
-            const n = normalizeStr(r?.[nameField]);
-            if (n) set.add(n.toLowerCase());
-            splitAliasValues(r?.[aliasField]).forEach((a) => set.add(a));
+            const nm = r?.[nameField];
+            if (nm && typeof nm === 'string') {
+                const lowered = normalizeStr(nm).toLowerCase();
+                if (lowered) set.add(lowered);
+                buildCatalogKeys(nm).forEach((k) => set.add(k));
+            }
+            const al = r?.[aliasField];
+            if (al && typeof al === 'string') {
+                const fullAlias = normalizeStr(al).toLowerCase();
+                if (fullAlias) set.add(fullAlias);
+                const normalizedAlias = normalizeAlias(al);
+                if (normalizedAlias) set.add(normalizedAlias);
+                String(al)
+                    .split(',')
+                    .map((a) => normalizeStr(a))
+                    .filter(Boolean)
+                    .forEach((piece) => {
+                        set.add(piece.toLowerCase());
+                        buildCatalogKeys(piece).forEach((k) => set.add(k));
+                    });
+            }
         });
         return set;
+    };
+
+    const matchesImportCatalogMetadata = (value, set) => {
+        if (!value || typeof value !== 'string') return false;
+        const normalized = normalizeStr(value).toLowerCase();
+        const normalizedAlias = normalizeAlias(value);
+        const catalogKeys = buildCatalogKeys(value);
+        return (
+            set.has(normalized) ||
+            set.has(normalizedAlias) ||
+            catalogKeys.some((k) => set.has(k))
+        );
     };
 
     // Helper function to update project in PostgreSQL with JSONB structure
@@ -2054,9 +2101,9 @@ router.post('/confirm-import-data', async (req, res) => {
         const sectorsResult = await connection.query(
             `SELECT name, alias FROM sectors WHERE COALESCE(voided, false) = false`
         );
-        const ministryLookup = buildMetadataLookupSet(getQueryRows(ministriesResult), 'name', 'alias');
-        const stateDepartmentLookup = buildMetadataLookupSet(getQueryRows(departmentsResult), 'name', 'alias');
-        const sectorLookup = buildMetadataLookupSet(getQueryRows(sectorsResult), 'name', 'alias');
+        const ministryLookup = buildImportCatalogLookupSet(getQueryRows(ministriesResult), 'name', 'alias');
+        const stateDepartmentLookup = buildImportCatalogLookupSet(getQueryRows(departmentsResult), 'name', 'alias');
+        const sectorLookup = buildImportCatalogLookupSet(getQueryRows(sectorsResult), 'name', 'alias');
 
         for (let i = 0; i < dataToImport.length; i++) {
             const row = dataToImport[i] || {};
@@ -2311,12 +2358,13 @@ router.post('/confirm-import-data', async (req, res) => {
                 // If one/both are provided but not mapped in metadata, skip the entire row.
                 const hasScopeMetadataInput = Boolean(importedMinistry || importedStateDepartment);
                 if (hasScopeMetadataInput) {
-                    const ministryOk = Boolean(importedMinistry && ministryLookup.has(importedMinistry.toLowerCase()));
-                    const stateDepartmentOk = Boolean(importedStateDepartment && stateDepartmentLookup.has(importedStateDepartment.toLowerCase()));
-                    if (!ministryOk || !stateDepartmentOk) {
+                    const ministryBad = importedMinistry && !matchesImportCatalogMetadata(importedMinistry, ministryLookup);
+                    const stateDepartmentBad =
+                        importedStateDepartment && !matchesImportCatalogMetadata(importedStateDepartment, stateDepartmentLookup);
+                    if (ministryBad || stateDepartmentBad) {
                         const reasonParts = [];
-                        if (!ministryOk) reasonParts.push(`Ministry "${importedMinistry || '(blank)'}" not mapped`);
-                        if (!stateDepartmentOk) reasonParts.push(`State Department "${importedStateDepartment || '(blank)'}" not mapped`);
+                        if (ministryBad) reasonParts.push(`Ministry "${importedMinistry || '(blank)'}" not mapped`);
+                        if (stateDepartmentBad) reasonParts.push(`State Department "${importedStateDepartment || '(blank)'}" not mapped`);
                         summary.skippedRowsInvalidScopeMetadata.push({
                             rowNumber: i + 2,
                             projectName: projectPayload.projectName || `Row ${i + 2}`,
@@ -2327,7 +2375,7 @@ router.post('/confirm-import-data', async (req, res) => {
                 }
 
                 // Sector mismatch should not block import; clear it and report.
-                if (importedSector && !sectorLookup.has(importedSector.toLowerCase())) {
+                if (importedSector && !matchesImportCatalogMetadata(importedSector, sectorLookup)) {
                     summary.sectorClearedRows.push({
                         rowNumber: i + 2,
                         projectName: projectPayload.projectName || `Row ${i + 2}`,
@@ -2622,6 +2670,8 @@ router.post('/confirm-import-data', async (req, res) => {
         }
 
         await connection.commit();
+        const rowsProcessed = summary.projectsCreated + summary.projectsUpdated;
+        const rowsSkippedForScope = summary.skippedRowsInvalidScopeMetadata.length;
         
         // Build a message about skipped metadata
         const skippedMessages = [];
@@ -2646,8 +2696,33 @@ router.post('/confirm-import-data', async (req, res) => {
         if (skippedMessages.length > 0) {
             message += `. Note: ${skippedMessages.join('; ')}. Please create/update metadata mappings in Metadata Management.`;
         }
-        
-        return res.status(200).json({ success: true, message, details: summary });
+
+        // If nothing was written, return a non-success response so UI does not claim records were saved.
+        if (rowsProcessed === 0) {
+            return res.status(400).json({
+                success: false,
+                message: rowsSkippedForScope > 0
+                    ? 'No projects were imported. All rows were skipped due to invalid Ministry/State Department mapping.'
+                    : 'No projects were imported. Please check your file data and mapping.',
+                details: {
+                    ...summary,
+                    totalRows: dataToImport.length,
+                    rowsProcessed,
+                    rowsSkippedForScope
+                }
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message,
+            details: {
+                ...summary,
+                totalRows: dataToImport.length,
+                rowsProcessed,
+                rowsSkippedForScope
+            }
+        });
     } catch (err) {
         if (connection) {
             try {

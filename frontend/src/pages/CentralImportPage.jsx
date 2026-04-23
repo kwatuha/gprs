@@ -499,38 +499,50 @@ function CentralImportPage() {
           throw new Error('Unknown import type');
       }
 
-      setSnackbar({ open: true, message: response.message, severity: 'success' });
+      const rowsProcessed =
+        Number(response?.details?.rowsProcessed ?? 0) ||
+        Number(response?.details?.projectsCreated ?? 0) + Number(response?.details?.projectsUpdated ?? 0);
+      const hasSavedRows = rowsProcessed > 0;
+
+      setSnackbar({
+        open: true,
+        message: response.message,
+        severity: hasSavedRows ? 'success' : 'warning'
+      });
       setImportReport(response);
-      setSelectedFile(null);
-      setPreviewData(null);
-      setParsedHeaders([]);
-      setFullParsedData([]);
-      
-      // Navigate back to appropriate page after successful import
-      setTimeout(() => {
-        switch (currentImportType.id) {
-          case 'projects':
-            navigate('/projects');
-            break;
-          case 'strategic-plans':
-            navigate('/strategic-planning');
-            break;
-          case 'map-data':
-            navigate('/maps');
-            break;
-          case 'participants':
-            navigate('/participants');
-            break;
-          case 'comprehensive-projects':
-            navigate('/projects');
-            break;
-          case 'budgets':
-            navigate('/budgets');
-            break;
-          default:
-            navigate('/dashboard');
-        }
-      }, 2000);
+
+      if (hasSavedRows) {
+        setSelectedFile(null);
+        setPreviewData(null);
+        setParsedHeaders([]);
+        setFullParsedData([]);
+
+        // Navigate back to appropriate page after successful import
+        setTimeout(() => {
+          switch (currentImportType.id) {
+            case 'projects':
+              navigate('/projects');
+              break;
+            case 'strategic-plans':
+              navigate('/strategic-planning');
+              break;
+            case 'map-data':
+              navigate('/maps');
+              break;
+            case 'participants':
+              navigate('/participants');
+              break;
+            case 'comprehensive-projects':
+              navigate('/projects');
+              break;
+            case 'budgets':
+              navigate('/budgets');
+              break;
+            default:
+              navigate('/dashboard');
+          }
+        }, 2000);
+      }
 
     } catch (err) {
       console.error('Import confirmation error:', err);

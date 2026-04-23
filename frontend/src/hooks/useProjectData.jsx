@@ -53,7 +53,7 @@ const useProjectData = (user, authLoading, filterState, options = {}) => {
 
     try {
       const data = await apiService.projects.getProjects(filterParams);
-      setProjects(data);
+      setProjects(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error fetching projects:", err);
       setProjects([]);

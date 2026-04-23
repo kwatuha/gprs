@@ -148,7 +148,15 @@ function getUserOrgGroupInfo(user, options = {}) {
   return { key: 'unassigned', label: 'No organization assigned', sortTier: 99 };
 }
 
-function getUserAccessLevelGroups(user) {
+function getUserAccessLevelGroups(user, options = {}) {
+  const agencies = Array.isArray(options.agencies) ? options.agencies : [];
+  const validMinistryNames = options.validMinistryNames || new Set();
+  const validDeptPairs = options.validDeptPairs || new Set();
+  const validDepartmentNames = options.validDepartmentNames || new Set();
+  const validAgenciesById = options.validAgenciesById || new Map();
+  const validAgenciesByName = options.validAgenciesByName || new Map();
+
+  const normalizeKey = (v) => String(v || '').trim().toLowerCase();
   const scopes = Array.isArray(user?.organizationScopes) ? user.organizationScopes : [];
   const normalizedScopes = scopes
     .map((s) => {
@@ -156,7 +164,9 @@ function getUserAccessLevelGroups(user) {
       const scopeType = String(s.scopeType || s.scope_type || '').trim().toUpperCase();
       const ministry = String(s.ministry || '').trim();
       const stateDepartment = String(s.stateDepartment || s.state_department || '').trim();
-      return { scopeType, ministry, stateDepartment };
+      const agencyId = s.agencyId ?? s.agency_id;
+      const agencyName = String(s.agencyName || s.agency_name || '').trim();
+      return { scopeType, ministry, stateDepartment, agencyId, agencyName };
     })
     .filter(Boolean);
 
@@ -180,26 +190,73 @@ function getUserAccessLevelGroups(user) {
     }
     if (s.scopeType === 'MINISTRY_ALL') {
       const m = s.ministry || 'Unspecified Ministry';
+      const validMinistry = validMinistryNames.has(normalizeKey(m));
       addGroup({
-        key: `access:ministry:${m.toLowerCase()}`,
-        label: `Ministry Level: ${m}`,
-        sortTier: 1,
-        description: `Can access projects for ministry ${m}`,
+        key: validMinistry
+          ? `access:ministry:${normalizeKey(m)}`
+          : `access:invalid-ministry:${normalizeKey(m) || 'unspecified'}`,
+        label: validMinistry
+          ? `Ministry Level: ${m}`
+          : `Invalid Ministry Mapping: ${m}`,
+        sortTier: validMinistry ? 1 : 96,
+        description: validMinistry
+          ? `Can access projects for ministry ${m}`
+          : 'Ministry does not exist in ministries table; user may not load projects',
       });
       continue;
     }
     if (s.scopeType === 'STATE_DEPARTMENT_ALL') {
       const m = s.ministry || 'Unspecified Ministry';
       const sd = s.stateDepartment || 'Unspecified State Department';
+      const validPair = validDeptPairs.has(`${normalizeKey(m)}|${normalizeKey(sd)}`);
+      const validDepartment = validDepartmentNames.has(normalizeKey(sd));
       addGroup({
-        key: `access:state-department:${m.toLowerCase()}|${sd.toLowerCase()}`,
-        label: `State Department Level: ${sd}`,
-        sortTier: 2,
-        description: `Ministry: ${m}`,
+        key: validPair
+          ? `access:state-department:${normalizeKey(m)}|${normalizeKey(sd)}`
+          : `access:invalid-state-department:${normalizeKey(m)}|${normalizeKey(sd)}`,
+        label: validPair
+          ? `State Department Level: ${sd}`
+          : `Invalid State Department Mapping: ${sd}`,
+        sortTier: validPair ? 2 : 97,
+        description: validPair
+          ? `Ministry: ${m}`
+          : validDepartment
+          ? `Department exists but not under ministry ${m}; user may not load projects`
+          : 'State department does not exist in departments table; user may not load projects',
       });
       continue;
     }
     if (s.scopeType === 'AGENCY') {
+      const agencyIdKey = s.agencyId != null && s.agencyId !== '' ? String(s.agencyId) : null;
+      const agencyNameKey = normalizeKey(s.agencyName);
+      const agencyRow =
+        (agencyIdKey ? validAgenciesById.get(agencyIdKey) : null) ||
+        (agencyNameKey ? validAgenciesByName.get(agencyNameKey) : null) ||
+        (agencyIdKey
+          ? agencies.find((a) => String(a?.agency_id ?? a?.agencyId ?? '') === agencyIdKey)
+          : null);
+
+      const mappedMinistry = String(agencyRow?.ministry || '').trim();
+      const mappedStateDept = String(agencyRow?.state_department || agencyRow?.stateDepartment || '').trim();
+
+      if (mappedStateDept) {
+        const pairOk = validDeptPairs.has(`${normalizeKey(mappedMinistry)}|${normalizeKey(mappedStateDept)}`);
+        const deptOk = validDepartmentNames.has(normalizeKey(mappedStateDept));
+        addGroup({
+          key: pairOk
+            ? `access:legacy-to-state-department:${normalizeKey(mappedMinistry)}|${normalizeKey(mappedStateDept)}`
+            : `access:legacy-invalid-state-department:${normalizeKey(mappedMinistry)}|${normalizeKey(mappedStateDept)}`,
+          label: pairOk
+            ? `Legacy Agency -> State Department: ${mappedStateDept}`
+            : `Legacy Agency -> Invalid State Department: ${mappedStateDept}`,
+          sortTier: pairOk ? 3 : 97,
+          description: pairOk
+            ? `Derived from agency mapping (ministry: ${mappedMinistry || '—'})`
+            : deptOk
+            ? `Derived department exists but not under ministry ${mappedMinistry || '—'}`
+            : 'Derived department does not exist in departments table; user may not load projects',
+        });
+      }
       addGroup({
         key: 'access:legacy-agency',
         label: 'Legacy Agency Scope',
@@ -1845,9 +1902,43 @@ function UserManagementPage() {
   }, [filteredUsers, activeRoleNameSet]);
 
   const usersByAccessLevel = useMemo(() => {
+    const normalizeKey = (v) => String(v || '').trim().toLowerCase();
+    const validMinistryNames = new Set();
+    const validDepartmentNames = new Set();
+    const validDeptPairs = new Set();
+    const validAgenciesById = new Map();
+    const validAgenciesByName = new Map();
+
+    for (const m of ministriesHierarchy || []) {
+      const mName = String(m?.name || '').trim();
+      if (!mName) continue;
+      validMinistryNames.add(normalizeKey(mName));
+      const departments = Array.isArray(m?.departments) ? m.departments : [];
+      for (const d of departments) {
+        const dName = String(d?.name || d?.department_name || '').trim();
+        if (!dName) continue;
+        validDepartmentNames.add(normalizeKey(dName));
+        validDeptPairs.add(`${normalizeKey(mName)}|${normalizeKey(dName)}`);
+      }
+    }
+
+    for (const a of agencies || []) {
+      const aid = a?.agency_id ?? a?.agencyId;
+      const aName = String(a?.name || a?.agency_name || '').trim();
+      if (aid != null && aid !== '') validAgenciesById.set(String(aid), a);
+      if (aName) validAgenciesByName.set(normalizeKey(aName), a);
+    }
+
     const groups = new Map();
     for (const u of filteredUsers) {
-      const accessGroups = getUserAccessLevelGroups(u);
+      const accessGroups = getUserAccessLevelGroups(u, {
+        agencies,
+        validMinistryNames,
+        validDepartmentNames,
+        validDeptPairs,
+        validAgenciesById,
+        validAgenciesByName,
+      });
       for (const g of accessGroups) {
         if (!groups.has(g.key)) {
           groups.set(g.key, {
@@ -1870,7 +1961,7 @@ function UserManagementPage() {
       if (a.sortTier !== b.sortTier) return a.sortTier - b.sortTier;
       return a.label.localeCompare(b.label, undefined, { sensitivity: 'base' });
     });
-  }, [filteredUsers]);
+  }, [filteredUsers, ministriesHierarchy, agencies]);
 
   // Key columns only: avoid horizontal scroll; full details in View details dialog
   const userColumns = [
@@ -2444,7 +2535,7 @@ function UserManagementPage() {
             {userListView === 'byRole'
               ? 'Expand a role to see users assigned to it. Search above still filters this list.'
               : userListView === 'byAccessLevel'
-              ? 'Users are grouped by effective access scope (all ministries, ministry, state department, legacy agency, no scope). Search above still filters this list.'
+              ? 'Users are grouped by effective access scope, including invalid ministry/department mappings and legacy agency-derived mappings. Search above still filters this list.'
               : 'Grouped by ministry and state department (agency is not used as a section). Expand a section to see users. Search above still filters this list.'}
           </Typography>
           {(userListView === 'byRole' ? usersByRole : userListView === 'byAccessLevel' ? usersByAccessLevel : usersByOrganization).map((g, index) => (

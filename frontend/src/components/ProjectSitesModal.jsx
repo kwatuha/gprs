@@ -37,7 +37,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import axiosInstance from '../api/axiosInstance';
 import SiteUpdatesDialog from './SiteUpdatesDialog';
 
-const ProjectSitesModal = ({ open, onClose, projectId, projectName }) => {
+const ProjectSitesModal = ({ open, onClose, projectId, projectName, showSiteActions = true }) => {
   const [sites, setSites] = useState([]);
   const [summary, setSummary] = useState({ total: 0, byCounty: {}, byConstituency: {}, byWard: {} });
   const [loading, setLoading] = useState(false);
@@ -240,7 +240,7 @@ const ProjectSitesModal = ({ open, onClose, projectId, projectName }) => {
     }
   };
 
-  const columns = [
+  const allSiteColumns = [
     { field: 'site_id', headerName: 'ID', width: 80 },
     {
       field: 'site_name',
@@ -342,6 +342,8 @@ const ProjectSitesModal = ({ open, onClose, projectId, projectName }) => {
       },
     },
   ];
+
+  const columns = showSiteActions ? allSiteColumns : allSiteColumns.filter((c) => c.field !== 'actions');
 
   return (
     <Dialog 

@@ -15,7 +15,16 @@ import apiServiceMain from '../api';
 import axiosInstance from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext.jsx';
 import { tokens } from "./dashboard/theme";
-import { isSuperAdminUser, normalizeRoleForCompare } from '../utils/roleUtils';
+import {
+  isSuperAdminUser,
+  normalizeRoleForCompare,
+  isMdaIctAdminUser,
+  canMdaIctAdminMutateUser,
+} from '../utils/roleUtils';
+
+/** Shown when MDA ICT Admin hits controls for users outside allowed roles (matches API copy). */
+const MDA_ICT_ADMIN_CANNOT_MUTATE_USER_MESSAGE =
+  'MDA ICT Admin can only edit users in Data Entry Officer, Data Approver, or Viewer roles.';
 
 
 // --- Utility function for case conversion (Copied from ProjectDetailsPage for consistency) ---
@@ -298,7 +307,7 @@ function getUserAccessLevelGroups(user, options = {}) {
 function UserManagementPage() {
   const { user, logout, hasPrivilege } = useAuth();
   const isSuperAdmin = isSuperAdminUser(user);
-  const isMdaIctAdmin = normalizeRoleForCompare(user?.role || user?.roleName) === 'mda ict admin';
+  const isMdaIctAdmin = isMdaIctAdminUser(user);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -815,6 +824,10 @@ function UserManagementPage() {
         setSnackbar({ open: true, message: 'Permission denied to edit users.', severity: 'error' });
         return;
     }
+    if (!canMdaIctAdminMutateUser(user, userItem)) {
+      setSnackbar({ open: true, message: MDA_ICT_ADMIN_CANNOT_MUTATE_USER_MESSAGE, severity: 'warning' });
+      return;
+    }
     setOpenStandaloneOrgDialog(false);
     setCurrentUserToEdit(userItem);
     setOrganizationScopes([]);
@@ -873,6 +886,10 @@ function UserManagementPage() {
   const handleOpenStandaloneOrgDialog = async (row) => {
     if (!hasPrivilege('user.update')) {
       setSnackbar({ open: true, message: 'Permission denied to edit organization access.', severity: 'error' });
+      return;
+    }
+    if (!canMdaIctAdminMutateUser(user, row)) {
+      setSnackbar({ open: true, message: MDA_ICT_ADMIN_CANNOT_MUTATE_USER_MESSAGE, severity: 'warning' });
       return;
     }
     if (openUserDialog) {
@@ -1255,6 +1272,10 @@ function UserManagementPage() {
   };
 
   const handleOpenDeleteConfirmDialog = (userId, username) => {
+    if (!isSuperAdmin) {
+      setSnackbar({ open: true, message: 'Only Super Admin can delete users.', severity: 'warning' });
+      return;
+    }
     if (!hasPrivilege('user.delete')) {
         setSnackbar({ open: true, message: 'Permission denied to delete users.', severity: 'error' });
         return;
@@ -1274,6 +1295,11 @@ function UserManagementPage() {
     setLoading(true);
     handleCloseDeleteConfirmDialog();
     try {
+      if (!isSuperAdmin) {
+        setSnackbar({ open: true, message: 'Only Super Admin can delete users.', severity: 'warning' });
+        setLoading(false);
+        return;
+      }
       if (!hasPrivilege('user.delete')) {
           setSnackbar({ open: true, message: 'Permission denied to delete user.', severity: 'error' });
           setLoading(false);
@@ -1285,7 +1311,15 @@ function UserManagementPage() {
       fetchVoidedUsers();
     } catch (err) {
       console.error("Delete user error:", err);
-      setSnackbar({ open: true, message: err.response?.data?.message || err.message || 'Failed to delete user.', severity: 'error' });
+      setSnackbar({
+        open: true,
+        message:
+          err.response?.data?.error ||
+          err.response?.data?.message ||
+          err.message ||
+          'Failed to delete user.',
+        severity: 'error',
+      });
     } finally {
       setLoading(false);
     }
@@ -1318,13 +1352,17 @@ function UserManagementPage() {
   };
 
   // Reset Password Handler
-  const handleOpenResetPasswordDialog = (userId, username) => {
+  const handleOpenResetPasswordDialog = (targetRow) => {
     if (!hasPrivilege('user.update')) {
       setSnackbar({ open: true, message: 'Permission denied to reset passwords.', severity: 'error' });
       return;
     }
-    setUserToResetId(userId);
-    setUserToResetName(username);
+    if (!canMdaIctAdminMutateUser(user, targetRow)) {
+      setSnackbar({ open: true, message: MDA_ICT_ADMIN_CANNOT_MUTATE_USER_MESSAGE, severity: 'warning' });
+      return;
+    }
+    setUserToResetId(targetRow.userId);
+    setUserToResetName(targetRow.username);
     setOpenResetPasswordDialog(true);
   };
 
@@ -1347,10 +1385,14 @@ function UserManagementPage() {
       handleCloseResetPasswordDialog();
     } catch (err) {
       console.error("Reset password error:", err);
-      setSnackbar({ 
-        open: true, 
-        message: err.response?.data?.message || err.message || 'Failed to reset password.', 
-        severity: 'error' 
+      setSnackbar({
+        open: true,
+        message:
+          err.response?.data?.error ||
+          err.response?.data?.message ||
+          err.message ||
+          'Failed to reset password.',
+        severity: 'error',
       });
     } finally {
       setLoading(false);
@@ -1358,15 +1400,19 @@ function UserManagementPage() {
   };
 
   // Disable/Enable User Handler
-  const handleToggleUserStatus = (userId, username, currentStatus) => {
+  const handleToggleUserStatus = (targetRow) => {
     if (!hasPrivilege('user.update')) {
       setSnackbar({ open: true, message: 'Permission denied to change user status.', severity: 'error' });
       return;
     }
+    if (!canMdaIctAdminMutateUser(user, targetRow)) {
+      setSnackbar({ open: true, message: MDA_ICT_ADMIN_CANNOT_MUTATE_USER_MESSAGE, severity: 'warning' });
+      return;
+    }
 
-    setUserToToggleId(userId);
-    setUserToToggleName(username);
-    setUserToToggleCurrentStatus(currentStatus);
+    setUserToToggleId(targetRow.userId);
+    setUserToToggleName(targetRow.username);
+    setUserToToggleCurrentStatus(targetRow.isActive);
     setOpenToggleStatusDialog(true);
   };
 
@@ -1393,10 +1439,14 @@ function UserManagementPage() {
       handleCloseToggleStatusDialog();
     } catch (err) {
       console.error(`${action} user error:`, err);
-      setSnackbar({ 
-        open: true, 
-        message: err.response?.data?.message || err.message || `Failed to ${action} user.`, 
-        severity: 'error' 
+      setSnackbar({
+        open: true,
+        message:
+          err.response?.data?.error ||
+          err.response?.data?.message ||
+          err.message ||
+          `Failed to ${action} user.`,
+        severity: 'error',
       });
     } finally {
       setLoading(false);
@@ -1405,6 +1455,10 @@ function UserManagementPage() {
 
   // --- Role Management Handlers ---
   const handleOpenRoleManagementDialog = () => {
+    if (!isSuperAdmin) {
+      setSnackbar({ open: true, message: 'Only Super Admin can open role management.', severity: 'warning' });
+      return;
+    }
     if (!hasPrivilege('role.read_all')) {
       setSnackbar({ open: true, message: 'Permission denied to view roles.', severity: 'error' });
       return;
@@ -1419,6 +1473,10 @@ function UserManagementPage() {
   };
 
   const handleOpenCreateRoleDialog = () => {
+    if (!isSuperAdmin) {
+      setSnackbar({ open: true, message: 'Only Super Admin can add roles.', severity: 'warning' });
+      return;
+    }
     if (!hasPrivilege('role.create')) {
       setSnackbar({ open: true, message: 'Permission denied to create roles.', severity: 'error' });
       return;
@@ -1533,6 +1591,11 @@ function UserManagementPage() {
         await apiService.updateRole(roleId, roleDataToSubmit);
         setSnackbar({ open: true, message: 'Role updated successfully!', severity: 'success' });
       } else {
+        if (!isSuperAdmin) {
+          setSnackbar({ open: true, message: 'Only Super Admin can create roles.', severity: 'warning' });
+          setLoading(false);
+          return;
+        }
         if (!hasPrivilege('role.create')) {
           setSnackbar({ open: true, message: 'Permission denied to create role.', severity: 'error' });
           setLoading(false);
@@ -1628,6 +1691,10 @@ function UserManagementPage() {
 
   // --- Privilege Management Handlers ---
   const handleOpenPrivilegeManagementDialog = () => {
+    if (!isSuperAdmin) {
+      setSnackbar({ open: true, message: 'Only Super Admin can open privilege management.', severity: 'warning' });
+      return;
+    }
     if (!hasPrivilege('privilege.read_all')) {
       setSnackbar({ open: true, message: 'Permission denied to view privileges.', severity: 'error' });
       return;
@@ -1641,6 +1708,10 @@ function UserManagementPage() {
   };
 
   const handleOpenCreatePrivilegeDialog = () => {
+    if (!isSuperAdmin) {
+      setSnackbar({ open: true, message: 'Only Super Admin can add privileges.', severity: 'warning' });
+      return;
+    }
     if (!hasPrivilege('privilege.create')) {
       setSnackbar({ open: true, message: 'Permission denied to create privileges.', severity: 'error' });
       return;
@@ -1706,6 +1777,11 @@ function UserManagementPage() {
         await apiService.updatePrivilege(currentPrivilegeToEdit.privilegeId, updatedFields);
         setSnackbar({ open: true, message: 'Privilege updated successfully!', severity: 'success' });
       } else {
+        if (!isSuperAdmin) {
+          setSnackbar({ open: true, message: 'Only Super Admin can create privileges.', severity: 'warning' });
+          setLoading(false);
+          return;
+        }
         if (!hasPrivilege('privilege.create')) {
           setSnackbar({ open: true, message: 'Permission denied to create privilege.', severity: 'error' });
           setLoading(false);
@@ -2035,7 +2111,10 @@ function UserManagementPage() {
       align: 'center',
       renderCell: ({ row }) => {
         const { isActive, userId, username } = row;
-        const canToggle = hasPrivilege('user.update') && userId !== user.id;
+        const canToggle =
+          hasPrivilege('user.update') &&
+          userId !== user.id &&
+          canMdaIctAdminMutateUser(user, row);
         return (
           <Box
             m="0 auto"
@@ -2058,8 +2137,16 @@ function UserManagementPage() {
                 backgroundColor: isActive ? colors.redAccent[500] : colors.greenAccent[500]
               } : {}
             }}
-            onClick={() => { if (canToggle) handleToggleUserStatus(userId, username, isActive); }}
-            title={canToggle ? `Click to ${isActive ? 'disable' : 'enable'} user` : isActive ? 'Active' : 'Disabled'}
+            onClick={() => { if (canToggle) handleToggleUserStatus(row); }}
+            title={
+              canToggle
+                ? `Click to ${isActive ? 'disable' : 'enable'} user`
+                : !hasPrivilege('user.update') || userId === user.id
+                  ? isActive
+                    ? 'Active'
+                    : 'Disabled'
+                  : MDA_ICT_ADMIN_CANNOT_MUTATE_USER_MESSAGE
+            }
           >
             {isActive ? <CheckCircleIcon sx={{ color: colors.grey[100], fontSize: '18px' }} /> : <BlockIcon sx={{ color: colors.grey[100], fontSize: '18px' }} />}
             <Typography color={colors.grey[100]} sx={{ fontSize: '0.875rem', fontWeight: 600 }}>
@@ -2097,14 +2184,22 @@ function UserManagementPage() {
             {hasPrivilege('user.update') && (
               <IconButton
                 size="small"
+                disabled={!canMdaIctAdminMutateUser(user, params.row)}
                 sx={{
                   color: colors.grey[100],
                   backgroundColor: colors.purple?.[700] || colors.blueAccent[800],
-                  '&:hover': { backgroundColor: colors.purple?.[600] || colors.blueAccent[700], transform: 'scale(1.1)' },
-                  transition: 'all 0.2s ease'
+                  '&:hover': canMdaIctAdminMutateUser(user, params.row)
+                    ? { backgroundColor: colors.purple?.[600] || colors.blueAccent[700], transform: 'scale(1.1)' }
+                    : {},
+                  transition: 'all 0.2s ease',
+                  opacity: canMdaIctAdminMutateUser(user, params.row) ? 1 : 0.45,
                 }}
-                onClick={() => handleOpenStandaloneOrgDialog(params.row)}
-                title="Organization access — which agencies & ministries this user may see"
+                onClick={() => canMdaIctAdminMutateUser(user, params.row) && handleOpenStandaloneOrgDialog(params.row)}
+                title={
+                  canMdaIctAdminMutateUser(user, params.row)
+                    ? 'Organization access — which agencies & ministries this user may see'
+                    : MDA_ICT_ADMIN_CANNOT_MUTATE_USER_MESSAGE
+                }
               >
                 <AccountTreeIcon fontSize="small" />
               </IconButton>
@@ -2112,21 +2207,34 @@ function UserManagementPage() {
             {hasPrivilege('user.update') && (
               <IconButton
                 size="small"
-                disabled={isCurrentUser}
+                disabled={isCurrentUser || !canMdaIctAdminMutateUser(user, params.row)}
                 sx={{
                   color: colors.grey[100],
                   backgroundColor: colors.blueAccent[700],
-                  '&:hover': !isCurrentUser ? { backgroundColor: colors.blueAccent[600], transform: 'scale(1.1)' } : {},
+                  '&:hover':
+                    !isCurrentUser && canMdaIctAdminMutateUser(user, params.row)
+                      ? { backgroundColor: colors.blueAccent[600], transform: 'scale(1.1)' }
+                      : {},
                   transition: 'all 0.2s ease',
-                  opacity: isCurrentUser ? 0.5 : 1,
+                  opacity: isCurrentUser || !canMdaIctAdminMutateUser(user, params.row) ? 0.5 : 1,
                 }}
-                onClick={() => !isCurrentUser && handleOpenResetPasswordDialog(params.row.userId, params.row.username)}
-                title={isCurrentUser ? 'Use profile to change your password' : 'Reset Password to reset123'}
+                onClick={() =>
+                  !isCurrentUser &&
+                  canMdaIctAdminMutateUser(user, params.row) &&
+                  handleOpenResetPasswordDialog(params.row)
+                }
+                title={
+                  isCurrentUser
+                    ? 'Use profile to change your password'
+                    : !canMdaIctAdminMutateUser(user, params.row)
+                      ? MDA_ICT_ADMIN_CANNOT_MUTATE_USER_MESSAGE
+                      : 'Reset Password to reset123'
+                }
               >
                 <LockResetIcon fontSize="small" />
               </IconButton>
             )}
-            {hasPrivilege('user.delete') && (
+            {isSuperAdmin && hasPrivilege('user.delete') && (
               <IconButton
                 size="small"
                 disabled={isCurrentUser}
@@ -2138,7 +2246,11 @@ function UserManagementPage() {
                   opacity: isCurrentUser ? 0.5 : 1,
                 }}
                 onClick={() => !isCurrentUser && handleOpenDeleteConfirmDialog(params.row.userId, params.row.username)}
-                title={isCurrentUser ? 'You cannot delete your own account' : 'Delete User'}
+                title={
+                  isCurrentUser
+                    ? 'You cannot delete your own account'
+                    : 'Delete User (Super Admin only)'
+                }
               >
                 <DeleteIcon fontSize="small" />
               </IconButton>
@@ -2397,7 +2509,7 @@ function UserManagementPage() {
                     Add User
                   </Button>
                 )}
-                {hasPrivilege('role.read_all') && (
+                {isSuperAdmin && hasPrivilege('role.read_all') && (
                   <Button
                     variant="outlined"
                     size="small"
@@ -2418,7 +2530,7 @@ function UserManagementPage() {
                     Roles
                   </Button>
                 )}
-                {hasPrivilege('privilege.read_all') && (
+                {isSuperAdmin && hasPrivilege('privilege.read_all') && (
                   <Button
                     variant="outlined"
                     size="small"
@@ -2589,7 +2701,10 @@ function UserManagementPage() {
                   {g.users.map((row) => {
                     const fullName = `${row.firstName || ''} ${row.lastName || ''}`.trim() || '—';
                     const isCurrentUser = row.userId === user.id;
-                    const canToggle = hasPrivilege('user.update') && row.userId !== user.id;
+                    const canToggle =
+                      hasPrivilege('user.update') &&
+                      row.userId !== user.id &&
+                      canMdaIctAdminMutateUser(user, row);
                     return (
                       <Paper
                         key={row.userId}
@@ -2637,7 +2752,7 @@ function UserManagementPage() {
                           }}
                         />
                         <Box
-                          onClick={() => { if (canToggle) handleToggleUserStatus(row.userId, row.username, row.isActive); }}
+                          onClick={() => { if (canToggle) handleToggleUserStatus(row); }}
                           sx={{
                             cursor: canToggle ? 'pointer' : 'default',
                             display: 'inline-flex',
@@ -2648,7 +2763,15 @@ function UserManagementPage() {
                             borderRadius: '6px',
                             backgroundColor: row.isActive ? colors.greenAccent[700] : colors.redAccent[700],
                           }}
-                          title={canToggle ? `Click to ${row.isActive ? 'disable' : 'enable'}` : row.isActive ? 'Active' : 'Disabled'}
+                          title={
+                            canToggle
+                              ? `Click to ${row.isActive ? 'disable' : 'enable'}`
+                              : !hasPrivilege('user.update') || isCurrentUser
+                                ? row.isActive
+                                  ? 'Active'
+                                  : 'Disabled'
+                                : MDA_ICT_ADMIN_CANNOT_MUTATE_USER_MESSAGE
+                          }
                         >
                           {row.isActive ? (
                             <CheckCircleIcon sx={{ color: colors.grey[100], fontSize: '16px' }} />
@@ -2666,20 +2789,25 @@ function UserManagementPage() {
                           {hasPrivilege('user.update') && user.id !== row.userId && (
                             <IconButton
                               size="small"
+                              disabled={!canMdaIctAdminMutateUser(user, row)}
                               sx={{ color: colors.blueAccent[400] }}
-                              onClick={() => handleOpenResetPasswordDialog(row.userId, row.username)}
-                              title="Reset password"
+                              onClick={() => canMdaIctAdminMutateUser(user, row) && handleOpenResetPasswordDialog(row)}
+                              title={
+                                canMdaIctAdminMutateUser(user, row)
+                                  ? 'Reset password'
+                                  : MDA_ICT_ADMIN_CANNOT_MUTATE_USER_MESSAGE
+                              }
                             >
                               <LockResetIcon fontSize="small" />
                             </IconButton>
                           )}
-                          {hasPrivilege('user.delete') && (
+                          {isSuperAdmin && hasPrivilege('user.delete') && (
                             <IconButton
                               size="small"
                               disabled={isCurrentUser}
                               sx={{ color: colors.redAccent[400] }}
                               onClick={() => !isCurrentUser && handleOpenDeleteConfirmDialog(row.userId, row.username)}
-                              title="Delete"
+                              title={isCurrentUser ? 'You cannot delete your own account' : 'Delete (Super Admin only)'}
                             >
                               <DeleteIcon fontSize="small" />
                             </IconButton>
@@ -2978,7 +3106,14 @@ function UserManagementPage() {
               size="small"
               variant="contained"
               startIcon={<EditIcon sx={{ fontSize: '1rem' }} />}
+              disabled={!canMdaIctAdminMutateUser(user, viewDetailsUser)}
+              title={
+                canMdaIctAdminMutateUser(user, viewDetailsUser)
+                  ? ''
+                  : MDA_ICT_ADMIN_CANNOT_MUTATE_USER_MESSAGE
+              }
               onClick={() => {
+                if (!canMdaIctAdminMutateUser(user, viewDetailsUser)) return;
                 handleCloseViewDetails();
                 handleOpenEditUserDialog(viewDetailsUser);
               }}
@@ -4124,13 +4259,17 @@ function UserManagementPage() {
           Role Management
         </DialogTitle>
         <DialogContent dividers sx={{ backgroundColor: colors.primary[400] }}>
-          {hasPrivilege('role.create') && (
+          {isSuperAdmin && hasPrivilege('role.create') && (
             <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreateRoleDialog} sx={{ mb: 2, backgroundColor: colors.greenAccent[600], '&:hover': { backgroundColor: colors.greenAccent[700] }, color: 'white' }}>
               Add New Role
             </Button>
           )}
           {roles.length === 0 ? (
-            <Alert severity="info">No roles found. Add a new role to get started.</Alert>
+            <Alert severity="info">
+              {isSuperAdmin
+                ? 'No roles found. Use Add New Role to create one.'
+                : 'No roles found.'}
+            </Alert>
           ) : (
             <Box
               height="400px"
@@ -4236,7 +4375,14 @@ function UserManagementPage() {
         </DialogContent>
         <DialogActions sx={{ padding: '16px 24px', borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: colors.primary[400] }}>
           <Button onClick={handleCloseRoleDialog} color="primary" variant="outlined">Cancel</Button>
-          <Button onClick={handleRoleSubmit} color="primary" variant="contained">{currentRoleToEdit ? 'Update Role' : 'Create Role'}</Button>
+          <Button
+            onClick={handleRoleSubmit}
+            color="primary"
+            variant="contained"
+            disabled={!currentRoleToEdit && !isSuperAdmin}
+          >
+            {currentRoleToEdit ? 'Update Role' : 'Create Role'}
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -4252,13 +4398,17 @@ function UserManagementPage() {
           Privilege Management
         </DialogTitle>
         <DialogContent dividers sx={{ backgroundColor: colors.primary[400] }}>
-          {hasPrivilege('privilege.create') && (
+          {isSuperAdmin && hasPrivilege('privilege.create') && (
             <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreatePrivilegeDialog} sx={{ mb: 2, backgroundColor: colors.greenAccent[600], '&:hover': { backgroundColor: colors.greenAccent[700] }, color: 'white' }}>
               Add New Privilege
             </Button>
           )}
           {privileges.length === 0 ? (
-            <Alert severity="info">No privileges found. Add a new privilege to get started.</Alert>
+            <Alert severity="info">
+              {isSuperAdmin
+                ? 'No privileges found. Use Add New Privilege to create one.'
+                : 'No privileges found.'}
+            </Alert>
           ) : (
             <Box
               height="400px"
@@ -4312,7 +4462,13 @@ function UserManagementPage() {
         </DialogContent>
         <DialogActions sx={{ padding: '16px 24px', borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: colors.primary[400] }}>
           <Button type="button" onClick={handleClosePrivilegeDialog} color="primary" variant="outlined" disabled={loading}>Cancel</Button>
-          <Button type="button" onClick={handlePrivilegeSubmit} color="primary" variant="contained" disabled={loading}>
+          <Button
+            type="button"
+            onClick={handlePrivilegeSubmit}
+            color="primary"
+            variant="contained"
+            disabled={loading || (!currentPrivilegeToEdit && !isSuperAdmin)}
+          >
             {loading ? 'Saving...' : (currentPrivilegeToEdit ? 'Update Privilege' : 'Create Privilege')}
           </Button>
         </DialogActions>

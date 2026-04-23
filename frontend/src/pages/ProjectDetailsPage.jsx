@@ -3536,7 +3536,8 @@ function ProjectDetailsPage() {
                             </Grid>
                         </Grid>
 
-                        {/* Add/Edit Job form */}
+                        {/* Add/Edit Job form — only users who can create/update projects */}
+                        {canModifyOrCreateProjects && (
                         <Paper sx={{ p: 2, mb: 2 }}>
                             <Typography variant="subtitle2" sx={{ mb: 1 }}>
                                 {editingJob ? 'Edit Job Record' : 'Add Jobs Created'}
@@ -3752,7 +3753,6 @@ function ProjectDetailsPage() {
                                         <Button
                                             variant="contained"
                                             size="small"
-                                            disabled={!canModifyOrCreateProjects}
                                             onClick={async () => {
                                                 const errors = {};
                                                 if (!jobFormData.categoryId) {
@@ -3861,6 +3861,7 @@ function ProjectDetailsPage() {
                                 </Grid>
                             </Grid>
                         </Paper>
+                        )}
 
                         {/* Jobs list */}
                         <Paper sx={{ p: 2 }}>
@@ -3889,7 +3890,9 @@ function ProjectDetailsPage() {
                                                 <TableCell><strong>Female</strong></TableCell>
                                                 <TableCell><strong>Direct Jobs</strong></TableCell>
                                                 <TableCell><strong>Indirect Jobs</strong></TableCell>
-                                                <TableCell><strong>Actions</strong></TableCell>
+                                                {canModifyOrCreateProjects && (
+                                                    <TableCell><strong>Actions</strong></TableCell>
+                                                )}
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
@@ -3911,6 +3914,7 @@ function ProjectDetailsPage() {
                                                     <TableCell>{job.female_count ?? 0}</TableCell>
                                                     <TableCell>{job.direct_jobs ?? 0}</TableCell>
                                                     <TableCell>{job.indirect_jobs ?? 0}</TableCell>
+                                                    {canModifyOrCreateProjects && (
                                                     <TableCell>
                                                         <Box display="flex" gap={0.5}>
                                                             <Tooltip title="Edit">
@@ -3947,6 +3951,7 @@ function ProjectDetailsPage() {
                                                             </Tooltip>
                                                         </Box>
                                                     </TableCell>
+                                                    )}
                                                 </TableRow>
                                             ))}
                                         </TableBody>
@@ -4166,6 +4171,7 @@ function ProjectDetailsPage() {
                                         </Button>
                                     </>
                                 )}
+                                {canModifyOrCreateProjects && (
                                 <Button
                                     variant="outlined"
                                     size="small"
@@ -4175,11 +4181,12 @@ function ProjectDetailsPage() {
                                 >
                                     Import
                                 </Button>
+                                )}
+                                {canModifyOrCreateProjects && (
                                 <Button
                                     variant="contained"
                                     size="small"
                                     startIcon={<AddIcon />}
-                                    disabled={!canModifyOrCreateProjects}
                                     onClick={() => {
                                         setEditingSite(null);
                                         setSiteFormData({
@@ -4196,6 +4203,7 @@ function ProjectDetailsPage() {
                                 >
                                     Add site
                                 </Button>
+                                )}
                             </Stack>
                         </Box>
                         {loadingSites ? (
@@ -4207,7 +4215,11 @@ function ProjectDetailsPage() {
                         ) : projectSites.length === 0 ? (
                             <Paper variant="outlined" sx={{ p: 3, textAlign: 'center', borderColor: 'divider' }}>
                                 <Typography variant="body2" color="text.secondary">
-                                    No sites yet. Use <strong>Add site</strong> or <strong>Import</strong> above to add sites.
+                                    {canModifyOrCreateProjects ? (
+                                        <>No sites yet. Use <strong>Add site</strong> or <strong>Import</strong> above to add sites.</>
+                                    ) : (
+                                        'No sites have been recorded for this project yet.'
+                                    )}
                                 </Typography>
                             </Paper>
                         ) : (
@@ -4265,7 +4277,9 @@ function ProjectDetailsPage() {
                                                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem', py: 1.25, bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100' }}>Status</TableCell>
                                                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem', py: 1.25, bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100' }}>Progress</TableCell>
                                                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem', py: 1.25, bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100' }}>Approved Cost</TableCell>
-                                                <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.8rem', py: 1.25, bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100' }}>Actions</TableCell>
+                                                {canModifyOrCreateProjects && (
+                                                    <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.8rem', py: 1.25, bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100' }}>Actions</TableCell>
+                                                )}
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
@@ -4313,6 +4327,7 @@ function ProjectDetailsPage() {
                                                         <TableCell sx={{ py: 1.25 }}>
                                                             {site.approved_cost_kes != null ? formatCurrency(site.approved_cost_kes) : '—'}
                                                         </TableCell>
+                                                        {canModifyOrCreateProjects && (
                                                         <TableCell align="right" sx={{ py: 1.25 }}>
                                                             <Tooltip title="Edit site">
                                                                 <IconButton
@@ -4368,6 +4383,7 @@ function ProjectDetailsPage() {
                                                                 </IconButton>
                                                             </Tooltip>
                                                         </TableCell>
+                                                        )}
                                                     </TableRow>
                                                 ))}
                                         </TableBody>
@@ -5106,6 +5122,7 @@ function ProjectDetailsPage() {
                 }}
                 projectId={projectId}
                 projectName={project?.projectName || 'Project'}
+                showSiteActions={canModifyOrCreateProjects}
             />
 
             {/* Import Sites Dialog */}

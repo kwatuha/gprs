@@ -825,6 +825,10 @@ router.put('/users/:id', async (req, res) => {
  * @description Soft delete a user by setting voided = 1.
  */
 router.delete('/users/:id', async (req, res) => {
+    if (!isSuperAdminRequester(req.user)) {
+        return res.status(403).json({ error: 'Only Super Admin can delete users.' });
+    }
+
     const { id } = req.params;
     try {
         const DB_TYPE = process.env.DB_TYPE || 'mysql';
@@ -1024,6 +1028,10 @@ router.get('/roles/:id', async (req, res) => {
  * @description Create a new role in the roles table.
  */
 router.post('/roles', async (req, res) => {
+    if (!isSuperAdminRequester(req.user)) {
+        return res.status(403).json({ error: 'Only Super Admin can create roles.' });
+    }
+
     const { roleName, name, description } = req.body;
     const roleNameValue = roleName || name; // Support both field names
 
@@ -1279,6 +1287,10 @@ router.get('/privileges/:id', async (req, res) => {
  * @description Create a new privilege in the privileges table.
  */
 router.post('/privileges', async (req, res) => {
+    if (!isSuperAdminRequester(req.user)) {
+        return res.status(403).json({ error: 'Only Super Admin can create privileges.' });
+    }
+
     // Normalize body (express may deliver object, or nested/odd shapes from proxies)
     let body = req.body;
     if (body == null) {

@@ -3,21 +3,21 @@ import {
   IconButton, 
   useTheme, 
   Typography, 
-  Badge, 
   Avatar, 
   Menu, 
   MenuItem, 
   ListItemIcon, 
   ListItemText,
-  Divider
+  Divider,
+  Tooltip,
 } from "@mui/material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
 import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import LockIcon from "@mui/icons-material/Lock";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import { useAuth } from '../context/AuthContext';
 import { usePageTitle } from '../context/PageTitleContext';
 import { useProfileModal } from '../context/ProfileModalContext';
@@ -55,6 +55,19 @@ const Topbar = () => {
   const handleHelpSupportClick = () => {
     navigate(ROUTES.HELP_SUPPORT);
     handleClose();
+  };
+
+  /** Best-effort “hard” reload: clears same-origin Cache Storage (e.g. service worker caches), then reloads. Browsers do not allow invoking Ctrl+Shift+R from script. */
+  const handleReloadApp = () => {
+    const reload = () => window.location.reload();
+    if (typeof window !== "undefined" && window.caches?.keys) {
+      window.caches
+        .keys()
+        .then((keys) => Promise.all(keys.map((k) => window.caches.delete(k))))
+        .then(reload, reload);
+    } else {
+      reload();
+    }
   };
 
   return (
@@ -98,19 +111,28 @@ const Topbar = () => {
 
       {/* RIGHT SECTION */}
       <Box display="flex" alignItems="center" gap={1}>
-        {/* NOTIFICATIONS */}
-        <IconButton 
-          sx={{ 
-            color: 'white',
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.1)'
-            }
-          }}
+        <Tooltip
+          title={
+            <>
+              Reload the application from the server and clear in-app caches (same as a strong refresh).
+              <br />
+              If something still looks outdated, use your browser’s hard refresh: Ctrl+Shift+R (Windows/Linux) or Cmd+Shift+R (Mac).
+            </>
+          }
+          enterTouchDelay={0}
+          slotProps={{ tooltip: { sx: { maxWidth: 320 } } }}
         >
-          <Badge badgeContent={3} color="error">
-            <NotificationsOutlinedIcon />
-          </Badge>
-        </IconButton>
+          <IconButton
+            onClick={handleReloadApp}
+            aria-label="Reload application"
+            sx={{
+              color: "white",
+              "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.1)" },
+            }}
+          >
+            <RefreshIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
         
         {/* USER AVATAR */}
         <IconButton 
@@ -187,6 +209,18 @@ const Topbar = () => {
               <HelpOutlineIcon fontSize="small" />
             </ListItemIcon>
             <ListItemText>Help & Support</ListItemText>
+          </MenuItem>
+
+          <MenuItem
+            onClick={() => {
+              handleClose();
+              handleReloadApp();
+            }}
+          >
+            <ListItemIcon>
+              <RefreshIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Reload application</ListItemText>
           </MenuItem>
           
           <Divider />

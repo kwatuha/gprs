@@ -12,6 +12,8 @@ const routeTitles = {
   '/projects': { title: 'Projects', subtitle: 'Project Management' },
   '/contractor-dashboard': { title: 'Personal Dashboard', subtitle: 'My Activities' },
   '/project-analytics': { title: 'Project Analytics', subtitle: 'Performance Metrics & Statistics' },
+  '/project-by-status-dashboard': { title: 'Project By Status', subtitle: 'Status distribution & filters' },
+  '/project-by-sector-dashboard': { title: 'Project By Sector', subtitle: 'Sector spread & registry alignment' },
   
   // Reporting routes
   '/reports': { title: 'Reports', subtitle: 'Analytics & Insights' },

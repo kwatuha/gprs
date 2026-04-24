@@ -63,6 +63,35 @@ const projectService = {
       const response = await axiosInstance.post('/projects/confirm-import-data', importData);
       return response.data;
     },
+    getProjectUploadLogs: async (params = {}) => {
+      try {
+        const response = await axiosInstance.get('/projects/import-logs', { params });
+        return response.data;
+      } catch (error) {
+        // Fallback route for backends that expose upload logs outside /projects/:id namespace.
+        if (error?.response?.status === 404 || error?.response?.status === 400) {
+          const fallback = await axiosInstance.get('/project-import-logs', { params });
+          return fallback.data;
+        }
+        throw error;
+      }
+    },
+    downloadProjectUploadLogFile: async (logId) => {
+      try {
+        const response = await axiosInstance.get(`/projects/import-logs/${logId}/file`, {
+          responseType: 'blob',
+        });
+        return response.data;
+      } catch (error) {
+        if (error?.response?.status === 404 || error?.response?.status === 400) {
+          const fallback = await axiosInstance.get(`/project-import-logs/${logId}/file`, {
+            responseType: 'blob',
+          });
+          return fallback.data;
+        }
+        throw error;
+      }
+    },
     downloadProjectTemplate: async () => {
       const token = localStorage.getItem('jwtToken');
       const baseUrl = axiosInstance.defaults.baseURL || '/api';

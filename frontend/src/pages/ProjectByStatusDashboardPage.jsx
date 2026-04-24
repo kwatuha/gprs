@@ -60,6 +60,13 @@ import { useNavigate } from 'react-router-dom';
 import sectorsService from '../api/sectorsService';
 import projectService from '../api/projectService';
 import { normalizeProjectStatus } from '../utils/projectStatusNormalizer';
+import {
+  buildSectorCanonicalLookup,
+  buildSectorDisplayMap,
+  labelForSectorRegistryBucket,
+  rawRegistrySectorFromProject,
+  sectorRegistryBucketKey,
+} from '../utils/organizationChartLabels';
 import { ROUTES } from '../configs/appConfig';
 
 const STATUS_COLORS = {
@@ -147,15 +154,15 @@ const ProjectByStatusDashboardPage = () => {
   const [projectsError, setProjectsError] = useState('');
 
   useEffect(() => {
-    const fetchSectors = async () => {
+    const loadSectors = async () => {
       try {
-        const data = await sectorsService.getAllSectors();
-        setSectors(data || []);
+        const sectorRows = await sectorsService.getAllSectors();
+        setSectors(sectorRows || []);
       } catch (error) {
         console.error('Error fetching sectors:', error);
       }
     };
-    fetchSectors();
+    loadSectors();
   }, []);
 
   useEffect(() => {
@@ -223,32 +230,23 @@ const ProjectByStatusDashboardPage = () => {
       }))
       .sort((a, b) => b.count - a.count);
 
-    // Create a map of sector names to aliases
-    const sectorAliasMap = new Map();
-    sectors.forEach((sector) => {
-      const sectorName = sector.sectorName || sector.name;
-      const alias = sector.alias || sectorName;
-      if (sectorName) {
-        sectorAliasMap.set(sectorName, alias);
-      }
-    });
+    const sectorDisplayMap = buildSectorDisplayMap(sectors);
+    const sectorCanonicalLookup = buildSectorCanonicalLookup(sectors);
 
-    // Status by Sector
+    // Status by Sector — only `sector` from the project; must match Sectors Management (case-insensitive) or bucketed
     const statusBySector = new Map();
     filteredProjects.forEach((p) => {
-      // Try to get sector from various possible fields
-      const sectorName = p.sector || p.categoryName || p.department || 'Unknown';
+      const bucketKey = sectorRegistryBucketKey(rawRegistrySectorFromProject(p), sectorCanonicalLookup);
       const status = normalizeProjectStatus(p.Status || p.status || 'Unknown');
-      const key = `${sectorName}|${status}`;
-      const current = statusBySector.get(key) || { sector: sectorName, status, count: 0 };
+      const key = `${bucketKey}|${status}`;
+      const current = statusBySector.get(key) || { sector: bucketKey, status, count: 0 };
       current.count += 1;
       statusBySector.set(key, current);
     });
 
     const sectorStatusChart = Array.from(statusBySector.values())
       .reduce((acc, item) => {
-        // Use alias if available, otherwise use sector name
-        const displayName = sectorAliasMap.get(item.sector) || item.sector;
+        const displayName = labelForSectorRegistryBucket(item.sector, sectorDisplayMap);
         const existing = acc.find((d) => d.sector === item.sector);
         if (existing) {
           existing[item.status] = item.count;
@@ -395,7 +393,7 @@ const ProjectByStatusDashboardPage = () => {
       }}
     >
       <Box mb={3}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.5, flexWrap: 'wrap' }}>
           <Box
             sx={{
               width: 3,
@@ -405,7 +403,7 @@ const ProjectByStatusDashboardPage = () => {
               mt: 0.25,
             }}
           />
-          <Box sx={{ flex: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 200 }}>
             <Typography
               variant="h5"
               sx={{
@@ -433,6 +431,26 @@ const ProjectByStatusDashboardPage = () => {
             >
               Track project status distribution, trends, and breakdowns across departments, directorates, and geographic regions.
             </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
+            <Chip
+              label="By sector"
+              size="small"
+              onClick={() => navigate(ROUTES.PROJECT_BY_SECTOR_DASHBOARD)}
+              sx={{ bgcolor: colors.purple[600], color: 'white', fontWeight: 600, cursor: 'pointer' }}
+            />
+            <Chip
+              label="Summary"
+              size="small"
+              onClick={() => navigate(ROUTES.SYSTEM_DASHBOARD)}
+              sx={{ bgcolor: colors.greenAccent[700], color: 'white', fontWeight: 600, cursor: 'pointer' }}
+            />
+            <Chip
+              label="Finance"
+              size="small"
+              onClick={() => navigate(ROUTES.FINANCE_DASHBOARD)}
+              sx={{ bgcolor: colors.blueAccent[600], color: 'white', fontWeight: 600, cursor: 'pointer' }}
+            />
           </Box>
         </Box>
 

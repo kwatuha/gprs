@@ -314,7 +314,6 @@ const ProjectFormDialog = ({
                   }
                 }}
                 loading={loadingSectors}
-                freeSolo
                 sx={{ minWidth: 200 }}
                 renderInput={(params) => (
                   <TextField
@@ -324,8 +323,8 @@ const ProjectFormDialog = ({
                     variant="outlined"
                     size="small"
                     required
-                    placeholder="Search or select sector"
-                    helperText={formErrors.sector || "Select the government sector for this project"}
+                    placeholder="Select sector from registry"
+                    helperText={formErrors.sector || "Choose a sector from Sectors Management (charts use this field only)"}
                     error={!!formErrors.sector}
                     sx={{
                       minWidth: 200,

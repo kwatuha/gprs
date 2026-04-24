@@ -50,6 +50,14 @@ import { tokens } from './dashboard/theme';
 import { useNavigate } from 'react-router-dom';
 import sectorsService from '../api/sectorsService';
 import projectService from '../api/projectService';
+import { ROUTES } from '../configs/appConfig';
+import {
+  buildSectorCanonicalLookup,
+  buildSectorDisplayMap,
+  labelForSectorRegistryBucket,
+  rawRegistrySectorFromProject,
+  sectorRegistryBucketKey,
+} from '../utils/organizationChartLabels';
 
 const formatCurrency = (value) =>
   `KES ${((Number(value) || 0) / 1_000_000).toLocaleString('en-KE', {
@@ -122,15 +130,15 @@ const FinanceDashboardPage = () => {
   const [allProjects, setAllProjects] = useState([]);
 
   useEffect(() => {
-    const fetchSectors = async () => {
+    const loadSectors = async () => {
       try {
-        const data = await sectorsService.getAllSectors();
-        setSectors(data || []);
+        const sectorRows = await sectorsService.getAllSectors();
+        setSectors(sectorRows || []);
       } catch (error) {
         console.error('Error fetching sectors:', error);
       }
     };
-    fetchSectors();
+    loadSectors();
   }, []);
 
   useEffect(() => {
@@ -145,7 +153,9 @@ const FinanceDashboardPage = () => {
           directorate: p.directorate || p.directorateName || p.agency || '',
           financialYear: p.financialYear || p.financialYearName || '',
           budgetSource: p.budgetSource || p.source || 'Unknown',
-          sector: p.sector || p.categoryName || p.department || p.ministry || 'Unknown',
+          /** Raw sector from API only — sector charts use this + Sectors Management registry */
+          registrySectorRaw: rawRegistrySectorFromProject(p),
+          sector: p.sector || p.categoryName || p.directorate || p.department || p.ministry || 'Unknown',
           budget: Number(p.budget ?? p.costOfProject ?? p.allocatedBudget ?? 0),
           Disbursed: Number(p.Disbursed ?? p.paidOut ?? p.disbursedBudget ?? 0),
         }));
@@ -173,29 +183,20 @@ const FinanceDashboardPage = () => {
     const totalDisbursed = filteredProjects.reduce((sum, p) => sum + (p.Disbursed || 0), 0);
     const overallAbsorption = totalBudget > 0 ? Math.round((totalDisbursed / totalBudget) * 100) : 0;
 
-    // Create a map of sector names to aliases
-    const sectorAliasMap = new Map();
-    sectors.forEach((sector) => {
-      const sectorName = sector.sectorName || sector.name;
-      const alias = sector.alias || sectorName;
-      if (sectorName) {
-        sectorAliasMap.set(sectorName, alias);
-      }
-    });
+    const sectorDisplayMap = buildSectorDisplayMap(sectors);
+    const sectorCanonicalLookup = buildSectorCanonicalLookup(sectors);
 
-    // Disbursement by Sector
+    // Disbursement by Sector — registry sector field only vs Sectors Management
     const sectorMap = new Map();
     filteredProjects.forEach((p) => {
-      // Try to get sector from various possible fields
-      const sectorName = p.sector || p.categoryName || p.department || 'Unknown';
+      const sectorName = sectorRegistryBucketKey(p.registrySectorRaw ?? '', sectorCanonicalLookup);
       const current = sectorMap.get(sectorName) || { sector: sectorName, budget: 0, disbursed: 0 };
       current.budget += p.budget || 0;
       current.disbursed += p.Disbursed || 0;
       sectorMap.set(sectorName, current);
     });
     const sectorChart = Array.from(sectorMap.values()).map((row) => {
-      // Use alias if available, otherwise use sector name
-      const displayName = sectorAliasMap.get(row.sector) || row.sector;
+      const displayName = labelForSectorRegistryBucket(row.sector, sectorDisplayMap);
       return {
         name: displayName,
         sector: row.sector,
@@ -343,26 +344,34 @@ const FinanceDashboardPage = () => {
               Financial performance analysis: Track budget allocation, disbursement rates, funding sources, and identify under-performing projects.
             </Typography>
           </Box>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<RefreshIcon sx={{ fontSize: 16 }} />}
-            onClick={() => navigate('/summary-statistics')}
-            sx={{
-              borderColor: colors.blueAccent[500],
-              color: colors.blueAccent[500],
-              fontSize: '0.8rem',
-              py: 0.5,
-              px: 1.5,
-              minWidth: 'auto',
-              '&:hover': {
-                borderColor: colors.blueAccent[400],
-                bgcolor: `${colors.blueAccent[600]}20`,
-              },
-            }}
-          >
-            Summary Statistics
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+            <Chip
+              label="By sector"
+              size="small"
+              onClick={() => navigate(ROUTES.PROJECT_BY_SECTOR_DASHBOARD)}
+              sx={{ bgcolor: colors.purple[600], color: 'white', fontWeight: 600, cursor: 'pointer' }}
+            />
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<RefreshIcon sx={{ fontSize: 16 }} />}
+              onClick={() => navigate(ROUTES.SYSTEM_DASHBOARD)}
+              sx={{
+                borderColor: colors.blueAccent[500],
+                color: colors.blueAccent[500],
+                fontSize: '0.8rem',
+                py: 0.5,
+                px: 1.5,
+                minWidth: 'auto',
+                '&:hover': {
+                  borderColor: colors.blueAccent[400],
+                  bgcolor: `${colors.blueAccent[600]}20`,
+                },
+              }}
+            >
+              Summary Statistics
+            </Button>
+          </Box>
         </Box>
 
         {/* Filters - Collapsible at Top (aligned with Project By Status) */}

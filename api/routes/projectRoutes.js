@@ -29,6 +29,160 @@ const { projectRouter: projectPhotoRouter, photoRouter } = require('./projectPho
 const projectAssignmentRoutes = require('./projectAssignmentRoutes');
 const projectJobsRoutes = require('./projectJobsRoutes');
 
+const PROJECT_IMPORT_LOG_DIR = path.join(__dirname, '..', 'uploads', 'project-import-logs');
+
+const ensureProjectImportLogTable = async () => {
+    const runSafeDdl = async (sql) => {
+        try {
+            await pool.query(sql);
+        } catch (err) {
+            // Ignore race-condition duplicates when concurrent requests initialize the same DDL.
+            // PostgreSQL can surface these as duplicate_table / duplicate_object / unique violations.
+            const code = String(err?.code || '');
+            // Also ignore insufficient-privilege errors: app user may be read/write only,
+            // while schema DDL is handled through DBA migrations.
+            if (code === '42P07' || code === '42710' || code === '23505' || code === '42501') {
+                return;
+            }
+            throw err;
+        }
+    };
+
+    await runSafeDdl(`
+        CREATE TABLE IF NOT EXISTS project_import_logs (
+            id BIGSERIAL PRIMARY KEY,
+            user_id BIGINT NULL,
+            full_name TEXT NULL,
+            role_name TEXT NULL,
+            ministry TEXT NULL,
+            state_department TEXT NULL,
+            uploaded_file_name TEXT NULL,
+            saved_file_path TEXT NULL,
+            had_mapping_errors BOOLEAN NOT NULL DEFAULT FALSE,
+            rows_inserted INTEGER NOT NULL DEFAULT 0,
+            rows_updated INTEGER NOT NULL DEFAULT 0,
+            rows_processed INTEGER NOT NULL DEFAULT 0,
+            import_status TEXT NOT NULL DEFAULT 'success',
+            import_message TEXT NULL,
+            metadata_json JSONB NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+    await runSafeDdl(`CREATE INDEX IF NOT EXISTS idx_project_import_logs_created_at ON project_import_logs (created_at DESC)`);
+    await runSafeDdl(`CREATE INDEX IF NOT EXISTS idx_project_import_logs_user_id ON project_import_logs (user_id)`);
+    await runSafeDdl(`CREATE INDEX IF NOT EXISTS idx_project_import_logs_mapping_errors ON project_import_logs (had_mapping_errors)`);
+    await runSafeDdl(`CREATE INDEX IF NOT EXISTS idx_project_import_logs_status ON project_import_logs (import_status)`);
+};
+
+const hasProjectImportLogAccess = (req) => {
+    const roleRaw = req?.user?.roleName || req?.user?.role || '';
+    const role = String(roleRaw).trim().toLowerCase().replace(/[\s-]+/g, '_');
+    const privileges = Array.isArray(req?.user?.privileges) ? req.user.privileges : [];
+    const hasPrivilegeBypass =
+        privileges.includes('admin.access') || privileges.includes('organization.scope_bypass');
+    const roleAllowed =
+        role === 'mda_ict_admin' ||
+        role === 'super_admin' ||
+        role === 'admin' ||
+        role === 'administrator' ||
+        role === 'ict_admin';
+    return roleAllowed || hasPrivilegeBypass || privilege.isAdminLike(req?.user) || isSuperAdminRequester(req?.user);
+};
+
+const parseUploadedWorkbookCopy = (importContext = {}) => {
+    const base64Payload = importContext?.importFileBase64;
+    const originalName = importContext?.originalFileName || `projects-import-${Date.now()}.xlsx`;
+    if (!base64Payload || typeof base64Payload !== 'string') return null;
+
+    const cleanBase64 = base64Payload.includes(',') ? base64Payload.split(',').pop() : base64Payload;
+    const safeName = String(originalName).replace(/[^a-zA-Z0-9._-]/g, '_');
+    fs.mkdirSync(PROJECT_IMPORT_LOG_DIR, { recursive: true });
+    const savedName = `${Date.now()}-${safeName}`;
+    const savedPath = path.join(PROJECT_IMPORT_LOG_DIR, savedName);
+    fs.writeFileSync(savedPath, Buffer.from(cleanBase64, 'base64'));
+    return { originalName, savedPath };
+};
+
+const deriveHadMappingErrors = (importContext = {}, summary = {}) => {
+    if (importContext?.hadMappingErrors === true) return true;
+    const mappingSummary = importContext?.mappingSummary || {};
+    const unmatchedCount = [
+        mappingSummary?.budgets?.unmatched?.length || 0,
+        mappingSummary?.departments?.unmatched?.length || 0,
+        mappingSummary?.subcounties?.unmatched?.length || 0,
+        mappingSummary?.wards?.unmatched?.length || 0,
+        mappingSummary?.financialYears?.unmatched?.length || 0,
+        mappingSummary?.counties?.unmatched?.length || 0,
+        mappingSummary?.constituencies?.unmatched?.length || 0,
+        mappingSummary?.kenyaWards?.unmatched?.length || 0,
+        mappingSummary?.implementingAgencies?.unmatched?.length || 0,
+        mappingSummary?.sectors?.unmatched?.length || 0,
+        mappingSummary?.ministries?.unmatched?.length || 0,
+        mappingSummary?.stateDepartments?.unmatched?.length || 0,
+        summary?.errors?.length || 0
+    ].reduce((a, b) => a + b, 0);
+    return unmatchedCount > 0;
+};
+
+const recordProjectImportLog = async ({
+    req,
+    importContext = {},
+    summary = {},
+    rowsProcessed = 0,
+    status = 'success',
+    message = null,
+}) => {
+    try {
+        await ensureProjectImportLogTable();
+        const workbookCopy = parseUploadedWorkbookCopy(importContext);
+        const user = req?.user || {};
+        const fullName = (
+            [user.firstName, user.lastName].filter(Boolean).join(' ').trim() ||
+            user.fullName ||
+            user.name ||
+            user.username ||
+            null
+        );
+        const roleName = user.roleName || user.role || null;
+        const ministry = user.ministry || user.departmentName || user.department || null;
+        const stateDepartment = user.stateDepartment || user.sectionName || user.directorate || null;
+        const rowsInserted = Number(summary?.projectsCreated || 0);
+        const rowsUpdated = Number(summary?.projectsUpdated || 0);
+        const hadMappingErrors = deriveHadMappingErrors(importContext, summary);
+
+        await pool.query(
+            `INSERT INTO project_import_logs (
+                user_id, full_name, role_name, ministry, state_department,
+                uploaded_file_name, saved_file_path, had_mapping_errors,
+                rows_inserted, rows_updated, rows_processed, import_status, import_message, metadata_json
+            ) VALUES (
+                $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb
+            )`,
+            [
+                user.id || user.userId || null,
+                fullName,
+                roleName,
+                ministry,
+                stateDepartment,
+                workbookCopy?.originalName || importContext?.originalFileName || null,
+                workbookCopy?.savedPath || null,
+                hadMappingErrors,
+                rowsInserted,
+                rowsUpdated,
+                Number(rowsProcessed || 0),
+                status,
+                message,
+                JSON.stringify({
+                    importContext: importContext || null,
+                    summary: summary || null,
+                }),
+            ]
+        );
+    } catch (logErr) {
+        console.error('Failed to record project import log:', logErr.message);
+    }
+};
+
 
 // Base SQL query for project details with all left joins
 const BASE_PROJECT_SELECT_JOINS = `
@@ -1782,7 +1936,7 @@ router.post('/check-metadata-mapping', upload.single('file'), async (req, res) =
 
 //========================================
 router.post('/confirm-import-data', async (req, res) => {
-    const { dataToImport } = req.body || {};
+    const { dataToImport, importContext } = req.body || {};
     if (!dataToImport || !Array.isArray(dataToImport) || dataToImport.length === 0) {
         return res.status(400).json({ success: false, message: 'No data provided for import confirmation.' });
     }
@@ -2699,11 +2853,20 @@ router.post('/confirm-import-data', async (req, res) => {
 
         // If nothing was written, return a non-success response so UI does not claim records were saved.
         if (rowsProcessed === 0) {
+            const failureMessage = rowsSkippedForScope > 0
+                ? 'No projects were imported. All rows were skipped due to invalid Ministry/State Department mapping.'
+                : 'No projects were imported. Please check your file data and mapping.';
+            await recordProjectImportLog({
+                req,
+                importContext,
+                summary,
+                rowsProcessed,
+                status: 'failed',
+                message: failureMessage,
+            });
             return res.status(400).json({
                 success: false,
-                message: rowsSkippedForScope > 0
-                    ? 'No projects were imported. All rows were skipped due to invalid Ministry/State Department mapping.'
-                    : 'No projects were imported. Please check your file data and mapping.',
+                message: failureMessage,
                 details: {
                     ...summary,
                     totalRows: dataToImport.length,
@@ -2712,6 +2875,15 @@ router.post('/confirm-import-data', async (req, res) => {
                 }
             });
         }
+
+        await recordProjectImportLog({
+            req,
+            importContext,
+            summary,
+            rowsProcessed,
+            status: 'success',
+            message,
+        });
 
         return res.status(200).json({
             success: true,
@@ -2745,6 +2917,14 @@ router.post('/confirm-import-data', async (req, res) => {
         if (isConnectionError) {
             console.error('Project import failed due to database connection issue:', err.message);
             console.error('This may occur during long-running imports. The connection may have timed out.');
+            await recordProjectImportLog({
+                req,
+                importContext,
+                summary: {},
+                rowsProcessed: 0,
+                status: 'failed',
+                message: 'Database connection error during import.',
+            });
             return res.status(503).json({ 
                 success: false, 
                 message: 'Database connection error during import. This may occur with large imports. Please try again with a smaller batch or contact support.',
@@ -2756,6 +2936,14 @@ router.post('/confirm-import-data', async (req, res) => {
         }
         
         console.error('Project import confirmation error:', err);
+        await recordProjectImportLog({
+            req,
+            importContext,
+            summary: {},
+            rowsProcessed: 0,
+            status: 'failed',
+            message: err.message || 'Project import confirmation failed',
+        });
         return res.status(500).json({ 
             success: false, 
             message: err.message || 'Failed to import projects',
@@ -2791,6 +2979,75 @@ router.get('/template', async (req, res) => {
     } catch (err) {
         console.error('Error serving projects template:', err);
         return res.status(500).json({ message: 'Failed to serve projects template' });
+    }
+});
+
+/**
+ * @route GET /api/projects/import-logs
+ * @description List project import logs (admin only: MDA ICT Admin / Super Admin)
+ */
+router.get('/import-logs', async (req, res) => {
+    try {
+        if (!hasProjectImportLogAccess(req)) {
+            return res.status(403).json({ message: 'Access denied' });
+        }
+        await ensureProjectImportLogTable();
+        const result = await pool.query(`
+            SELECT
+                id,
+                user_id AS "userId",
+                full_name AS "fullName",
+                role_name AS "roleName",
+                ministry,
+                state_department AS "stateDepartment",
+                uploaded_file_name AS "uploadedFileName",
+                had_mapping_errors AS "hadMappingErrors",
+                rows_inserted AS "rowsInserted",
+                rows_updated AS "rowsUpdated",
+                rows_processed AS "rowsProcessed",
+                import_status AS "importStatus",
+                import_message AS "importMessage",
+                metadata_json AS "metadataJson",
+                created_at AS "createdAt"
+            FROM project_import_logs
+            ORDER BY created_at DESC
+            LIMIT 1000
+        `);
+        return res.status(200).json(result.rows || []);
+    } catch (err) {
+        console.error('Error listing project import logs:', err);
+        return res.status(500).json({ message: `Failed to load project import logs: ${err.message}` });
+    }
+});
+
+/**
+ * @route GET /api/projects/import-logs/:id/file
+ * @description Download uploaded workbook snapshot for an import log
+ */
+router.get('/import-logs/:id/file', async (req, res) => {
+    try {
+        if (!hasProjectImportLogAccess(req)) {
+            return res.status(403).json({ message: 'Access denied' });
+        }
+        const id = Number(req.params.id);
+        if (!Number.isFinite(id) || id <= 0) {
+            return res.status(400).json({ message: 'Invalid log ID' });
+        }
+        await ensureProjectImportLogTable();
+        const result = await pool.query(
+            `SELECT uploaded_file_name, saved_file_path FROM project_import_logs WHERE id = $1 LIMIT 1`,
+            [id]
+        );
+        const row = result.rows?.[0];
+        if (!row) return res.status(404).json({ message: 'Upload log not found' });
+        if (!row.saved_file_path || !fs.existsSync(row.saved_file_path)) {
+            return res.status(404).json({ message: 'Uploaded file is not available' });
+        }
+        const filename = row.uploaded_file_name || `projects-import-${id}.xlsx`;
+        return res.download(row.saved_file_path, filename);
+    } catch (err) {
+        console.error('Error downloading project import file:', err);
+        return res.status(500).json({ message: `Failed to download uploaded file: ${err.message}` });
     }
 });
 

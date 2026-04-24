@@ -11,6 +11,11 @@
           "route": "PROJECT_BY_STATUS_DASHBOARD"
         },
         {
+          "title": "Project By Sector",
+          "icon": "CategoryIcon",
+          "route": "PROJECT_BY_SECTOR_DASHBOARD"
+        },
+        {
           "title": "Finance Dashboard",
           "icon": "AttachMoneyIcon",
           "route": "FINANCE_DASHBOARD"
@@ -72,6 +77,12 @@
           "icon": "CloudUploadIcon",
           "route": "CENTRAL_IMPORT",
           "permission": "project.create"
+        },
+        {
+          "title": "Bulk Upload Logs",
+          "icon": "AssessmentIcon",
+          "route": "PROJECTS_UPLOAD_LOG",
+          "roles": ["mda_ict_admin", "super_admin"]
         },
         {
           "title": "Reports",

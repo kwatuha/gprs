@@ -432,6 +432,14 @@ function CentralImportPage() {
     }
   };
 
+  const toBase64DataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('Failed to read selected file.'));
+      reader.readAsDataURL(file);
+    });
+
   const handleConfirmImport = async () => {
     if (!currentImportType) {
       setSnackbar({ open: true, message: 'Please select an import type first.', severity: 'warning' });
@@ -469,7 +477,34 @@ function CentralImportPage() {
       // Route to appropriate API based on import type
       switch (currentImportType.id) {
         case 'projects':
-          response = await apiService.projects.confirmProjectImport({ dataToImport: fullParsedData });
+          const importFileBase64 = selectedFile ? await toBase64DataUrl(selectedFile) : null;
+          response = await apiService.projects.confirmProjectImport({
+            dataToImport: fullParsedData,
+            importContext: {
+              originalFileName: selectedFile?.name || null,
+              uploadedAtClient: new Date().toISOString(),
+              importFileBase64,
+              // Backend can derive whether metadata mapping issues existed while previewing.
+              hadMappingErrors: Boolean(
+                mappingSummary &&
+                  (
+                    (mappingSummary.budgets?.unmatched?.length || 0) +
+                    (mappingSummary.departments?.unmatched?.length || 0) +
+                    (mappingSummary.subcounties?.unmatched?.length || 0) +
+                    (mappingSummary.wards?.unmatched?.length || 0) +
+                    (mappingSummary.financialYears?.unmatched?.length || 0) +
+                    (mappingSummary.counties?.unmatched?.length || 0) +
+                    (mappingSummary.constituencies?.unmatched?.length || 0) +
+                    (mappingSummary.kenyaWards?.unmatched?.length || 0) +
+                    (mappingSummary.implementingAgencies?.unmatched?.length || 0) +
+                    (mappingSummary.sectors?.unmatched?.length || 0) +
+                    (mappingSummary.ministries?.unmatched?.length || 0) +
+                    (mappingSummary.stateDepartments?.unmatched?.length || 0)
+                  ) > 0
+              ),
+              mappingSummary: mappingSummary || null,
+            },
+          });
           break;
         case 'strategic-plans':
           response = await apiService.strategy.confirmStrategicPlanImport({ dataToImport: fullParsedData });

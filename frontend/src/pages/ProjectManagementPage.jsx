@@ -29,6 +29,16 @@ import { checkUserPrivilege, currencyFormatter, getProjectStatusBackgroundColor,
 import { normalizeProjectStatus } from '../utils/projectStatusNormalizer';
 import projectTableColumnsConfig from '../configs/projectTableConfig';
 import apiService from '../api';
+import sectorsService from '../api/sectorsService';
+import {
+  SECTOR_CHART_BUCKET_OTHER,
+  SECTOR_CHART_BUCKET_UNSPECIFIED,
+  buildSectorCanonicalLookup,
+  rawRegistrySectorFromProject,
+  sectorRegistryBucketKey,
+} from '../utils/organizationChartLabels';
+import { isVoidedProject } from '../utils/sectorGapDrilldown';
+import { ROUTES } from '../configs/appConfig';
 import { tokens } from "./dashboard/theme"; // Import tokens for color styling
 
 // Import our new, compact components and hooks
@@ -275,8 +285,33 @@ function ProjectManagementPage() {
   // State for DataGrid filter model (column filters)
   const [filterModel, setFilterModel] = useState({ items: [] });
   const appliedStatusFromQueryRef = useRef('');
+  const appliedSectorRegistryFromQueryRef = useRef('');
   const projectsRef = useRef([]);
   projectsRef.current = Array.isArray(projects) ? projects : [];
+
+  /** Deep-link from Project by Sector dashboard: `?sectorRegistry=other|unspecified` or encoded canonical sector name */
+  const [sectorsForRegistryFilter, setSectorsForRegistryFilter] = useState([]);
+  const [sectorRegistryClientFilter, setSectorRegistryClientFilter] = useState(null);
+
+  const sectorCanonicalLookup = useMemo(
+    () => buildSectorCanonicalLookup(sectorsForRegistryFilter),
+    [sectorsForRegistryFilter]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await sectorsService.getAllSectors();
+        if (!cancelled) setSectorsForRegistryFilter(Array.isArray(rows) ? rows : []);
+      } catch {
+        if (!cancelled) setSectorsForRegistryFilter([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // State for toggling between progress and status view
   const [distributionView, setDistributionView] = useState('status'); // 'progress' or 'status'
@@ -491,6 +526,46 @@ function ProjectManagementPage() {
       }
     };
   }, [searchParams, setSearchParams, loading, authLoading, projects?.length ?? 0]);
+
+  useEffect(() => {
+    const raw = searchParams.get('sectorRegistry');
+    const param = raw == null ? '' : String(raw).trim();
+    if (!param) {
+      appliedSectorRegistryFromQueryRef.current = '';
+      return;
+    }
+    if (loading || authLoading) return;
+    if (appliedSectorRegistryFromQueryRef.current === param) return;
+    appliedSectorRegistryFromQueryRef.current = param;
+
+    const lower = param.toLowerCase();
+    if (lower === 'other') {
+      setSectorRegistryClientFilter('other');
+    } else if (lower === 'unspecified') {
+      setSectorRegistryClientFilter('unspecified');
+    } else {
+      try {
+        setSectorRegistryClientFilter(decodeURIComponent(param));
+      } catch {
+        setSectorRegistryClientFilter(param);
+      }
+    }
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('sectorRegistry');
+    setSearchParams(nextParams, { replace: true });
+
+    // Initial project list is capped (e.g. 100). Deep-linked sector buckets often have no rows in
+    // that slice — load the full list so filters match the sector dashboard counts.
+    setLoadingAll(true);
+    fetchProjects(true)
+      .then(() => {
+        setAllProjectsLoaded(true);
+      })
+      .finally(() => {
+        setLoadingAll(false);
+      });
+  }, [searchParams, setSearchParams, loading, authLoading, fetchProjects]);
   
   // State for export loading
   const [exportingExcel, setExportingExcel] = useState(false);
@@ -522,9 +597,23 @@ function ProjectManagementPage() {
       return [];
     }
 
-    // If no column filters are applied, return filteredProjects as-is
+    const sectorFilteredBase =
+      sectorRegistryClientFilter == null || sectorRegistryClientFilter === ''
+        ? filteredProjects
+        : filteredProjects.filter((project) => {
+            if (isVoidedProject(project)) return false;
+            const bk = sectorRegistryBucketKey(
+              rawRegistrySectorFromProject(project),
+              sectorCanonicalLookup
+            );
+            if (sectorRegistryClientFilter === 'other') return bk === SECTOR_CHART_BUCKET_OTHER;
+            if (sectorRegistryClientFilter === 'unspecified') return bk === SECTOR_CHART_BUCKET_UNSPECIFIED;
+            return bk === sectorRegistryClientFilter;
+          });
+
+    // If no column filters are applied, return sectorFilteredBase as-is
     if (!filterModel.items || filterModel.items.length === 0) {
-      return filteredProjects;
+      return sectorFilteredBase;
     }
 
     // Helper function to check if a filter matches
@@ -632,7 +721,7 @@ function ProjectManagementPage() {
     };
 
     // Apply column filters
-    const filtered = filteredProjects.filter(project => {
+    const filtered = sectorFilteredBase.filter(project => {
       // Group filters by field to handle OR logic for status filters
       const filtersByField = {};
       filterModel.items.forEach(filterItem => {
@@ -665,7 +754,7 @@ function ProjectManagementPage() {
     // Debug logging
     if (filterModel.items?.some(item => item.field === 'overallProgress')) {
       console.log('Filtered results:', {
-        totalProjects: filteredProjects.length,
+        totalProjects: sectorFilteredBase.length,
         filteredCount: filtered.length,
         filterModel: filterModel.items,
         sampleProject: filtered[0]
@@ -673,7 +762,7 @@ function ProjectManagementPage() {
     }
     
     return filtered;
-  }, [filteredProjects, filterModel]);
+  }, [filteredProjects, filterModel, sectorRegistryClientFilter, sectorCanonicalLookup]);
 
   // Calculate summary statistics from filtered projects (respects search and column filters)
   const summaryStats = useMemo(() => {
@@ -1262,14 +1351,11 @@ function ProjectManagementPage() {
         dataGridColumn.flex = 0; // Prevent flex from interfering with wrapping
         break;
       case 'status':
-        dataGridColumn.valueGetter = (params) => {
-          if (!params?.row) return '';
-          return rawProjectStatus(params.row);
-        };
         dataGridColumn.renderCell = (params) => {
-          if (!params || !params.value) return null;
-          
-          const status = params.value;
+          if (!params || !params.row) return null;
+
+          const status = rawProjectStatus(params.row);
+          if (!status) return null;
           const normalizedStatus = status?.toLowerCase() || '';
           
           // Get status icon based on status
@@ -1893,7 +1979,7 @@ function ProjectManagementPage() {
               },
             }}
           />
-          {(searchQuery || (filterModel.items && filterModel.items.length > 0)) && (
+          {(searchQuery || (filterModel.items && filterModel.items.length > 0) || sectorRegistryClientFilter) && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
               <Chip
                 label={`${dataGridFilteredProjects.length} project${dataGridFilteredProjects.length !== 1 ? 's' : ''} found`}
@@ -1915,6 +2001,23 @@ function ProjectManagementPage() {
                     color: isLight ? colors.blueAccent[700] : colors.blueAccent[300],
                     fontSize: '0.7rem',
                   }}
+                />
+              )}
+              {sectorRegistryClientFilter && (
+                <Chip
+                  label={
+                    sectorRegistryClientFilter === 'other'
+                      ? 'Sector: not in registry'
+                      : sectorRegistryClientFilter === 'unspecified'
+                        ? 'Sector: unspecified'
+                        : `Sector: ${sectorRegistryClientFilter}`
+                  }
+                  onDelete={() => {
+                    setSectorRegistryClientFilter(null);
+                    appliedSectorRegistryFromQueryRef.current = '';
+                  }}
+                  size="small"
+                  sx={{ fontSize: '0.7rem' }}
                 />
               )}
             </Box>
@@ -2580,9 +2683,9 @@ function ProjectManagementPage() {
           No projects match your search query "{searchQuery}". Try different keywords or clear the search.
         </Alert>
       )}
-      {!loading && !error && projects.length > 0 && filterModel.items?.length > 0 && dataGridFilteredProjects?.length === 0 && (
+      {!loading && !error && projects.length > 0 && (filterModel.items?.length > 0 || sectorRegistryClientFilter) && dataGridFilteredProjects?.length === 0 && (
         <Alert severity="info" sx={{ mt: 2 }}>
-          No projects match the current filter. Try adjusting your filters or clear them to see all projects.
+          No projects match the current filter. Try adjusting your filters, clear the sector filter chip, or use &quot;Load all projects&quot; if the rows you need are not in the first page of results.
         </Alert>
       )}
 

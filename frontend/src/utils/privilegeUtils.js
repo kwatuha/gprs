@@ -5,6 +5,7 @@
 
 const ADMIN_ROLE_IDS = new Set([1]);
 const ADMIN_ROLE_NAMES = new Set(['admin', 'mda_ict_admin', 'super_admin', 'administrator', 'ict_admin']);
+const PROJECT_BY_SECTOR_ALLOWED_ROLES = new Set(['mda_ict_admin', 'super_admin']);
 
 export const normalizeRoleName = (roleName) =>
   String(roleName || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
@@ -55,6 +56,22 @@ export const isAdmin = (user) => {
  */
 export const isContractor = (user) => {
   return normalizeRoleName(user?.roleName || user?.role) === 'contractor' || user?.contractorId;
+};
+
+export const isMdaIctAdminOrSuperAdmin = (user) => {
+  if (!user) return false;
+  const normalizedRole = normalizeRoleName(user.roleName || user.role);
+  return normalizedRole === 'mda_ict_admin' || normalizedRole === 'super_admin';
+};
+
+/**
+ * Access rule for Project by Sector dashboard.
+ * Intended audience: MDA ICT admins and Super admins.
+ */
+export const canAccessProjectBySectorDashboard = (user) => {
+  if (!user) return false;
+  const normalizedRole = normalizeRoleName(user.roleName || user.role);
+  return PROJECT_BY_SECTOR_ALLOWED_ROLES.has(normalizedRole);
 };
 
 /**
@@ -184,6 +201,8 @@ export default {
   checkUserPrivilege,
   isAdmin,
   isContractor,
+  isMdaIctAdminOrSuperAdmin,
+  canAccessProjectBySectorDashboard,
   hasAllPrivileges,
   hasAnyPrivilege,
   getUserRole,

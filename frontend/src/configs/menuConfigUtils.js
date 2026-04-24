@@ -1,5 +1,5 @@
 import menuConfig from './menuConfig.json';
-import { normalizeRoleName } from '../utils/privilegeUtils.js';
+import { normalizeRoleName, canAccessProjectBySectorDashboard } from '../utils/privilegeUtils.js';
 
 const ADMIN_ROLE_NAMES = new Set(['admin', 'mda_ict_admin', 'super_admin', 'administrator', 'ict_admin']);
 const EXECUTIVE_VIEWER_ROLE_NAMES = new Set(['executive_viewer', 'project_lead']);
@@ -65,6 +65,9 @@ export const getFilteredMenuCategories = (isAdmin = false, hasPrivilege = null, 
       if (submenu.hidden === true) {
         return false;
       }
+      if (submenu.route === 'PROJECT_BY_SECTOR_DASHBOARD' && !canAccessProjectBySectorDashboard(user)) {
+        return false;
+      }
       
       // If both permission and roles are specified, user needs EITHER permission OR role (OR logic)
       if (submenu.permission && submenu.roles) {
@@ -98,6 +101,7 @@ export const getFilteredMenuCategories = (isAdmin = false, hasPrivilege = null, 
   const allowedDashboardRoutes = [
     'SYSTEM_DASHBOARD',
     'PROJECT_BY_STATUS_DASHBOARD',
+    'PROJECT_BY_SECTOR_DASHBOARD',
     'FINANCE_DASHBOARD',
     'JOBS_DASHBOARD',
   ];

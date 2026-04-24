@@ -26,6 +26,13 @@ import {
 import sectorsService from '../api/sectorsService';
 import projectService from '../api/projectService';
 import {
+  buildSectorCanonicalLookup,
+  buildSectorDisplayMap,
+  labelForSectorRegistryBucket,
+  rawRegistrySectorFromProject,
+  sectorRegistryBucketKey,
+} from '../utils/organizationChartLabels';
+import {
   Assessment as AssessmentIcon,
   Work as WorkIcon,
   LocationOn as LocationOnIcon,
@@ -150,15 +157,15 @@ const SystemDashboardPage = () => {
   });
 
   useEffect(() => {
-    const fetchSectors = async () => {
+    const loadSectors = async () => {
       try {
-        const data = await sectorsService.getAllSectors();
-        setSectors(data || []);
+        const sectorRows = await sectorsService.getAllSectors();
+        setSectors(sectorRows || []);
       } catch (error) {
         console.error('Error fetching sectors:', error);
       }
     };
-    fetchSectors();
+    loadSectors();
   }, []);
 
   useEffect(() => {
@@ -178,7 +185,8 @@ const SystemDashboardPage = () => {
           County: p.County || p.county || p.countyNames || 'Unknown',
           Constituency: p.Constituency || p.constituency || p.constituencyNames || 'Unknown',
           ward: p.ward || p.wardNames || 'Unknown',
-          sector: p.sector || p.categoryName || p.department || p.ministry || 'Unknown',
+          registrySectorRaw: rawRegistrySectorFromProject(p),
+          sector: p.sector || p.categoryName || p.directorate || p.department || p.ministry || 'Unknown',
           budgetSource: p.budgetSource || p.source || 'Unknown',
           percentageComplete: Number(p.percentageComplete ?? p.overallProgress ?? 0),
           StartDate: p.StartDate || p.startDate || '',
@@ -267,26 +275,20 @@ const SystemDashboardPage = () => {
       color: STATUS_COLORS[name] || '#64748b',
     }));
 
-    // Disbursement by sector (using sector field, fallback to department)
+    // Disbursement by sector — registry `sector` field only vs Sectors Management
     const sectorMap = new Map();
-    const sectorAliasMap = new Map();
-    sectors.forEach((sector) => {
-      const sectorName = sector.sectorName || sector.name;
-      const alias = sector.alias || sectorName;
-      if (sectorName) {
-        sectorAliasMap.set(sectorName, alias);
-      }
-    });
+    const sectorDisplayMap = buildSectorDisplayMap(sectors);
+    const sectorCanonicalLookup = buildSectorCanonicalLookup(sectors);
 
     filteredProjects.forEach((p) => {
-      const sectorKey = p.sector || p.department || 'Unknown';
+      const sectorKey = sectorRegistryBucketKey(p.registrySectorRaw ?? '', sectorCanonicalLookup);
       const current = sectorMap.get(sectorKey) || { sector: sectorKey, budget: 0, disbursed: 0 };
       current.budget += p.budget || 0;
       current.disbursed += p.Disbursed || 0;
       sectorMap.set(sectorKey, current);
     });
     const sectorChart = Array.from(sectorMap.values()).map((row) => {
-      const displayName = sectorAliasMap.get(row.sector) || row.sector;
+      const displayName = labelForSectorRegistryBucket(row.sector, sectorDisplayMap);
       return {
         name: displayName,
         contracted: row.budget,
@@ -572,6 +574,21 @@ const SystemDashboardPage = () => {
                 transition: 'all 0.2s ease',
               }}
               onClick={() => navigate('/project-by-status-dashboard')}
+            />
+            <Chip
+              label="Project By Sector"
+              size="small"
+              sx={{
+                bgcolor: colors.purple[600],
+                color: 'white',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                height: 24,
+                '&:hover': { opacity: 0.92, transform: 'scale(1.05)' },
+                transition: 'all 0.2s ease',
+              }}
+              onClick={() => navigate('/project-by-sector-dashboard')}
             />
             <Chip
               label="Finance"

@@ -5,6 +5,7 @@ import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 // Import AuthProvider and ChatProvider
 import { AuthProvider } from './context/AuthContext';
 import { ChatProvider } from './context/ChatContext';
+import { useAuth } from './context/AuthContext';
 
 // Import Layout and Page Components
 import MainLayout from './layouts/MainLayout';
@@ -84,6 +85,8 @@ import OperationsDashboardPage from './pages/OperationsDashboardPage';
 import JobsImpactDashboardPage from './pages/JobsImpactDashboardPage';
 import FinanceDashboardPage from './pages/FinanceDashboardPage';
 import ProjectByStatusDashboardPage from './pages/ProjectByStatusDashboardPage';
+import ProjectBySectorDashboardPage from './pages/ProjectBySectorDashboardPage';
+import ProjectsUploadLogPage from './pages/ProjectsUploadLogPage';
 import ReportingDashboardPage from './pages/ReportingDashboardPage';
 import ProjectOrganizationDashboardPage from './pages/ProjectOrganizationDashboardPage';
  
@@ -98,6 +101,26 @@ import DashboardConfigManager from './components/DashboardConfigManager';
 import { modernTheme } from './theme/modernTheme';
 // Add CentralImportPage for unified import hub
 import CentralImportPage from './pages/CentralImportPage';
+import { ROUTES } from './configs/appConfig';
+import { canAccessProjectBySectorDashboard, isMdaIctAdminOrSuperAdmin } from './utils/privilegeUtils';
+
+function ProjectBySectorRouteGuard() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!canAccessProjectBySectorDashboard(user)) {
+    return <Navigate to={ROUTES.SYSTEM_DASHBOARD} replace />;
+  }
+  return <ProjectBySectorDashboardPage />;
+}
+
+function ProjectsUploadLogRouteGuard() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!isMdaIctAdminOrSuperAdmin(user)) {
+    return <Navigate to={ROUTES.SYSTEM_DASHBOARD} replace />;
+  }
+  return <ProjectsUploadLogPage />;
+}
 
 // Define routes at domain root ("/")
 const router = createBrowserRouter([
@@ -131,6 +154,14 @@ const router = createBrowserRouter([
       {
         path: 'project-by-status-dashboard',
         element: <ProjectByStatusDashboardPage />,
+      },
+      {
+        path: 'project-by-sector-dashboard',
+        element: <ProjectBySectorRouteGuard />,
+      },
+      {
+        path: 'data-upload-log',
+        element: <ProjectsUploadLogRouteGuard />,
       },
       {
         path: 'reporting-dashboard',

@@ -71,6 +71,8 @@ import {
 import { ROUTES } from '../configs/appConfig';
 import SectorGapProjectsModal from '../components/SectorGapProjectsModal';
 import { isVoidedProject, suggestPossibleRegistrySectors } from '../utils/sectorGapDrilldown';
+import { useAuth } from '../context/AuthContext.jsx';
+import { isSuperAdminUser } from '../utils/roleUtils';
 
 const STATUS_COLORS = {
   Completed: '#16a34a',
@@ -112,10 +114,11 @@ const ProjectBySectorDashboardPage = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [filters, setFilters] = useState({
-    department: '',
-    directorate: '',
-    financialYear: '',
+    ministry: '',
+    stateDepartment: '',
+    agency: '',
     status: '',
     sectorBucket: '',
   });
@@ -152,17 +155,24 @@ const ProjectBySectorDashboardPage = () => {
         const rows = Array.isArray(data) ? data : [];
         const normalized = rows.map((p) => {
           const sectorText = rawRegistrySectorFromProject(p);
+          const ministry = String(
+            p.ministry ?? p.ministryName ?? p.departmentName ?? p.department ?? ''
+          ).trim();
+          const stateDepartment = String(
+            p.stateDepartment ?? p.state_department ?? p.stateDepartmentName ?? ''
+          ).trim();
+          const agency = String(
+            p.agency ?? p.agencyName ?? p.implementingAgency ?? p.implementing_agency ?? p.directorate ?? p.directorateName ?? ''
+          ).trim();
           return {
             ...p,
             sector: sectorText,
             projectName: p.projectName || p.project_name || 'Untitled Project',
             Status: p.status || p.Status || 'Unknown',
-            department: p.department || p.departmentName || p.ministry || '',
-            directorate: p.directorate || p.directorateName || p.agency || '',
+            ministry,
+            stateDepartment,
+            agency,
             financialYear: p.financialYear || p.financialYearName || '',
-            ministry: p.ministry ?? p.ministryName ?? p.departmentName ?? p.department ?? '',
-            stateDepartment:
-              p.stateDepartment ?? p.state_department ?? p.stateDepartmentName ?? p.agency ?? p.directorate ?? '',
             budget: Number(p.budget ?? p.costOfProject ?? p.allocatedBudget ?? 0),
             Disbursed: Number(p.Disbursed ?? p.paidOut ?? p.disbursedBudget ?? 0),
           };
@@ -187,11 +197,70 @@ const ProjectBySectorDashboardPage = () => {
     [allProjects]
   );
 
+  const orgScopeMeta = useMemo(() => {
+    const scopes = Array.isArray(user?.organizationScopes) ? user.organizationScopes : [];
+    const normalized = scopes
+      .map((s) => ({
+        scopeType: String(s?.scopeType || s?.scope_type || '').trim().toUpperCase(),
+        ministry: String(s?.ministry || '').trim(),
+        stateDepartment: String(s?.stateDepartment || s?.state_department || '').trim(),
+      }))
+      .filter((s) => s.scopeType);
+
+    const superAdmin = isSuperAdminUser(user);
+    const hasAllMinistriesScope =
+      superAdmin || normalized.some((s) => s.scopeType === 'ALL_MINISTRIES');
+    const ministryScopes = normalized.filter((s) => s.scopeType === 'MINISTRY_ALL' && s.ministry);
+    const stateDeptScopes = normalized.filter(
+      (s) => s.scopeType === 'STATE_DEPARTMENT_ALL' && s.ministry && s.stateDepartment
+    );
+
+    if (hasAllMinistriesScope) {
+      return { level: 'all', allowedMinistries: null, allowedPairs: null };
+    }
+    if (ministryScopes.length > 0) {
+      return {
+        level: 'ministry',
+        allowedMinistries: new Set(ministryScopes.map((s) => s.ministry.toLowerCase())),
+        allowedPairs: null,
+      };
+    }
+    if (stateDeptScopes.length > 0) {
+      return {
+        level: 'state_department',
+        allowedMinistries: null,
+        allowedPairs: new Set(
+          stateDeptScopes.map((s) => `${s.ministry.toLowerCase()}|${s.stateDepartment.toLowerCase()}`)
+        ),
+      };
+    }
+    return { level: 'all', allowedMinistries: null, allowedPairs: null };
+  }, [user]);
+
+  const scopeBaseProjects = useMemo(() => {
+    if (orgScopeMeta.level === 'ministry') {
+      return allProjectsActive.filter((p) =>
+        orgScopeMeta.allowedMinistries.has(String(p.ministry || '').trim().toLowerCase())
+      );
+    }
+    if (orgScopeMeta.level === 'state_department') {
+      return allProjectsActive.filter((p) => {
+        const k = `${String(p.ministry || '').trim().toLowerCase()}|${String(
+          p.stateDepartment || ''
+        )
+          .trim()
+          .toLowerCase()}`;
+        return orgScopeMeta.allowedPairs.has(k);
+      });
+    }
+    return allProjectsActive;
+  }, [allProjectsActive, orgScopeMeta]);
+
   const filteredProjects = useMemo(() => {
-    return allProjectsActive.filter((p) => {
-      if (filters.department && p.department !== filters.department) return false;
-      if (filters.directorate && p.directorate !== filters.directorate) return false;
-      if (filters.financialYear && p.financialYear !== filters.financialYear) return false;
+    return scopeBaseProjects.filter((p) => {
+      if (filters.ministry && p.ministry !== filters.ministry) return false;
+      if (filters.stateDepartment && p.stateDepartment !== filters.stateDepartment) return false;
+      if (filters.agency && p.agency !== filters.agency) return false;
       if (filters.status) {
         const normalized = normalizeProjectStatus(p.Status || p.status || 'Unknown');
         if (normalized !== filters.status) return false;
@@ -202,7 +271,7 @@ const ProjectBySectorDashboardPage = () => {
       }
       return true;
     });
-  }, [allProjectsActive, filters, sectorCanonicalLookup]);
+  }, [scopeBaseProjects, filters, sectorCanonicalLookup]);
 
   const sectorGapRows = useMemo(() => {
     if (!sectorGapModal) return [];
@@ -321,12 +390,51 @@ const ProjectBySectorDashboardPage = () => {
     };
   }, [filteredProjects, sectorCanonicalLookup, sectorDisplayMap]);
 
-  const uniqueDepartments = Array.from(new Set(allProjectsActive.map((p) => p.department))).filter(Boolean);
-  const uniqueDirectorates = Array.from(new Set(allProjectsActive.map((p) => p.directorate))).filter(Boolean);
-  const uniqueFinancialYears = Array.from(new Set(allProjectsActive.map((p) => p.financialYear))).filter(Boolean);
-  const uniqueStatuses = Array.from(
-    new Set(allProjectsActive.map((p) => normalizeProjectStatus(p.Status || p.status || 'Unknown')))
+  const showMinistryFilter = orgScopeMeta.level === 'all';
+  const showStateDepartmentFilter = orgScopeMeta.level === 'all' || orgScopeMeta.level === 'ministry';
+
+  const uniqueMinistries = Array.from(new Set(scopeBaseProjects.map((p) => p.ministry))).filter(Boolean);
+  const uniqueStateDepartments = Array.from(
+    new Set(
+      scopeBaseProjects
+        .filter((p) => !filters.ministry || p.ministry === filters.ministry)
+        .map((p) => p.stateDepartment)
+    )
   ).filter(Boolean);
+  const uniqueAgencies = Array.from(
+    new Set(
+      scopeBaseProjects
+        .filter((p) => !filters.ministry || p.ministry === filters.ministry)
+        .filter((p) => !filters.stateDepartment || p.stateDepartment === filters.stateDepartment)
+        .map((p) => p.agency)
+    )
+  ).filter(Boolean);
+  const uniqueStatuses = Array.from(
+    new Set(scopeBaseProjects.map((p) => normalizeProjectStatus(p.Status || p.status || 'Unknown')))
+  ).filter(Boolean);
+
+  useEffect(() => {
+    setFilters((prev) => {
+      const next = { ...prev };
+      if (!showMinistryFilter) next.ministry = '';
+      if (!showStateDepartmentFilter) next.stateDepartment = '';
+      if (showStateDepartmentFilter && next.stateDepartment) {
+        const ok = uniqueStateDepartments.includes(next.stateDepartment);
+        if (!ok) next.stateDepartment = '';
+      }
+      if (next.agency) {
+        const ok = uniqueAgencies.includes(next.agency);
+        if (!ok) next.agency = '';
+      }
+      const unchanged =
+        next.ministry === prev.ministry &&
+        next.stateDepartment === prev.stateDepartment &&
+        next.agency === prev.agency &&
+        next.status === prev.status &&
+        next.sectorBucket === prev.sectorBucket;
+      return unchanged ? prev : next;
+    });
+  }, [showMinistryFilter, showStateDepartmentFilter, uniqueStateDepartments, uniqueAgencies]);
 
   const sectorFilterOptions = useMemo(() => {
     const opts = [{ value: '', label: 'All sector buckets' }];
@@ -514,50 +622,54 @@ const ProjectBySectorDashboardPage = () => {
           <Collapse in={filtersExpanded}>
             <CardContent sx={{ p: 1.5, pt: 0, '&:last-child': { pb: 1.5 } }}>
               <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                {showMinistryFilter && (
+                  <FormControl size="small" sx={{ flex: 1, minWidth: 140 }}>
+                    <InputLabel sx={{ fontSize: '0.75rem' }}>Ministry</InputLabel>
+                    <Select
+                      value={filters.ministry}
+                      label="Ministry"
+                      onChange={(e) => setFilters({ ...filters, ministry: e.target.value, stateDepartment: '', agency: '' })}
+                      sx={{ fontSize: '0.8rem', height: '32px' }}
+                    >
+                      <MenuItem value="">All</MenuItem>
+                      {uniqueMinistries.map((m) => (
+                        <MenuItem key={m} value={m}>
+                          {m}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+                {showStateDepartmentFilter && (
+                  <FormControl size="small" sx={{ flex: 1, minWidth: 140 }}>
+                    <InputLabel sx={{ fontSize: '0.75rem' }}>State Department</InputLabel>
+                    <Select
+                      value={filters.stateDepartment}
+                      label="State Department"
+                      onChange={(e) => setFilters({ ...filters, stateDepartment: e.target.value, agency: '' })}
+                      sx={{ fontSize: '0.8rem', height: '32px' }}
+                    >
+                      <MenuItem value="">All</MenuItem>
+                      {uniqueStateDepartments.map((d) => (
+                        <MenuItem key={d} value={d}>
+                          {d}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
                 <FormControl size="small" sx={{ flex: 1, minWidth: 140 }}>
-                  <InputLabel sx={{ fontSize: '0.75rem' }}>Department</InputLabel>
+                  <InputLabel sx={{ fontSize: '0.75rem' }}>Agency</InputLabel>
                   <Select
-                    value={filters.department}
-                    label="Department"
-                    onChange={(e) => setFilters({ ...filters, department: e.target.value })}
+                    value={filters.agency}
+                    label="Agency"
+                    onChange={(e) => setFilters({ ...filters, agency: e.target.value })}
                     sx={{ fontSize: '0.8rem', height: '32px' }}
                   >
                     <MenuItem value="">All</MenuItem>
-                    {uniqueDepartments.map((d) => (
-                      <MenuItem key={d} value={d}>
-                        {d}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl size="small" sx={{ flex: 1, minWidth: 140 }}>
-                  <InputLabel sx={{ fontSize: '0.75rem' }}>Directorate</InputLabel>
-                  <Select
-                    value={filters.directorate}
-                    label="Directorate"
-                    onChange={(e) => setFilters({ ...filters, directorate: e.target.value })}
-                    sx={{ fontSize: '0.8rem', height: '32px' }}
-                  >
-                    <MenuItem value="">All</MenuItem>
-                    {uniqueDirectorates.map((d) => (
-                      <MenuItem key={d} value={d}>
-                        {d}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl size="small" sx={{ flex: 1, minWidth: 140 }}>
-                  <InputLabel sx={{ fontSize: '0.75rem' }}>Financial year</InputLabel>
-                  <Select
-                    value={filters.financialYear}
-                    label="Financial year"
-                    onChange={(e) => setFilters({ ...filters, financialYear: e.target.value })}
-                    sx={{ fontSize: '0.8rem', height: '32px' }}
-                  >
-                    <MenuItem value="">All</MenuItem>
-                    {uniqueFinancialYears.map((fy) => (
-                      <MenuItem key={fy} value={fy}>
-                        {fy}
+                    {uniqueAgencies.map((a) => (
+                      <MenuItem key={a} value={a}>
+                        {a}
                       </MenuItem>
                     ))}
                   </Select>
@@ -616,7 +728,7 @@ const ProjectBySectorDashboardPage = () => {
               sub: 'After filters',
               icon: AssessmentIcon,
               grad: ['#2563eb', '#3b82f6'],
-              tooltip: 'Projects currently included after dashboard filters (department, year, status, sector bucket).',
+              tooltip: 'Projects currently included after dashboard filters (ministry, state department, agency, status, sector bucket).',
             },
             {
               title: 'Registry sectors',

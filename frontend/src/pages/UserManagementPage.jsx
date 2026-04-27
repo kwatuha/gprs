@@ -5,9 +5,10 @@ import {
   Select, MenuItem, FormControl, InputLabel, Snackbar, Alert, Stack, useTheme,
   Chip, Checkbox, Avatar, Tabs, Tab, Accordion, AccordionSummary, AccordionDetails,
   DialogContentText, InputAdornment, Grid, Autocomplete,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
 } from '@mui/material';
 import { DataGrid } from "@mui/x-data-grid";
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, PersonAdd as PersonAddIcon, Settings as SettingsIcon, Lock as LockIcon, LockReset as LockResetIcon, Block as BlockIcon, CheckCircle as CheckCircleIcon, Search as SearchIcon, Clear as ClearIcon, Visibility as VisibilityIcon, VisibilityOff as VisibilityOffIcon, AccountTree as AccountTreeIcon, ExpandMore as ExpandMoreIcon, ViewList as ViewListIcon, Hub as HubIcon, AdminPanelSettings as AdminPanelSettingsIcon, TableChart as ExcelIcon, Security as SecurityIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, PersonAdd as PersonAddIcon, Settings as SettingsIcon, Lock as LockIcon, LockReset as LockResetIcon, Block as BlockIcon, CheckCircle as CheckCircleIcon, Search as SearchIcon, Clear as ClearIcon, Visibility as VisibilityIcon, VisibilityOff as VisibilityOffIcon, AccountTree as AccountTreeIcon, ExpandMore as ExpandMoreIcon, ViewList as ViewListIcon, Hub as HubIcon, AdminPanelSettings as AdminPanelSettingsIcon, TableChart as ExcelIcon, Security as SecurityIcon, SyncAlt as SyncAltIcon } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import { useSearchParams } from 'react-router-dom';
 import apiService from '../api/userService';
@@ -26,6 +27,36 @@ import {
 const MDA_ICT_ADMIN_CANNOT_MUTATE_USER_MESSAGE =
   'MDA ICT Admin can only edit users in Data Entry Officer, Data Approver, or Viewer roles.';
 
+/** API `issue` codes from GET /users/organization-integrity/preview → misaligned rows */
+const ORG_INTEGRITY_ISSUE_LABELS = {
+  unknown_ministry: 'Ministry: no registry match (reconcile skips)',
+  ministry_would_change: 'Ministry: will update to registry name',
+  unknown_state_department: 'State department: no registry match (reconcile skips)',
+  state_department_would_change: 'State department: will update to registry name',
+};
+
+function formatOrgIntegrityIssue(issue) {
+  if (!issue) return '—';
+  return ORG_INTEGRITY_ISSUE_LABELS[issue] || issue;
+}
+
+function orgIntegrityRowSearchHaystack(sectionKey, row) {
+  const parts = [];
+  if (sectionKey === 'users') {
+    parts.push(row.userId, row.username, row.currentMinistry, row.currentStateDepartment, row.proposedMinistry, row.proposedStateDepartment, row.issue, formatOrgIntegrityIssue(row.issue));
+  } else if (sectionKey === 'scopes') {
+    parts.push(row.scopeId, row.userId, row.username, row.scopeType, row.currentMinistry, row.currentStateDepartment, row.proposedMinistry, row.proposedStateDepartment, row.issue, formatOrgIntegrityIssue(row.issue));
+  } else {
+    parts.push(row.projectId, row.projectName, row.currentMinistry, row.currentStateDepartment, row.proposedMinistry, row.proposedStateDepartment, row.issue, formatOrgIntegrityIssue(row.issue));
+  }
+  return parts.filter((v) => v != null && v !== '').join(' ').toLowerCase();
+}
+
+function filterOrgIntegrityRows(rows, sectionKey, query) {
+  const q = (query || '').trim().toLowerCase();
+  if (!q || !Array.isArray(rows)) return rows || [];
+  return rows.filter((row) => orgIntegrityRowSearchHaystack(sectionKey, row).includes(q));
+}
 
 // --- Utility function for case conversion (Copied from ProjectDetailsPage for consistency) ---
 const snakeToCamelCase = (obj) => {
@@ -447,6 +478,23 @@ function UserManagementPage() {
   const [sessionPolicyLoading, setSessionPolicyLoading] = useState(false);
   const [sessionPolicySaving, setSessionPolicySaving] = useState(false);
 
+  /** Super Admin: align users / org scopes / projects to canonical ministries & departments */
+  const [openOrgIntegrityDialog, setOpenOrgIntegrityDialog] = useState(false);
+  const [openOrgIntegrityApplyConfirm, setOpenOrgIntegrityApplyConfirm] = useState(false);
+  const [orgIntegrityLoading, setOrgIntegrityLoading] = useState(false);
+  const [orgIntegrityApplyLoading, setOrgIntegrityApplyLoading] = useState(false);
+  const [orgIntegrityPreview, setOrgIntegrityPreview] = useState(null);
+  const [orgIntegrityPreviewLimit, setOrgIntegrityPreviewLimit] = useState(50);
+  const [orgIntegrityTableSearch, setOrgIntegrityTableSearch] = useState('');
+  const [orgIntegrityTab, setOrgIntegrityTab] = useState(0);
+  const [orgIntegrityDistinct, setOrgIntegrityDistinct] = useState(null);
+  const [orgIntegrityDistinctLoading, setOrgIntegrityDistinctLoading] = useState(false);
+  const [orgIntegrityManualApplyLoading, setOrgIntegrityManualApplyLoading] = useState(false);
+  const [orgIntegrityManualMinistryTo, setOrgIntegrityManualMinistryTo] = useState({});
+  const [orgIntegrityManualStateTo, setOrgIntegrityManualStateTo] = useState({});
+  const [openOrgIntegrityManualConfirm, setOpenOrgIntegrityManualConfirm] = useState(false);
+  const [orgIntegrityManualConfirmKind, setOrgIntegrityManualConfirmKind] = useState('ministry');
+
   // --- Fetching Data ---
 
   const fetchUsers = useCallback(async (pendingOnly = false) => {
@@ -613,6 +661,210 @@ function UserManagementPage() {
     }
   }, [sessionIdleTimeoutMinutes]);
 
+  const loadOrganizationIntegrityPreview = useCallback(async (limit) => {
+    const lim = Math.max(1, Math.min(parseInt(String(limit), 10) || 50, 500));
+    setOrgIntegrityLoading(true);
+    try {
+      const data = await apiService.getOrganizationIntegrityPreview(lim);
+      setOrgIntegrityPreview(data);
+    } catch (err) {
+      setOrgIntegrityPreview(null);
+      setSnackbar({
+        open: true,
+        message: err?.response?.data?.message || err?.message || 'Failed to load organization integrity preview.',
+        severity: 'error',
+      });
+    } finally {
+      setOrgIntegrityLoading(false);
+    }
+  }, []);
+
+  const loadOrganizationIntegrityMisalignedDistinct = useCallback(async () => {
+    setOrgIntegrityDistinctLoading(true);
+    try {
+      const data = await apiService.getOrganizationIntegrityMisalignedDistinct();
+      setOrgIntegrityDistinct(data);
+    } catch (err) {
+      setOrgIntegrityDistinct(null);
+      setSnackbar({
+        open: true,
+        message: err?.response?.data?.message || err?.message || 'Failed to load misaligned ministry/state lists.',
+        severity: 'error',
+      });
+    } finally {
+      setOrgIntegrityDistinctLoading(false);
+    }
+  }, []);
+
+  const handleOpenOrgIntegrityDialog = useCallback(() => {
+    if (!isSuperAdmin) return;
+    setOpenOrgIntegrityDialog(true);
+    setOrgIntegrityTab(0);
+    setOrgIntegrityManualMinistryTo({});
+    setOrgIntegrityManualStateTo({});
+    loadOrganizationIntegrityPreview(orgIntegrityPreviewLimit);
+    loadOrganizationIntegrityMisalignedDistinct();
+  }, [isSuperAdmin, orgIntegrityPreviewLimit, loadOrganizationIntegrityPreview, loadOrganizationIntegrityMisalignedDistinct]);
+
+  const handleApplyOrganizationIntegrity = useCallback(async () => {
+    if (!isSuperAdmin) return;
+    setOpenOrgIntegrityApplyConfirm(false);
+    setOrgIntegrityApplyLoading(true);
+    try {
+      const result = await apiService.postOrganizationIntegrityReconcile({
+        dryRun: false,
+        limit: orgIntegrityPreviewLimit,
+      });
+      const c = result?.changed || {};
+      setSnackbar({
+        open: true,
+        message: `Reconcile applied. Rows updated — users (ministry/state): ${c.usersMinistry ?? 0}/${c.usersStateDepartment ?? 0}; scopes: ${c.scopesMinistry ?? 0}/${c.scopesStateDepartment ?? 0}; projects: ${c.projectsMinistry ?? 0}/${c.projectsStateDepartment ?? 0}.`,
+        severity: 'success',
+      });
+      await loadOrganizationIntegrityPreview(orgIntegrityPreviewLimit);
+      await fetchUsers(false);
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err?.response?.data?.message || err?.message || 'Reconcile failed.',
+        severity: 'error',
+      });
+    } finally {
+      setOrgIntegrityApplyLoading(false);
+    }
+  }, [isSuperAdmin, orgIntegrityPreviewLimit, loadOrganizationIntegrityPreview, fetchUsers]);
+
+  /** One row per `departments` table record (via GET /ministries?withDepartments=1). departmentId is unique; same name can appear under different ministries. */
+  const orgIntegrityManualDepartmentOptions = useMemo(() => {
+    const items = [];
+    (ministriesHierarchy || []).forEach((m) => {
+      const mn = String(m?.name || '').trim();
+      (m?.departments || []).forEach((d) => {
+        const dn = String(d?.name || '').trim();
+        const departmentId = d?.departmentId ?? d?.department_id;
+        if (!dn || departmentId == null || departmentId === '') return;
+        items.push({
+          departmentId: Number(departmentId),
+          departmentName: dn,
+          ministryName: mn,
+          label: `${dn} — ${mn}`,
+        });
+      });
+    });
+    return items.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
+  }, [ministriesHierarchy]);
+
+  const buildMinistryManualMappingsPayload = useCallback(() => {
+    const rows = orgIntegrityDistinct?.misalignedMinistries || [];
+    return rows
+      .map((row) => {
+        const key = row.ministryKey ?? '';
+        const to = String(orgIntegrityManualMinistryTo[key] ?? '').trim();
+        if (!to) return null;
+        return row.isEmpty
+          ? { isEmptyMinistry: true, toMinistryName: to }
+          : { ministryKey: key, isEmptyMinistry: false, toMinistryName: to };
+      })
+      .filter(Boolean);
+  }, [orgIntegrityDistinct, orgIntegrityManualMinistryTo]);
+
+  const buildStateManualMappingsPayload = useCallback(() => {
+    const rows = orgIntegrityDistinct?.misalignedStateDepartments || [];
+    return rows
+      .map((row) => {
+        const key = row.stateDepartmentKey ?? '';
+        const idRaw = orgIntegrityManualStateTo[key];
+        if (idRaw === '' || idRaw == null) return null;
+        const opt = orgIntegrityManualDepartmentOptions.find(
+          (o) => String(o.departmentId) === String(idRaw)
+        );
+        const to = String(opt?.departmentName ?? '').trim();
+        if (!to) return null;
+        return row.isEmpty
+          ? { isEmptyStateDepartment: true, toDepartmentName: to }
+          : { stateDepartmentKey: key, isEmptyStateDepartment: false, toDepartmentName: to };
+      })
+      .filter(Boolean);
+  }, [orgIntegrityDistinct, orgIntegrityManualStateTo, orgIntegrityManualDepartmentOptions]);
+
+  const handleClickApplyManualMinistries = useCallback(() => {
+    const ministryMappings = buildMinistryManualMappingsPayload();
+    if (ministryMappings.length === 0) {
+      setSnackbar({ open: true, message: 'Choose a registry ministry for at least one row.', severity: 'warning' });
+      return;
+    }
+    setOrgIntegrityManualConfirmKind('ministry');
+    setOpenOrgIntegrityManualConfirm(true);
+  }, [buildMinistryManualMappingsPayload]);
+
+  const handleClickApplyManualStateDepartments = useCallback(() => {
+    const stateDepartmentMappings = buildStateManualMappingsPayload();
+    if (stateDepartmentMappings.length === 0) {
+      setSnackbar({ open: true, message: 'Choose a registry state department for at least one row.', severity: 'warning' });
+      return;
+    }
+    setOrgIntegrityManualConfirmKind('state');
+    setOpenOrgIntegrityManualConfirm(true);
+  }, [buildStateManualMappingsPayload]);
+
+  const handleConfirmOrganizationManualMap = useCallback(async () => {
+    const kind = orgIntegrityManualConfirmKind;
+    setOpenOrgIntegrityManualConfirm(false);
+    setOrgIntegrityManualApplyLoading(true);
+    try {
+      const ministryMappings = kind === 'ministry' ? buildMinistryManualMappingsPayload() : [];
+      const stateDepartmentMappings = kind === 'state' ? buildStateManualMappingsPayload() : [];
+      const result = await apiService.postOrganizationIntegrityManualMap({
+        ministryMappings,
+        stateDepartmentMappings,
+      });
+      const c = result?.changed || {};
+      setSnackbar({
+        open: true,
+        message:
+          kind === 'ministry'
+            ? `Ministries updated — users: ${c.usersMinistry ?? 0}; scopes: ${c.scopesMinistry ?? 0}; projects: ${c.projectsMinistry ?? 0}.`
+            : `State departments updated — users: ${c.usersStateDepartment ?? 0}; scopes: ${c.scopesStateDepartment ?? 0}; projects: ${c.projectsStateDepartment ?? 0}.`,
+        severity: 'success',
+      });
+      if (kind === 'ministry') {
+        setOrgIntegrityManualMinistryTo({});
+      } else {
+        setOrgIntegrityManualStateTo({});
+      }
+      await loadOrganizationIntegrityMisalignedDistinct();
+      await loadOrganizationIntegrityPreview(orgIntegrityPreviewLimit);
+      await fetchUsers(false);
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err?.response?.data?.message || err?.message || 'Manual update failed.',
+        severity: 'error',
+      });
+    } finally {
+      setOrgIntegrityManualApplyLoading(false);
+    }
+  }, [
+    orgIntegrityManualConfirmKind,
+    buildMinistryManualMappingsPayload,
+    buildStateManualMappingsPayload,
+    loadOrganizationIntegrityMisalignedDistinct,
+    loadOrganizationIntegrityPreview,
+    orgIntegrityPreviewLimit,
+    fetchUsers,
+  ]);
+
+  const orgIntegrityFilteredMisaligned = useMemo(() => {
+    const m = orgIntegrityPreview?.misaligned;
+    if (!m) return { users: [], scopes: [], projects: [] };
+    const q = orgIntegrityTableSearch;
+    return {
+      users: filterOrgIntegrityRows(m.users || [], 'users', q),
+      scopes: filterOrgIntegrityRows(m.scopes || [], 'scopes', q),
+      projects: filterOrgIntegrityRows(m.projects || [], 'projects', q),
+    };
+  }, [orgIntegrityPreview, orgIntegrityTableSearch]);
+
 
   const fetchMinistriesCatalog = useCallback(async () => {
     try {
@@ -625,6 +877,12 @@ function UserManagementPage() {
       setMinistriesHierarchy([]);
     }
   }, []);
+
+  useEffect(() => {
+    if (openOrgIntegrityDialog && isSuperAdmin) {
+      fetchMinistriesCatalog();
+    }
+  }, [openOrgIntegrityDialog, isSuperAdmin, fetchMinistriesCatalog]);
 
   // Fetch agencies (implementing agency dropdown still filtered by ministry + state department)
   const fetchAgencies = useCallback(async () => {
@@ -2572,6 +2830,31 @@ function UserManagementPage() {
                     Session Security
                   </Button>
                 )}
+                {isSuperAdmin && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<SyncAltIcon sx={{ fontSize: '1rem' }} />}
+                    onClick={handleOpenOrgIntegrityDialog}
+                    sx={{
+                      borderColor: colors.yellowAccent[600],
+                      color: colors.yellowAccent[600],
+                      '&:hover': {
+                        backgroundColor: colors.yellowAccent[700],
+                        color: 'white',
+                        borderColor: colors.yellowAccent[700],
+                      },
+                      fontWeight: 600,
+                      borderRadius: '8px',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                      px: 1.25,
+                      py: 0.5,
+                      fontSize: '0.8125rem',
+                    }}
+                  >
+                    Org data reconcile
+                  </Button>
+                )}
                 {isSuperAdmin && userListView !== 'voided' && (
                   <Button
                     variant="outlined"
@@ -4470,6 +4753,463 @@ function UserManagementPage() {
             disabled={loading || (!currentPrivilegeToEdit && !isSuperAdmin)}
           >
             {loading ? 'Saving...' : (currentPrivilegeToEdit ? 'Update Privilege' : 'Create Privilege')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openOrgIntegrityDialog}
+        onClose={() => {
+          setOpenOrgIntegrityDialog(false);
+          setOrgIntegrityPreview(null);
+          setOrgIntegrityTableSearch('');
+          setOrgIntegrityTab(0);
+          setOrgIntegrityDistinct(null);
+          setOrgIntegrityManualMinistryTo({});
+          setOrgIntegrityManualStateTo({});
+          setOpenOrgIntegrityManualConfirm(false);
+        }}
+        fullWidth
+        maxWidth="lg"
+      >
+        <DialogTitle sx={{ backgroundColor: colors.yellowAccent[700], color: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <SyncAltIcon />
+          Organization data reconcile
+        </DialogTitle>
+        <DialogContent dividers sx={{ backgroundColor: colors.primary[400] }}>
+          <Tabs value={orgIntegrityTab} onChange={(_, v) => setOrgIntegrityTab(v)} sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+            <Tab label="Preview & auto-reconcile" />
+            <Tab label="Manual: ministries" />
+            <Tab label="Manual: state departments" />
+          </Tabs>
+
+          {orgIntegrityTab === 0 && (
+          <>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }} sx={{ mb: 2 }} flexWrap="wrap">
+            <TextField
+              size="small"
+              type="number"
+              label="Rows per table (max)"
+              value={orgIntegrityPreviewLimit}
+              onChange={(e) => setOrgIntegrityPreviewLimit(Math.max(1, Math.min(parseInt(e.target.value, 10) || 50, 500)))}
+              inputProps={{ min: 1, max: 500 }}
+              sx={{ width: 160 }}
+            />
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={orgIntegrityLoading}
+              onClick={() => loadOrganizationIntegrityPreview(orgIntegrityPreviewLimit)}
+            >
+              {orgIntegrityLoading ? 'Loading…' : 'Refresh preview'}
+            </Button>
+            <TextField
+              size="small"
+              label="Search in loaded tables"
+              placeholder="Username, ministry, project name…"
+              value={orgIntegrityTableSearch}
+              onChange={(e) => setOrgIntegrityTableSearch(e.target.value)}
+              sx={{ flex: 1, minWidth: 220 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Stack>
+          {orgIntegrityLoading && !orgIntegrityPreview ? (
+            <Box display="flex" justifyContent="center" py={3}>
+              <CircularProgress size={28} />
+            </Box>
+          ) : orgIntegrityPreview ? (
+            <>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700, color: colors.grey[100] }}>
+                Full counts (entire database)
+              </Typography>
+              <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 1 }}>
+                <Chip size="small" color="default" label={`Users misaligned: ${orgIntegrityPreview.summary?.usersMisaligned ?? 0}`} />
+                <Chip size="small" variant="outlined" label={`…unknown ministry: ${orgIntegrityPreview.summary?.usersUnknownMinistry ?? 0}`} />
+                <Chip size="small" variant="outlined" label={`…ministry rename: ${orgIntegrityPreview.summary?.usersMinistryWouldChange ?? 0}`} />
+                <Chip size="small" variant="outlined" label={`…unknown state dept: ${orgIntegrityPreview.summary?.usersUnknownStateDepartment ?? 0}`} />
+                <Chip size="small" variant="outlined" label={`…state dept rename: ${orgIntegrityPreview.summary?.usersStateWouldChange ?? 0}`} />
+              </Stack>
+              <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
+                <Chip size="small" color="default" label={`Scopes misaligned: ${orgIntegrityPreview.summary?.scopesMisaligned ?? 0}`} />
+                <Chip size="small" variant="outlined" label={`…unknown ministry: ${orgIntegrityPreview.summary?.scopesUnknownMinistry ?? 0}`} />
+                <Chip size="small" variant="outlined" label={`…ministry rename: ${orgIntegrityPreview.summary?.scopesMinistryWouldChange ?? 0}`} />
+                <Chip size="small" variant="outlined" label={`…unknown state dept: ${orgIntegrityPreview.summary?.scopesUnknownStateDepartment ?? 0}`} />
+                <Chip size="small" variant="outlined" label={`…state dept rename: ${orgIntegrityPreview.summary?.scopesStateWouldChange ?? 0}`} />
+              </Stack>
+              <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
+                <Chip size="small" color="default" label={`Projects misaligned: ${orgIntegrityPreview.summary?.projectsMisaligned ?? 0}`} />
+                <Chip size="small" variant="outlined" label={`…unknown ministry: ${orgIntegrityPreview.summary?.projectsUnknownMinistry ?? 0}`} />
+                <Chip size="small" variant="outlined" label={`…ministry rename: ${orgIntegrityPreview.summary?.projectsMinistryWouldChange ?? 0}`} />
+                <Chip size="small" variant="outlined" label={`…unknown state dept: ${orgIntegrityPreview.summary?.projectsUnknownStateDepartment ?? 0}`} />
+                <Chip size="small" variant="outlined" label={`…state dept rename: ${orgIntegrityPreview.summary?.projectsStateWouldChange ?? 0}`} />
+              </Stack>
+
+              {[
+                {
+                  key: 'users',
+                  title: 'Users (misaligned only)',
+                  columns: [
+                    { id: 'userId', label: 'User ID', width: 72 },
+                    { id: 'username', label: 'Username', width: 120 },
+                    { id: 'currentOrg', label: 'Current organization', minWidth: 200 },
+                    { id: 'proposedOrg', label: 'Proposed after reconcile', minWidth: 200 },
+                    { id: 'issue', label: 'Issue', width: 160 },
+                  ],
+                  rowCells: (row) => ({
+                    userId: row.userId,
+                    username: row.username || '—',
+                    currentOrg: [row.currentMinistry, row.currentStateDepartment].filter(Boolean).join(' / ') || '—',
+                    proposedOrg: [row.proposedMinistry, row.proposedStateDepartment].filter(Boolean).join(' / ') || '— (no automatic fix)',
+                    issue: formatOrgIntegrityIssue(row.issue),
+                  }),
+                },
+                {
+                  key: 'scopes',
+                  title: 'Organization scopes (misaligned only)',
+                  columns: [
+                    { id: 'scopeId', label: 'Scope #', width: 72 },
+                    { id: 'user', label: 'User', width: 140 },
+                    { id: 'type', label: 'Type', width: 140 },
+                    { id: 'currentOrg', label: 'Current organization', minWidth: 200 },
+                    { id: 'proposedOrg', label: 'Proposed after reconcile', minWidth: 200 },
+                    { id: 'issue', label: 'Issue', width: 160 },
+                  ],
+                  rowCells: (row) => ({
+                    scopeId: row.scopeId,
+                    user: row.username ? `${row.username} (${row.userId ?? '—'})` : String(row.userId ?? '—'),
+                    type: row.scopeType || '—',
+                    currentOrg: [row.currentMinistry, row.currentStateDepartment].filter(Boolean).join(' / ') || '—',
+                    proposedOrg: [row.proposedMinistry, row.proposedStateDepartment].filter(Boolean).join(' / ') || '— (no automatic fix)',
+                    issue: formatOrgIntegrityIssue(row.issue),
+                  }),
+                },
+                {
+                  key: 'projects',
+                  title: 'Projects (misaligned only)',
+                  columns: [
+                    { id: 'projectId', label: 'Project ID', width: 88 },
+                    { id: 'name', label: 'Name', width: 160 },
+                    { id: 'currentOrg', label: 'Current organization', minWidth: 200 },
+                    { id: 'proposedOrg', label: 'Proposed after reconcile', minWidth: 200 },
+                    { id: 'issue', label: 'Issue', width: 160 },
+                  ],
+                  rowCells: (row) => ({
+                    projectId: row.projectId,
+                    name: row.projectName || '—',
+                    currentOrg: [row.currentMinistry, row.currentStateDepartment].filter(Boolean).join(' / ') || '—',
+                    proposedOrg: [row.proposedMinistry, row.proposedStateDepartment].filter(Boolean).join(' / ') || '— (no automatic fix)',
+                    issue: formatOrgIntegrityIssue(row.issue),
+                  }),
+                },
+              ].map((section) => {
+                const loadedRows = orgIntegrityPreview.misaligned?.[section.key] || [];
+                const rows = orgIntegrityFilteredMisaligned[section.key] || [];
+                const totalMis = orgIntegrityPreview.summary?.[`${section.key}Misaligned`] ?? loadedRows.length;
+                const searchActive = Boolean(orgIntegrityTableSearch.trim());
+                return (
+                <Box key={section.key} sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 0.75, fontWeight: 700, color: colors.grey[100] }}>
+                    {section.title}
+                    {searchActive
+                      ? ` — showing ${rows.length} of ${loadedRows.length} loaded row${loadedRows.length === 1 ? '' : 's'} (search; up to ${orgIntegrityPreviewLimit} loaded; ${totalMis} misaligned in DB)`
+                      : ` (showing up to ${orgIntegrityPreviewLimit} of ${totalMis} misaligned total)`}
+                  </Typography>
+                  <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 260, bgcolor: theme.palette.mode === 'dark' ? colors.primary[500] : 'grey.50' }}>
+                    <Table size="small" stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          {section.columns.map((col) => (
+                            <TableCell key={col.id} sx={{ fontWeight: 700, whiteSpace: 'nowrap' }} width={col.width} style={col.minWidth ? { minWidth: col.minWidth } : undefined}>
+                              {col.label}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {loadedRows.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={section.columns.length}>
+                              <Typography variant="body2" color="text.secondary">
+                                No misaligned rows in this category.
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ) : rows.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={section.columns.length}>
+                              <Typography variant="body2" color="text.secondary">
+                                No rows match your search in this category.
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          rows.map((row, idx) => {
+                            const cells = section.rowCells(row);
+                            return (
+                              <TableRow key={`${section.key}-${idx}-${cells.userId ?? cells.scopeId ?? cells.projectId}`}>
+                                {section.columns.map((col) => (
+                                  <TableCell key={col.id} sx={{ verticalAlign: 'top', fontSize: '0.8125rem' }}>
+                                    {cells[col.id]}
+                                  </TableCell>
+                                ))}
+                              </TableRow>
+                            );
+                          })
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
+                );
+              })}
+            </>
+          ) : (
+            <Alert severity="info">No preview loaded.</Alert>
+          )}
+          </>
+          )}
+
+          {orgIntegrityTab === 1 && (
+            <>
+              <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                <Button variant="outlined" size="small" disabled={orgIntegrityDistinctLoading} onClick={() => loadOrganizationIntegrityMisalignedDistinct()}>
+                  {orgIntegrityDistinctLoading ? 'Loading…' : 'Refresh distinct list'}
+                </Button>
+              </Stack>
+              {orgIntegrityDistinctLoading ? (
+                <Box display="flex" justifyContent="center" py={3}>
+                  <CircularProgress size={28} />
+                </Box>
+              ) : (orgIntegrityDistinct?.misalignedMinistries || []).length === 0 ? (
+                <Alert severity="success">No misaligned ministry values found.</Alert>
+              ) : (
+                <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 420, bgcolor: theme.palette.mode === 'dark' ? colors.primary[500] : 'grey.50' }}>
+                  <Table size="small" stickyHeader>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 700 }}>Misaligned ministry (stored)</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }} width={88}>Users</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }} width={88}>Scopes</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }} width={88}>Projects</TableCell>
+                        <TableCell sx={{ fontWeight: 700, minWidth: 280 }}>Update to</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {(orgIntegrityDistinct?.misalignedMinistries || []).map((row) => {
+                        const key = row.ministryKey ?? '';
+                        return (
+                          <TableRow key={`m-${row.isEmpty ? 'empty' : key}`}>
+                            <TableCell sx={{ fontSize: '0.8125rem' }}>{row.displayMinistry}</TableCell>
+                            <TableCell>{row.userCount ?? 0}</TableCell>
+                            <TableCell>{row.scopeCount ?? 0}</TableCell>
+                            <TableCell>{row.projectCount ?? 0}</TableCell>
+                            <TableCell>
+                              <Autocomplete
+                                size="small"
+                                fullWidth
+                                options={ministries || []}
+                                value={(() => {
+                                  const v = orgIntegrityManualMinistryTo[key];
+                                  if (!v) return null;
+                                  return (ministries || []).includes(v) ? v : null;
+                                })()}
+                                onChange={(_, newValue) => {
+                                  setOrgIntegrityManualMinistryTo((prev) => ({
+                                    ...prev,
+                                    [key]: newValue || '',
+                                  }));
+                                }}
+                                renderInput={(params) => (
+                                  <TextField
+                                    {...params}
+                                    placeholder="Type to search ministries…"
+                                    inputProps={{ ...params.inputProps, 'aria-label': `Update ministry for ${row.displayMinistry}` }}
+                                  />
+                                )}
+                                noOptionsText="No matching ministry"
+                                clearOnEscape
+                                ListboxProps={{ style: { maxHeight: 280 } }}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+              <Stack direction="row" justifyContent="flex-end" sx={{ mt: 2 }}>
+                <Button
+                  variant="contained"
+                  color="warning"
+                  onClick={handleClickApplyManualMinistries}
+                  disabled={orgIntegrityManualApplyLoading || orgIntegrityDistinctLoading}
+                >
+                  Apply ministry updates…
+                </Button>
+              </Stack>
+            </>
+          )}
+
+          {orgIntegrityTab === 2 && (
+            <>
+              <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                <Button variant="outlined" size="small" disabled={orgIntegrityDistinctLoading} onClick={() => loadOrganizationIntegrityMisalignedDistinct()}>
+                  {orgIntegrityDistinctLoading ? 'Loading…' : 'Refresh distinct list'}
+                </Button>
+              </Stack>
+              {orgIntegrityDistinctLoading ? (
+                <Box display="flex" justifyContent="center" py={3}>
+                  <CircularProgress size={28} />
+                </Box>
+              ) : (orgIntegrityDistinct?.misalignedStateDepartments || []).length === 0 ? (
+                <Alert severity="success">No misaligned state department values found.</Alert>
+              ) : (
+                <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 420, bgcolor: theme.palette.mode === 'dark' ? colors.primary[500] : 'grey.50' }}>
+                  <Table size="small" stickyHeader>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 700 }}>Misaligned state department (stored)</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }} width={88}>Users</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }} width={88}>Scopes</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }} width={88}>Projects</TableCell>
+                        <TableCell sx={{ fontWeight: 700, minWidth: 320 }}>Update to</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {(orgIntegrityDistinct?.misalignedStateDepartments || []).map((row) => {
+                        const key = row.stateDepartmentKey ?? '';
+                        return (
+                          <TableRow key={`sd-${row.isEmpty ? 'empty' : key}`}>
+                            <TableCell sx={{ fontSize: '0.8125rem' }}>{row.displayStateDepartment}</TableCell>
+                            <TableCell>{row.userCount ?? 0}</TableCell>
+                            <TableCell>{row.scopeCount ?? 0}</TableCell>
+                            <TableCell>{row.projectCount ?? 0}</TableCell>
+                            <TableCell>
+                              <Autocomplete
+                                size="small"
+                                fullWidth
+                                options={orgIntegrityManualDepartmentOptions}
+                                getOptionLabel={(opt) => opt.label}
+                                isOptionEqualToValue={(a, b) => a.departmentId === b.departmentId}
+                                value={(() => {
+                                  const idRaw = orgIntegrityManualStateTo[key];
+                                  if (idRaw === '' || idRaw == null) return null;
+                                  return (
+                                    orgIntegrityManualDepartmentOptions.find(
+                                      (o) => String(o.departmentId) === String(idRaw)
+                                    ) || null
+                                  );
+                                })()}
+                                onChange={(_, newValue) => {
+                                  setOrgIntegrityManualStateTo((prev) => ({
+                                    ...prev,
+                                    [key]: newValue != null ? String(newValue.departmentId) : '',
+                                  }));
+                                }}
+                                renderInput={(params) => (
+                                  <TextField
+                                    {...params}
+                                    placeholder="Type to search state departments…"
+                                    inputProps={{
+                                      ...params.inputProps,
+                                      'aria-label': `Update state department for ${row.displayStateDepartment}`,
+                                    }}
+                                  />
+                                )}
+                                noOptionsText="No matching department"
+                                clearOnEscape
+                                ListboxProps={{ style: { maxHeight: 280 } }}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+              <Stack direction="row" justifyContent="flex-end" sx={{ mt: 2 }}>
+                <Button
+                  variant="contained"
+                  color="warning"
+                  onClick={handleClickApplyManualStateDepartments}
+                  disabled={orgIntegrityManualApplyLoading || orgIntegrityDistinctLoading}
+                >
+                  Apply state department updates…
+                </Button>
+              </Stack>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ padding: '16px 24px', borderTop: `1px solid ${theme.palette.divider}`, backgroundColor: colors.primary[400] }}>
+          <Button
+            onClick={() => {
+              setOpenOrgIntegrityDialog(false);
+              setOrgIntegrityPreview(null);
+              setOrgIntegrityTableSearch('');
+              setOrgIntegrityTab(0);
+              setOrgIntegrityDistinct(null);
+              setOrgIntegrityManualMinistryTo({});
+              setOrgIntegrityManualStateTo({});
+              setOpenOrgIntegrityManualConfirm(false);
+            }}
+            variant="outlined"
+          >
+            Close
+          </Button>
+          {orgIntegrityTab === 0 && (
+          <Button
+            variant="contained"
+            color="warning"
+            disabled={orgIntegrityLoading || orgIntegrityApplyLoading}
+            onClick={() => setOpenOrgIntegrityApplyConfirm(true)}
+          >
+            Apply reconcile
+          </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openOrgIntegrityManualConfirm} onClose={() => !orgIntegrityManualApplyLoading && setOpenOrgIntegrityManualConfirm(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ bgcolor: colors.yellowAccent[800], color: 'white' }}>Confirm manual updates</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <DialogContentText sx={{ color: colors.grey[100] }}>
+            {orgIntegrityManualConfirmKind === 'ministry'
+              ? 'This will overwrite the ministry field for every user, organization scope, and project row that matches the selected source values. Continue?'
+              : 'This will overwrite the state department field for every matching user, STATE_DEPARTMENT_ALL scope, and project row. Continue?'}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 2, pb: 2 }}>
+          <Button onClick={() => setOpenOrgIntegrityManualConfirm(false)} variant="outlined" disabled={orgIntegrityManualApplyLoading}>
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmOrganizationManualMap} variant="contained" color="warning" disabled={orgIntegrityManualApplyLoading}>
+            {orgIntegrityManualApplyLoading ? 'Applying…' : 'Yes, apply'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openOrgIntegrityApplyConfirm} onClose={() => setOpenOrgIntegrityApplyConfirm(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ bgcolor: colors.redAccent[700], color: 'white' }}>Confirm reconcile</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <DialogContentText sx={{ color: colors.grey[100] }}>
+            This will write updates to the database for users, organization scopes, and projects that can be matched to the
+            ministries/departments registry. Continue?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 2, pb: 2 }}>
+          <Button onClick={() => setOpenOrgIntegrityApplyConfirm(false)} variant="outlined">
+            Cancel
+          </Button>
+          <Button onClick={handleApplyOrganizationIntegrity} variant="contained" color="error" disabled={orgIntegrityApplyLoading}>
+            {orgIntegrityApplyLoading ? 'Applying…' : 'Yes, apply'}
           </Button>
         </DialogActions>
       </Dialog>

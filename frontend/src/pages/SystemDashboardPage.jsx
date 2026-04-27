@@ -59,6 +59,8 @@ import {
   YAxis,
 } from 'recharts';
 import { tokens } from './dashboard/theme';
+import { useAuth } from '../context/AuthContext.jsx';
+import { isSuperAdminUser } from '../utils/roleUtils';
 
 /**
  * SystemDashboardPage
@@ -139,10 +141,11 @@ const SystemDashboardPage = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [filters, setFilters] = useState({
-    department: '',
-    directorate: '',
-    financialYear: '',
+    ministry: '',
+    stateDepartment: '',
+    agency: '',
     status: '',
   });
   const [filtersExpanded, setFiltersExpanded] = useState(false);
@@ -180,8 +183,16 @@ const SystemDashboardPage = () => {
           budget: Number(p.budget ?? p.costOfProject ?? p.allocatedBudget ?? 0),
           Disbursed: Number(p.Disbursed ?? p.paidOut ?? p.disbursedBudget ?? 0),
           financialYear: p.financialYear || p.financialYearName || 'Unknown',
-          department: p.department || p.departmentName || p.ministry || 'Unknown',
-          directorate: p.directorate || p.directorateName || p.agency || 'Unknown',
+          ministry: String(p.ministry ?? p.ministryName ?? p.departmentName ?? p.department ?? '').trim() || 'Unknown',
+          stateDepartment:
+            String(p.stateDepartment ?? p.state_department ?? p.stateDepartmentName ?? '').trim() || 'Unknown',
+          agency:
+            String(
+              p.agency ?? p.agencyName ?? p.implementingAgency ?? p.implementing_agency ?? p.directorate ?? p.directorateName ?? ''
+            ).trim() || 'Unknown',
+          // Keep legacy field for existing charts that still aggregate by "directorate".
+          directorate:
+            String(p.directorate ?? p.directorateName ?? p.agency ?? p.agencyName ?? '').trim() || 'Unknown',
           County: p.County || p.county || p.countyNames || 'Unknown',
           Constituency: p.Constituency || p.constituency || p.constituencyNames || 'Unknown',
           ward: p.ward || p.wardNames || 'Unknown',
@@ -223,15 +234,112 @@ const SystemDashboardPage = () => {
     fetchJobsSnapshot();
   }, []);
 
+  const orgScopeMeta = useMemo(() => {
+    const scopes = Array.isArray(user?.organizationScopes) ? user.organizationScopes : [];
+    const normalized = scopes
+      .map((s) => ({
+        scopeType: String(s?.scopeType || s?.scope_type || '').trim().toUpperCase(),
+        ministry: String(s?.ministry || '').trim(),
+        stateDepartment: String(s?.stateDepartment || s?.state_department || '').trim(),
+      }))
+      .filter((s) => s.scopeType);
+
+    const superAdmin = isSuperAdminUser(user);
+    const hasAllMinistriesScope =
+      superAdmin || normalized.some((s) => s.scopeType === 'ALL_MINISTRIES');
+    const ministryScopes = normalized.filter((s) => s.scopeType === 'MINISTRY_ALL' && s.ministry);
+    const stateDeptScopes = normalized.filter(
+      (s) => s.scopeType === 'STATE_DEPARTMENT_ALL' && s.ministry && s.stateDepartment
+    );
+
+    if (hasAllMinistriesScope) return { level: 'all', allowedMinistries: null, allowedPairs: null };
+    if (ministryScopes.length > 0) {
+      return {
+        level: 'ministry',
+        allowedMinistries: new Set(ministryScopes.map((s) => s.ministry.toLowerCase())),
+        allowedPairs: null,
+      };
+    }
+    if (stateDeptScopes.length > 0) {
+      return {
+        level: 'state_department',
+        allowedMinistries: null,
+        allowedPairs: new Set(
+          stateDeptScopes.map((s) => `${s.ministry.toLowerCase()}|${s.stateDepartment.toLowerCase()}`)
+        ),
+      };
+    }
+    return { level: 'all', allowedMinistries: null, allowedPairs: null };
+  }, [user]);
+
+  const scopeBaseProjects = useMemo(() => {
+    if (orgScopeMeta.level === 'ministry') {
+      return allProjects.filter((p) =>
+        orgScopeMeta.allowedMinistries.has(String(p.ministry || '').trim().toLowerCase())
+      );
+    }
+    if (orgScopeMeta.level === 'state_department') {
+      return allProjects.filter((p) => {
+        const k = `${String(p.ministry || '').trim().toLowerCase()}|${String(
+          p.stateDepartment || ''
+        )
+          .trim()
+          .toLowerCase()}`;
+        return orgScopeMeta.allowedPairs.has(k);
+      });
+    }
+    return allProjects;
+  }, [allProjects, orgScopeMeta]);
+
   const filteredProjects = useMemo(() => {
-    return allProjects.filter((p) => {
-      if (filters.department && p.department !== filters.department) return false;
-      if (filters.directorate && p.directorate !== filters.directorate) return false;
-      if (filters.financialYear && p.financialYear !== filters.financialYear) return false;
+    return scopeBaseProjects.filter((p) => {
+      if (filters.ministry && p.ministry !== filters.ministry) return false;
+      if (filters.stateDepartment && p.stateDepartment !== filters.stateDepartment) return false;
+      if (filters.agency && p.agency !== filters.agency) return false;
       if (filters.status && p.Status !== filters.status) return false;
       return true;
     });
-  }, [allProjects, filters]);
+  }, [scopeBaseProjects, filters]);
+
+  const showMinistryFilter = orgScopeMeta.level === 'all';
+  const showStateDepartmentFilter = orgScopeMeta.level === 'all' || orgScopeMeta.level === 'ministry';
+  const uniqueMinistries = Array.from(new Set(scopeBaseProjects.map((p) => p.ministry))).filter(Boolean);
+  const uniqueStateDepartments = Array.from(
+    new Set(
+      scopeBaseProjects
+        .filter((p) => !filters.ministry || p.ministry === filters.ministry)
+        .map((p) => p.stateDepartment)
+    )
+  ).filter(Boolean);
+  const uniqueAgencies = Array.from(
+    new Set(
+      scopeBaseProjects
+        .filter((p) => !filters.ministry || p.ministry === filters.ministry)
+        .filter((p) => !filters.stateDepartment || p.stateDepartment === filters.stateDepartment)
+        .map((p) => p.agency)
+    )
+  ).filter(Boolean);
+  const uniqueStatuses = Array.from(new Set(scopeBaseProjects.map((p) => p.Status))).filter(Boolean);
+
+  useEffect(() => {
+    setFilters((prev) => {
+      const next = { ...prev };
+      if (!showMinistryFilter) next.ministry = '';
+      if (!showStateDepartmentFilter) next.stateDepartment = '';
+      if (showStateDepartmentFilter && next.stateDepartment && !uniqueStateDepartments.includes(next.stateDepartment)) {
+        next.stateDepartment = '';
+      }
+      if (next.agency && !uniqueAgencies.includes(next.agency)) {
+        next.agency = '';
+      }
+      const unchanged =
+        next.ministry === prev.ministry &&
+        next.stateDepartment === prev.stateDepartment &&
+        next.agency === prev.agency &&
+        next.status === prev.status;
+      return unchanged ? prev : next;
+    });
+  }, [showMinistryFilter, showStateDepartmentFilter, uniqueStateDepartments, uniqueAgencies]);
 
   const {
     kpis,
@@ -249,7 +357,7 @@ const SystemDashboardPage = () => {
     const totalDisbursed = filteredProjects.reduce((sum, p) => sum + (p.Disbursed || 0), 0);
     const absorptionRate = totalBudget > 0 ? Math.round((totalDisbursed / totalBudget) * 100) : 0;
 
-    const distinctDepartments = new Set(filteredProjects.map((p) => p.department));
+    const distinctDepartments = new Set(filteredProjects.map((p) => p.stateDepartment));
     const distinctWards = new Set(filteredProjects.map((p) => p.ward));
 
     const kpiValues = {
@@ -688,6 +796,56 @@ const SystemDashboardPage = () => {
                   minWidth: 0,
                 }}
               >
+                {showMinistryFilter && (
+                  <FormControl
+                    size="small"
+                    fullWidth
+                    sx={{
+                      flex: { xs: 'none', sm: '1 1 0%' },
+                      minWidth: { sm: 0 },
+                    }}
+                  >
+                    <InputLabel sx={{ fontSize: '0.75rem' }}>Ministry</InputLabel>
+                    <Select
+                      value={filters.ministry}
+                      label="Ministry"
+                      onChange={(e) => setFilters({ ...filters, ministry: e.target.value, stateDepartment: '', agency: '' })}
+                      sx={{ fontSize: '0.8rem', height: '32px' }}
+                    >
+                      <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Ministries</MenuItem>
+                      {uniqueMinistries.map((m) => (
+                        <MenuItem key={m} value={m} sx={{ fontSize: '0.8rem' }}>
+                          {m}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+                {showStateDepartmentFilter && (
+                  <FormControl
+                    size="small"
+                    fullWidth
+                    sx={{
+                      flex: { xs: 'none', sm: '1 1 0%' },
+                      minWidth: { sm: 0 },
+                    }}
+                  >
+                    <InputLabel sx={{ fontSize: '0.75rem' }}>State Department</InputLabel>
+                    <Select
+                      value={filters.stateDepartment}
+                      label="State Department"
+                      onChange={(e) => setFilters({ ...filters, stateDepartment: e.target.value, agency: '' })}
+                      sx={{ fontSize: '0.8rem', height: '32px' }}
+                    >
+                      <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All State Departments</MenuItem>
+                      {uniqueStateDepartments.map((d) => (
+                        <MenuItem key={d} value={d} sx={{ fontSize: '0.8rem' }}>
+                          {d}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
                 <FormControl
                   size="small"
                   fullWidth
@@ -696,63 +854,17 @@ const SystemDashboardPage = () => {
                     minWidth: { sm: 0 },
                   }}
                 >
-                  <InputLabel sx={{ fontSize: '0.75rem' }}>Department</InputLabel>
+                  <InputLabel sx={{ fontSize: '0.75rem' }}>Agency</InputLabel>
                   <Select
-                    value={filters.department}
-                    label="Department"
-                    onChange={(e) => setFilters({ ...filters, department: e.target.value })}
+                    value={filters.agency}
+                    label="Agency"
+                    onChange={(e) => setFilters({ ...filters, agency: e.target.value })}
                     sx={{ fontSize: '0.8rem', height: '32px' }}
                   >
-                    <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Departments</MenuItem>
-                    {Array.from(new Set(allProjects.map((p) => p.department))).filter(Boolean).map((dept) => (
-                      <MenuItem key={dept} value={dept} sx={{ fontSize: '0.8rem' }}>
-                        {dept}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl
-                  size="small"
-                  fullWidth
-                  sx={{
-                    flex: { xs: 'none', sm: '1 1 0%' },
-                    minWidth: { sm: 0 },
-                  }}
-                >
-                  <InputLabel sx={{ fontSize: '0.75rem' }}>Directorate</InputLabel>
-                  <Select
-                    value={filters.directorate}
-                    label="Directorate"
-                    onChange={(e) => setFilters({ ...filters, directorate: e.target.value })}
-                    sx={{ fontSize: '0.8rem', height: '32px' }}
-                  >
-                    <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Directorates</MenuItem>
-                    {Array.from(new Set(allProjects.map((p) => p.directorate))).filter(Boolean).map((dir) => (
-                      <MenuItem key={dir} value={dir} sx={{ fontSize: '0.8rem' }}>
-                        {dir}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl
-                  size="small"
-                  fullWidth
-                  sx={{
-                    flex: { xs: 'none', sm: '1 1 0%' },
-                    minWidth: { sm: 0 },
-                  }}
-                >
-                  <InputLabel sx={{ fontSize: '0.75rem' }}>Financial Year</InputLabel>
-                  <Select
-                    value={filters.financialYear}
-                    label="Financial Year"
-                    onChange={(e) => setFilters({ ...filters, financialYear: e.target.value })}
-                    sx={{ fontSize: '0.8rem', height: '32px' }}
-                  >
-                    <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Years</MenuItem>
-                    {Array.from(new Set(allProjects.map((p) => p.financialYear))).filter(Boolean).map((fy) => (
-                      <MenuItem key={fy} value={fy} sx={{ fontSize: '0.8rem' }}>
-                        {fy}
+                    <MenuItem value="" sx={{ fontSize: '0.8rem' }}>All Agencies</MenuItem>
+                    {uniqueAgencies.map((a) => (
+                      <MenuItem key={a} value={a} sx={{ fontSize: '0.8rem' }}>
+                        {a}
                       </MenuItem>
                     ))}
                   </Select>

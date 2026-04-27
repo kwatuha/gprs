@@ -2378,4 +2378,1072 @@ router.get('/approved/summary', async (req, res) => {
     }
 });
 
+function requireSuperAdmin(req, res, next) {
+    if (!isSuperAdminRequester(req.user)) {
+        return res.status(403).json({ message: 'Super Admin access required.' });
+    }
+    return next();
+}
+
+/** Shorter comparable string must be at least this many characters for prefix-only match (reduces noise). */
+const ORG_INTEGRITY_PREFIX_MIN_LEN = 5;
+
+/** Fullwidth parentheses → ASCII for SQL translate(..., from, to). */
+const SQL_UNICODE_FW_PARENS = '\uFF08\uFF09';
+
+/**
+ * Normalized ministry fingerprint: fullwidth parens → ASCII, strip "Ministry of", strip trailing
+ * parenthetical blocks (e.g. "(MICDE)"), treat "&" like whitespace, drop filler words (the/and/of/for),
+ * then remove any remaining parenthetical segments, then alphanumeric-only. Aligns names with/without
+ * trailing abbreviations and punctuation variants.
+ */
+const ministryComparableExpr = (expr) => `
+    regexp_replace(
+        regexp_replace(
+            regexp_replace(
+                regexp_replace(
+                    regexp_replace(
+                        regexp_replace(
+                            translate(LOWER(btrim(COALESCE(${expr}, ''))), '${SQL_UNICODE_FW_PARENS}', '()'),
+                            '^ministry\\s+of\\s+', '', 'gi'
+                        ),
+                        '(?:\\\\s*\\\\([^)]*\\\\))+\\\\s*$', '', ''
+                    ),
+                    '&', ' ', 'g'
+                ),
+                '\\\\m(the|and|of|for)\\\\M', '', 'gi'
+            ),
+            '\\\\s*\\\\([^)]*\\\\)\\\\s*', '', 'g'
+        ),
+        '[^a-z0-9]+',
+        '',
+        'g'
+    )
+`;
+
+/**
+ * Same fingerprint idea as ministries for state department names (after leading "State Department of/for" strip).
+ */
+const stateDeptComparableExpr = (expr) => `
+    regexp_replace(
+        regexp_replace(
+            regexp_replace(
+                regexp_replace(
+                    regexp_replace(
+                        regexp_replace(
+                            translate(LOWER(btrim(COALESCE(${expr}, ''))), '${SQL_UNICODE_FW_PARENS}', '()'),
+                            '^state\\\\s+department\\\\s+(of|for)\\\\s+', '', 'gi'
+                        ),
+                        '(?:\\\\s*\\\\([^)]*\\\\))+\\\\s*$', '', ''
+                    ),
+                    '&', ' ', 'g'
+                ),
+                '\\\\m(the|and|of|for)\\\\M', '', 'gi'
+            ),
+            '\\\\s*\\\\([^)]*\\\\)\\\\s*', '', 'g'
+        ),
+        '[^a-z0-9]+',
+        '',
+        'g'
+    )
+`;
+
+/** Prefer exact → alias → normalized equality → prefix on normalized strings (e.g. registry "Defence" vs user "Ministry of Defence"). */
+function ministryMatchPriorityCase(sourceField, nameField, aliasField) {
+    const sm = ministryComparableExpr(sourceField);
+    const nm = ministryComparableExpr(nameField);
+    const L = ORG_INTEGRITY_PREFIX_MIN_LEN;
+    return `
+        CASE
+            WHEN LOWER(TRIM(COALESCE(${sourceField}, ''))) = LOWER(TRIM(COALESCE(${nameField}, ''))) THEN 1
+            WHEN EXISTS (
+                SELECT 1
+                FROM unnest(string_to_array(COALESCE(${aliasField}, ''), ',')) AS ma(token)
+                WHERE LOWER(TRIM(COALESCE(${sourceField}, ''))) = LOWER(TRIM(COALESCE(ma.token, '')))
+            ) THEN 2
+            WHEN (${sm}) = (${nm}) THEN 3
+            WHEN LENGTH(${sm}) >= ${L}
+                 AND LENGTH(${nm}) >= ${L}
+                 AND ((${nm}) LIKE (${sm}) || '%' OR (${sm}) LIKE (${nm}) || '%')
+                THEN 4
+            ELSE 5
+        END
+    `;
+}
+
+function stateDeptMatchPriorityCase(sourceField, nameField, aliasField) {
+    const sd = stateDeptComparableExpr(sourceField);
+    const nd = stateDeptComparableExpr(nameField);
+    const L = ORG_INTEGRITY_PREFIX_MIN_LEN;
+    return `
+        CASE
+            WHEN LOWER(TRIM(COALESCE(${sourceField}, ''))) = LOWER(TRIM(COALESCE(${nameField}, ''))) THEN 1
+            WHEN EXISTS (
+                SELECT 1
+                FROM unnest(string_to_array(COALESCE(${aliasField}, ''), ',')) AS da(token)
+                WHERE LOWER(TRIM(COALESCE(${sourceField}, ''))) = LOWER(TRIM(COALESCE(da.token, '')))
+            ) THEN 2
+            WHEN (${sd}) = (${nd}) THEN 3
+            WHEN LENGTH(${sd}) >= ${L}
+                 AND LENGTH(${nd}) >= ${L}
+                 AND ((${nd}) LIKE (${sd}) || '%' OR (${sd}) LIKE (${nd}) || '%')
+                THEN 4
+            ELSE 5
+        END
+    `;
+}
+
+const ministryMatchesClause = (sourceExpr, nameExpr, aliasExpr) => {
+    const sm = ministryComparableExpr(sourceExpr);
+    const nm = ministryComparableExpr(nameExpr);
+    const L = ORG_INTEGRITY_PREFIX_MIN_LEN;
+    return `
+    (
+        LOWER(TRIM(COALESCE(${sourceExpr}, ''))) = LOWER(TRIM(COALESCE(${nameExpr}, '')))
+        OR EXISTS (
+            SELECT 1
+            FROM unnest(string_to_array(COALESCE(${aliasExpr}, ''), ',')) AS ma(token)
+            WHERE LOWER(TRIM(COALESCE(${sourceExpr}, ''))) = LOWER(TRIM(COALESCE(ma.token, '')))
+        )
+        OR (${sm}) = (${nm})
+        OR (
+            LENGTH(${sm}) >= ${L}
+            AND LENGTH(${nm}) >= ${L}
+            AND ((${nm}) LIKE (${sm}) || '%' OR (${sm}) LIKE (${nm}) || '%')
+        )
+    )
+`;
+};
+
+const stateDepartmentMatchesClause = (sourceExpr, nameExpr, aliasExpr) => {
+    const sd = stateDeptComparableExpr(sourceExpr);
+    const nd = stateDeptComparableExpr(nameExpr);
+    const L = ORG_INTEGRITY_PREFIX_MIN_LEN;
+    return `
+    (
+        LOWER(TRIM(COALESCE(${sourceExpr}, ''))) = LOWER(TRIM(COALESCE(${nameExpr}, '')))
+        OR EXISTS (
+            SELECT 1
+            FROM unnest(string_to_array(COALESCE(${aliasExpr}, ''), ',')) AS da(token)
+            WHERE LOWER(TRIM(COALESCE(${sourceExpr}, ''))) = LOWER(TRIM(COALESCE(da.token, '')))
+        )
+        OR (${sd}) = (${nd})
+        OR (
+            LENGTH(${sd}) >= ${L}
+            AND LENGTH(${nd}) >= ${L}
+            AND ((${nd}) LIKE (${sd}) || '%' OR (${sd}) LIKE (${nd}) || '%')
+        )
+    )
+`;
+};
+
+/** CTEs ending in user_final: misaligned users with current vs proposed ministry/state (registry names). */
+function buildUserOrgMisalignedCte() {
+    return `
+        user_ministry_rank AS (
+            SELECT
+                u.userid,
+                m.name AS proposed_ministry,
+                ROW_NUMBER() OVER (
+                    PARTITION BY u.userid
+                    ORDER BY
+                        ${ministryMatchPriorityCase('u.ministry', 'm.name', 'm.alias')},
+                        m.name
+                ) AS rn
+            FROM users u
+            INNER JOIN ministries m ON COALESCE(m.voided, false) = false
+                AND (${ministryMatchesClause('u.ministry', 'm.name', 'm.alias')})
+            WHERE COALESCE(u.voided, false) = false
+              AND NULLIF(TRIM(COALESCE(u.ministry, '')), '') IS NOT NULL
+        ),
+        user_ministry_best AS (
+            SELECT userid, proposed_ministry FROM user_ministry_rank WHERE rn = 1
+        ),
+        user_state_rank AS (
+            SELECT
+                u.userid,
+                d.name AS proposed_state_department,
+                ROW_NUMBER() OVER (
+                    PARTITION BY u.userid
+                    ORDER BY
+                        ${stateDeptMatchPriorityCase('u.state_department', 'd.name', 'd.alias')},
+                        d.name
+                ) AS rn
+            FROM users u
+            INNER JOIN user_ministry_best umb ON umb.userid = u.userid
+            INNER JOIN ministries m ON COALESCE(m.voided, false) = false
+                AND LOWER(TRIM(m.name)) = LOWER(TRIM(umb.proposed_ministry))
+            INNER JOIN departments d ON d."ministryId" = m."ministryId" AND COALESCE(d.voided, false) = false
+            WHERE COALESCE(u.voided, false) = false
+              AND NULLIF(TRIM(COALESCE(u.state_department, '')), '') IS NOT NULL
+              AND (${stateDepartmentMatchesClause('u.state_department', 'd.name', 'd.alias')})
+        ),
+        user_state_best AS (
+            SELECT userid, proposed_state_department FROM user_state_rank WHERE rn = 1
+        ),
+        user_final AS (
+            SELECT
+                u.userid,
+                u.username,
+                u.ministry AS current_ministry,
+                u.state_department AS current_state_department,
+                umb.proposed_ministry,
+                usb.proposed_state_department,
+                CASE
+                    WHEN umb.proposed_ministry IS NULL THEN 'unknown_ministry'
+                    WHEN COALESCE(TRIM(u.ministry), '') IS DISTINCT FROM COALESCE(TRIM(umb.proposed_ministry), '') THEN 'ministry_would_change'
+                    WHEN NULLIF(TRIM(COALESCE(u.state_department, '')), '') IS NOT NULL
+                         AND usb.proposed_state_department IS NULL THEN 'unknown_state_department'
+                    WHEN NULLIF(TRIM(COALESCE(u.state_department, '')), '') IS NOT NULL
+                         AND COALESCE(TRIM(u.state_department), '') IS DISTINCT FROM COALESCE(TRIM(usb.proposed_state_department), '')
+                        THEN 'state_department_would_change'
+                    ELSE 'aligned'
+                END AS issue
+            FROM users u
+            LEFT JOIN user_ministry_best umb ON umb.userid = u.userid
+            LEFT JOIN user_state_best usb ON usb.userid = u.userid
+            WHERE COALESCE(u.voided, false) = false
+              AND (
+                    (umb.proposed_ministry IS NULL AND NULLIF(TRIM(COALESCE(u.ministry, '')), '') IS NOT NULL)
+                    OR COALESCE(TRIM(u.ministry), '') IS DISTINCT FROM COALESCE(TRIM(umb.proposed_ministry), '')
+                    OR (
+                        NULLIF(TRIM(COALESCE(u.state_department, '')), '') IS NOT NULL
+                        AND (
+                            usb.proposed_state_department IS NULL
+                            OR COALESCE(TRIM(u.state_department), '') IS DISTINCT FROM COALESCE(TRIM(usb.proposed_state_department), '')
+                        )
+                    )
+              )
+        )
+    `;
+}
+
+function buildScopeOrgMisalignedCte() {
+    return `
+        scope_ministry_rank AS (
+            SELECT
+                s.id,
+                m.name AS proposed_ministry,
+                ROW_NUMBER() OVER (
+                    PARTITION BY s.id
+                    ORDER BY
+                        ${ministryMatchPriorityCase('s.ministry', 'm.name', 'm.alias')},
+                        m.name
+                ) AS rn
+            FROM user_organization_scope s
+            INNER JOIN ministries m ON COALESCE(m.voided, false) = false
+                AND (${ministryMatchesClause('s.ministry', 'm.name', 'm.alias')})
+            WHERE s.scope_type IN ('MINISTRY_ALL', 'STATE_DEPARTMENT_ALL')
+              AND NULLIF(TRIM(COALESCE(s.ministry, '')), '') IS NOT NULL
+        ),
+        scope_ministry_best AS (
+            SELECT id, proposed_ministry FROM scope_ministry_rank WHERE rn = 1
+        ),
+        scope_state_rank AS (
+            SELECT
+                s.id,
+                d.name AS proposed_state_department,
+                ROW_NUMBER() OVER (
+                    PARTITION BY s.id
+                    ORDER BY
+                        ${stateDeptMatchPriorityCase('s.state_department', 'd.name', 'd.alias')},
+                        d.name
+                ) AS rn
+            FROM user_organization_scope s
+            INNER JOIN scope_ministry_best smb ON smb.id = s.id
+            INNER JOIN ministries m ON COALESCE(m.voided, false) = false
+                AND LOWER(TRIM(m.name)) = LOWER(TRIM(smb.proposed_ministry))
+            INNER JOIN departments d ON d."ministryId" = m."ministryId" AND COALESCE(d.voided, false) = false
+            WHERE s.scope_type = 'STATE_DEPARTMENT_ALL'
+              AND NULLIF(TRIM(COALESCE(s.state_department, '')), '') IS NOT NULL
+              AND (${stateDepartmentMatchesClause('s.state_department', 'd.name', 'd.alias')})
+        ),
+        scope_state_best AS (
+            SELECT id, proposed_state_department FROM scope_state_rank WHERE rn = 1
+        ),
+        scope_final AS (
+            SELECT
+                s.id,
+                s.user_id,
+                u.username,
+                s.scope_type,
+                s.ministry AS current_ministry,
+                s.state_department AS current_state_department,
+                smb.proposed_ministry,
+                ssb.proposed_state_department,
+                CASE
+                    WHEN smb.proposed_ministry IS NULL THEN 'unknown_ministry'
+                    WHEN COALESCE(TRIM(s.ministry), '') IS DISTINCT FROM COALESCE(TRIM(smb.proposed_ministry), '') THEN 'ministry_would_change'
+                    WHEN s.scope_type = 'STATE_DEPARTMENT_ALL'
+                         AND NULLIF(TRIM(COALESCE(s.state_department, '')), '') IS NOT NULL
+                         AND ssb.proposed_state_department IS NULL THEN 'unknown_state_department'
+                    WHEN s.scope_type = 'STATE_DEPARTMENT_ALL'
+                         AND NULLIF(TRIM(COALESCE(s.state_department, '')), '') IS NOT NULL
+                         AND COALESCE(TRIM(s.state_department), '') IS DISTINCT FROM COALESCE(TRIM(ssb.proposed_state_department), '')
+                        THEN 'state_department_would_change'
+                    ELSE 'aligned'
+                END AS issue
+            FROM user_organization_scope s
+            LEFT JOIN users u ON u.userid = s.user_id
+            LEFT JOIN scope_ministry_best smb ON smb.id = s.id
+            LEFT JOIN scope_state_best ssb ON ssb.id = s.id
+            WHERE s.scope_type IN ('MINISTRY_ALL', 'STATE_DEPARTMENT_ALL')
+              AND (
+                    (smb.proposed_ministry IS NULL AND NULLIF(TRIM(COALESCE(s.ministry, '')), '') IS NOT NULL)
+                    OR COALESCE(TRIM(s.ministry), '') IS DISTINCT FROM COALESCE(TRIM(smb.proposed_ministry), '')
+                    OR (
+                        s.scope_type = 'STATE_DEPARTMENT_ALL'
+                        AND NULLIF(TRIM(COALESCE(s.state_department, '')), '') IS NOT NULL
+                        AND (
+                            ssb.proposed_state_department IS NULL
+                            OR COALESCE(TRIM(s.state_department), '') IS DISTINCT FROM COALESCE(TRIM(ssb.proposed_state_department), '')
+                        )
+                    )
+              )
+        )
+    `;
+}
+
+function buildProjectOrgMisalignedCte() {
+    return `
+        project_ministry_rank AS (
+            SELECT
+                p.project_id,
+                m.name AS proposed_ministry,
+                ROW_NUMBER() OVER (
+                    PARTITION BY p.project_id
+                    ORDER BY
+                        ${ministryMatchPriorityCase('p.ministry', 'm.name', 'm.alias')},
+                        m.name
+                ) AS rn
+            FROM projects p
+            INNER JOIN ministries m ON COALESCE(m.voided, false) = false
+                AND (${ministryMatchesClause('p.ministry', 'm.name', 'm.alias')})
+            WHERE COALESCE(p.voided, false) = false
+              AND NULLIF(TRIM(COALESCE(p.ministry, '')), '') IS NOT NULL
+        ),
+        project_ministry_best AS (
+            SELECT project_id, proposed_ministry FROM project_ministry_rank WHERE rn = 1
+        ),
+        project_state_rank AS (
+            SELECT
+                p.project_id,
+                d.name AS proposed_state_department,
+                ROW_NUMBER() OVER (
+                    PARTITION BY p.project_id
+                    ORDER BY
+                        ${stateDeptMatchPriorityCase('p.state_department', 'd.name', 'd.alias')},
+                        d.name
+                ) AS rn
+            FROM projects p
+            INNER JOIN project_ministry_best pmb ON pmb.project_id = p.project_id
+            INNER JOIN ministries m ON COALESCE(m.voided, false) = false
+                AND LOWER(TRIM(m.name)) = LOWER(TRIM(pmb.proposed_ministry))
+            INNER JOIN departments d ON d."ministryId" = m."ministryId" AND COALESCE(d.voided, false) = false
+            WHERE COALESCE(p.voided, false) = false
+              AND NULLIF(TRIM(COALESCE(p.state_department, '')), '') IS NOT NULL
+              AND (${stateDepartmentMatchesClause('p.state_department', 'd.name', 'd.alias')})
+        ),
+        project_state_best AS (
+            SELECT project_id, proposed_state_department FROM project_state_rank WHERE rn = 1
+        ),
+        project_final AS (
+            SELECT
+                p.project_id,
+                p.name,
+                p.ministry AS current_ministry,
+                p.state_department AS current_state_department,
+                pmb.proposed_ministry,
+                psb.proposed_state_department,
+                CASE
+                    WHEN pmb.proposed_ministry IS NULL THEN 'unknown_ministry'
+                    WHEN COALESCE(TRIM(p.ministry), '') IS DISTINCT FROM COALESCE(TRIM(pmb.proposed_ministry), '') THEN 'ministry_would_change'
+                    WHEN NULLIF(TRIM(COALESCE(p.state_department, '')), '') IS NOT NULL
+                         AND psb.proposed_state_department IS NULL THEN 'unknown_state_department'
+                    WHEN NULLIF(TRIM(COALESCE(p.state_department, '')), '') IS NOT NULL
+                         AND COALESCE(TRIM(p.state_department), '') IS DISTINCT FROM COALESCE(TRIM(psb.proposed_state_department), '')
+                        THEN 'state_department_would_change'
+                    ELSE 'aligned'
+                END AS issue
+            FROM projects p
+            LEFT JOIN project_ministry_best pmb ON pmb.project_id = p.project_id
+            LEFT JOIN project_state_best psb ON psb.project_id = p.project_id
+            WHERE COALESCE(p.voided, false) = false
+              AND (
+                    NULLIF(TRIM(COALESCE(p.ministry, '')), '') IS NULL
+                    OR pmb.proposed_ministry IS NULL
+                    OR COALESCE(TRIM(p.ministry), '') IS DISTINCT FROM COALESCE(TRIM(pmb.proposed_ministry), '')
+                    OR (
+                        NULLIF(TRIM(COALESCE(p.state_department, '')), '') IS NOT NULL
+                        AND (
+                            psb.proposed_state_department IS NULL
+                            OR COALESCE(TRIM(p.state_department), '') IS DISTINCT FROM COALESCE(TRIM(psb.proposed_state_department), '')
+                        )
+                    )
+              )
+        )
+    `;
+}
+
+async function getOrgIntegrityPreview(limit = 50) {
+    const previewLimit = Math.max(1, Math.min(parseInt(String(limit), 10) || 50, 500));
+
+    const userCte = buildUserOrgMisalignedCte();
+    const scopeCte = buildScopeOrgMisalignedCte();
+    const projectCte = buildProjectOrgMisalignedCte();
+
+    const userCountSql = `WITH ${userCte}
+        SELECT
+            COUNT(*)::int AS "totalMisaligned",
+            COUNT(*) FILTER (WHERE issue = 'unknown_ministry')::int AS "unknownMinistry",
+            COUNT(*) FILTER (WHERE issue = 'ministry_would_change')::int AS "ministryWouldChange",
+            COUNT(*) FILTER (WHERE issue = 'unknown_state_department')::int AS "unknownStateDepartment",
+            COUNT(*) FILTER (WHERE issue = 'state_department_would_change')::int AS "stateWouldChange"
+        FROM user_final`;
+
+    const userRowsSql = `WITH ${userCte}
+        SELECT
+            userid AS "userId",
+            username,
+            current_ministry AS "currentMinistry",
+            current_state_department AS "currentStateDepartment",
+            proposed_ministry AS "proposedMinistry",
+            proposed_state_department AS "proposedStateDepartment",
+            issue
+        FROM user_final
+        ORDER BY userid
+        LIMIT $1`;
+
+    const scopeCountSql = `WITH ${scopeCte}
+        SELECT
+            COUNT(*)::int AS "totalMisaligned",
+            COUNT(*) FILTER (WHERE issue = 'unknown_ministry')::int AS "unknownMinistry",
+            COUNT(*) FILTER (WHERE issue = 'ministry_would_change')::int AS "ministryWouldChange",
+            COUNT(*) FILTER (WHERE issue = 'unknown_state_department')::int AS "unknownStateDepartment",
+            COUNT(*) FILTER (WHERE issue = 'state_department_would_change')::int AS "stateWouldChange"
+        FROM scope_final`;
+
+    const scopeRowsSql = `WITH ${scopeCte}
+        SELECT
+            id AS "scopeId",
+            user_id AS "userId",
+            username,
+            scope_type AS "scopeType",
+            current_ministry AS "currentMinistry",
+            current_state_department AS "currentStateDepartment",
+            proposed_ministry AS "proposedMinistry",
+            proposed_state_department AS "proposedStateDepartment",
+            issue
+        FROM scope_final
+        ORDER BY user_id, id
+        LIMIT $1`;
+
+    const projectCountSql = `WITH ${projectCte}
+        SELECT
+            COUNT(*)::int AS "totalMisaligned",
+            COUNT(*) FILTER (WHERE issue = 'unknown_ministry')::int AS "unknownMinistry",
+            COUNT(*) FILTER (WHERE issue = 'ministry_would_change')::int AS "ministryWouldChange",
+            COUNT(*) FILTER (WHERE issue = 'unknown_state_department')::int AS "unknownStateDepartment",
+            COUNT(*) FILTER (WHERE issue = 'state_department_would_change')::int AS "stateWouldChange"
+        FROM project_final`;
+
+    const projectRowsSql = `WITH ${projectCte}
+        SELECT
+            project_id AS "projectId",
+            name AS "projectName",
+            current_ministry AS "currentMinistry",
+            current_state_department AS "currentStateDepartment",
+            proposed_ministry AS "proposedMinistry",
+            proposed_state_department AS "proposedStateDepartment",
+            issue
+        FROM project_final
+        ORDER BY project_id
+        LIMIT $1`;
+
+    const [
+        userCountRes,
+        userRowsRes,
+        scopeCountRes,
+        scopeRowsRes,
+        projectCountRes,
+        projectRowsRes,
+    ] = await Promise.all([
+        pool.query(userCountSql),
+        pool.query(userRowsSql, [previewLimit]),
+        pool.query(scopeCountSql),
+        pool.query(scopeRowsSql, [previewLimit]),
+        pool.query(projectCountSql),
+        pool.query(projectRowsSql, [previewLimit]),
+    ]);
+
+    const uc = userCountRes.rows?.[0] || {};
+    const sc = scopeCountRes.rows?.[0] || {};
+    const pc = projectCountRes.rows?.[0] || {};
+
+    return {
+        summary: {
+            usersMisaligned: uc.totalMisaligned ?? 0,
+            usersUnknownMinistry: uc.unknownMinistry ?? 0,
+            usersMinistryWouldChange: uc.ministryWouldChange ?? 0,
+            usersUnknownStateDepartment: uc.unknownStateDepartment ?? 0,
+            usersStateWouldChange: uc.stateWouldChange ?? 0,
+            scopesMisaligned: sc.totalMisaligned ?? 0,
+            scopesUnknownMinistry: sc.unknownMinistry ?? 0,
+            scopesMinistryWouldChange: sc.ministryWouldChange ?? 0,
+            scopesUnknownStateDepartment: sc.unknownStateDepartment ?? 0,
+            scopesStateWouldChange: sc.stateWouldChange ?? 0,
+            projectsMisaligned: pc.totalMisaligned ?? 0,
+            projectsUnknownMinistry: pc.unknownMinistry ?? 0,
+            projectsMinistryWouldChange: pc.ministryWouldChange ?? 0,
+            projectsUnknownStateDepartment: pc.unknownStateDepartment ?? 0,
+            projectsStateWouldChange: pc.stateWouldChange ?? 0,
+        },
+        misaligned: {
+            users: userRowsRes.rows || [],
+            scopes: scopeRowsRes.rows || [],
+            projects: projectRowsRes.rows || [],
+        },
+    };
+}
+
+/** Ministry string has no registry match (empty allowed). */
+function ministryMisalignedWhereClause(sourceTableAlias) {
+    const col = `${sourceTableAlias}.ministry`;
+    return `
+    (
+        NULLIF(TRIM(COALESCE(${col}, '')), '') IS NULL
+        OR NOT EXISTS (
+            SELECT 1 FROM ministries m
+            WHERE COALESCE(m.voided, false) = false
+              AND (${ministryMatchesClause(col, 'm.name', 'm.alias')})
+        )
+    )`;
+}
+
+/** State department string has no registry match (empty allowed). */
+function stateDeptMisalignedWhereClause(sourceTableAlias) {
+    const col = `${sourceTableAlias}.state_department`;
+    return `
+    (
+        NULLIF(TRIM(COALESCE(${col}, '')), '') IS NULL
+        OR NOT EXISTS (
+            SELECT 1 FROM departments d
+            INNER JOIN ministries m ON m."ministryId" = d."ministryId" AND COALESCE(m.voided, false) = false
+            WHERE COALESCE(d.voided, false) = false
+              AND (${stateDepartmentMatchesClause(col, 'd.name', 'd.alias')})
+        )
+    )`;
+}
+
+async function getMisalignedMinistryDistinct() {
+    const uw = ministryMisalignedWhereClause('u');
+    const sw = ministryMisalignedWhereClause('s');
+    const pw = ministryMisalignedWhereClause('p');
+    const userCte = buildUserOrgMisalignedCte();
+    const scopeCte = buildScopeOrgMisalignedCte();
+    const projectCte = buildProjectOrgMisalignedCte();
+
+    const userSql = `
+        SELECT TRIM(COALESCE(u.ministry, '')) AS "ministryKey", COUNT(*)::int AS n
+        FROM users u
+        WHERE COALESCE(u.voided, false) = false AND ${uw}
+        GROUP BY TRIM(COALESCE(u.ministry, ''))`;
+
+    const scopeSql = `
+        SELECT TRIM(COALESCE(s.ministry, '')) AS "ministryKey", COUNT(*)::int AS n
+        FROM user_organization_scope s
+        WHERE s.scope_type IN ('MINISTRY_ALL', 'STATE_DEPARTMENT_ALL')
+          AND ${sw}
+        GROUP BY TRIM(COALESCE(s.ministry, ''))`;
+
+    const projectSql = `
+        SELECT TRIM(COALESCE(p.ministry, '')) AS "ministryKey", COUNT(*)::int AS n
+        FROM projects p
+        WHERE COALESCE(p.voided, false) = false AND ${pw}
+        GROUP BY TRIM(COALESCE(p.ministry, ''))`;
+
+    const userWouldChangeSql = `WITH ${userCte}
+        SELECT TRIM(COALESCE(current_ministry, '')) AS "ministryKey", COUNT(*)::int AS n
+        FROM user_final
+        WHERE issue = 'ministry_would_change'
+        GROUP BY TRIM(COALESCE(current_ministry, ''))`;
+
+    const scopeWouldChangeSql = `WITH ${scopeCte}
+        SELECT TRIM(COALESCE(current_ministry, '')) AS "ministryKey", COUNT(*)::int AS n
+        FROM scope_final
+        WHERE issue = 'ministry_would_change'
+        GROUP BY TRIM(COALESCE(current_ministry, ''))`;
+
+    const projectWouldChangeSql = `WITH ${projectCte}
+        SELECT TRIM(COALESCE(current_ministry, '')) AS "ministryKey", COUNT(*)::int AS n
+        FROM project_final
+        WHERE issue = 'ministry_would_change'
+        GROUP BY TRIM(COALESCE(current_ministry, ''))`;
+
+    const [ur, sr, pr, uwr, swr, pwr] = await Promise.all([
+        pool.query(userSql),
+        pool.query(scopeSql),
+        pool.query(projectSql),
+        pool.query(userWouldChangeSql),
+        pool.query(scopeWouldChangeSql),
+        pool.query(projectWouldChangeSql),
+    ]);
+
+    const merged = new Map();
+    const bump = (key, field, n) => {
+        const k = key == null ? '' : String(key);
+        const isEmpty = k === '';
+        const cur = merged.get(k) || {
+            ministryKey: k,
+            displayMinistry: isEmpty ? '(empty / unspecified)' : k,
+            isEmpty,
+            userCount: 0,
+            scopeCount: 0,
+            projectCount: 0,
+        };
+        cur[field] += n;
+        merged.set(k, cur);
+    };
+
+    for (const r of ur.rows || []) bump(r.ministryKey, 'userCount', r.n || 0);
+    for (const r of sr.rows || []) bump(r.ministryKey, 'scopeCount', r.n || 0);
+    for (const r of pr.rows || []) bump(r.ministryKey, 'projectCount', r.n || 0);
+    for (const r of uwr.rows || []) bump(r.ministryKey, 'userCount', r.n || 0);
+    for (const r of swr.rows || []) bump(r.ministryKey, 'scopeCount', r.n || 0);
+    for (const r of pwr.rows || []) bump(r.ministryKey, 'projectCount', r.n || 0);
+
+    const list = Array.from(merged.values());
+    list.sort((a, b) => {
+        if (a.isEmpty !== b.isEmpty) return a.isEmpty ? -1 : 1;
+        return String(a.ministryKey).localeCompare(String(b.ministryKey), undefined, { sensitivity: 'base' });
+    });
+    return list;
+}
+
+async function getMisalignedStateDepartmentDistinct() {
+    const uw = stateDeptMisalignedWhereClause('u');
+    const sw = stateDeptMisalignedWhereClause('s');
+    const pw = stateDeptMisalignedWhereClause('p');
+    const userCte = buildUserOrgMisalignedCte();
+    const scopeCte = buildScopeOrgMisalignedCte();
+    const projectCte = buildProjectOrgMisalignedCte();
+
+    const userSql = `
+        SELECT TRIM(COALESCE(u.state_department, '')) AS "stateDepartmentKey", COUNT(*)::int AS n
+        FROM users u
+        WHERE COALESCE(u.voided, false) = false AND ${uw}
+        GROUP BY TRIM(COALESCE(u.state_department, ''))`;
+
+    const scopeSql = `
+        SELECT TRIM(COALESCE(s.state_department, '')) AS "stateDepartmentKey", COUNT(*)::int AS n
+        FROM user_organization_scope s
+        WHERE s.scope_type = 'STATE_DEPARTMENT_ALL'
+          AND ${sw}
+        GROUP BY TRIM(COALESCE(s.state_department, ''))`;
+
+    const projectSql = `
+        SELECT TRIM(COALESCE(p.state_department, '')) AS "stateDepartmentKey", COUNT(*)::int AS n
+        FROM projects p
+        WHERE COALESCE(p.voided, false) = false AND ${pw}
+        GROUP BY TRIM(COALESCE(p.state_department, ''))`;
+
+    const userWouldChangeSql = `WITH ${userCte}
+        SELECT TRIM(COALESCE(current_state_department, '')) AS "stateDepartmentKey", COUNT(*)::int AS n
+        FROM user_final
+        WHERE issue = 'state_department_would_change'
+        GROUP BY TRIM(COALESCE(current_state_department, ''))`;
+
+    const scopeWouldChangeSql = `WITH ${scopeCte}
+        SELECT TRIM(COALESCE(current_state_department, '')) AS "stateDepartmentKey", COUNT(*)::int AS n
+        FROM scope_final
+        WHERE issue = 'state_department_would_change'
+        GROUP BY TRIM(COALESCE(current_state_department, ''))`;
+
+    const projectWouldChangeSql = `WITH ${projectCte}
+        SELECT TRIM(COALESCE(current_state_department, '')) AS "stateDepartmentKey", COUNT(*)::int AS n
+        FROM project_final
+        WHERE issue = 'state_department_would_change'
+        GROUP BY TRIM(COALESCE(current_state_department, ''))`;
+
+    const [ur, sr, pr, uwr, swr, pwr] = await Promise.all([
+        pool.query(userSql),
+        pool.query(scopeSql),
+        pool.query(projectSql),
+        pool.query(userWouldChangeSql),
+        pool.query(scopeWouldChangeSql),
+        pool.query(projectWouldChangeSql),
+    ]);
+
+    const merged = new Map();
+    const bump = (key, field, n) => {
+        const k = key == null ? '' : String(key);
+        const isEmpty = k === '';
+        const cur = merged.get(k) || {
+            stateDepartmentKey: k,
+            displayStateDepartment: isEmpty ? '(empty / unspecified)' : k,
+            isEmpty,
+            userCount: 0,
+            scopeCount: 0,
+            projectCount: 0,
+        };
+        cur[field] += n;
+        merged.set(k, cur);
+    };
+
+    for (const r of ur.rows || []) bump(r.stateDepartmentKey, 'userCount', r.n || 0);
+    for (const r of sr.rows || []) bump(r.stateDepartmentKey, 'scopeCount', r.n || 0);
+    for (const r of pr.rows || []) bump(r.stateDepartmentKey, 'projectCount', r.n || 0);
+    for (const r of uwr.rows || []) bump(r.stateDepartmentKey, 'userCount', r.n || 0);
+    for (const r of swr.rows || []) bump(r.stateDepartmentKey, 'scopeCount', r.n || 0);
+    for (const r of pwr.rows || []) bump(r.stateDepartmentKey, 'projectCount', r.n || 0);
+
+    const list = Array.from(merged.values());
+    list.sort((a, b) => {
+        if (a.isEmpty !== b.isEmpty) return a.isEmpty ? -1 : 1;
+        return String(a.stateDepartmentKey).localeCompare(String(b.stateDepartmentKey), undefined, { sensitivity: 'base' });
+    });
+    return list;
+}
+
+async function resolveCanonicalMinistryName(conn, name) {
+    const t = String(name || '').trim();
+    if (!t) return null;
+    const r = await conn.query(
+        `SELECT name FROM ministries WHERE COALESCE(voided, false) = false AND TRIM(name) = $1 LIMIT 1`,
+        [t]
+    );
+    return r.rows?.[0]?.name || null;
+}
+
+async function resolveCanonicalDepartmentName(conn, name) {
+    const t = String(name || '').trim();
+    if (!t) return null;
+    const r = await conn.query(
+        `SELECT d.name FROM departments d
+         WHERE COALESCE(d.voided, false) = false AND TRIM(d.name) = $1 LIMIT 1`,
+        [t]
+    );
+    return r.rows?.[0]?.name || null;
+}
+
+router.get('/organization-integrity/preview', requireSuperAdmin, async (req, res) => {
+    try {
+        const DB_TYPE = process.env.DB_TYPE || 'mysql';
+        if (DB_TYPE !== 'postgresql') {
+            return res.status(400).json({ message: 'Organization integrity tooling is only available for PostgreSQL.' });
+        }
+        const report = await getOrgIntegrityPreview(req.query.limit || 50);
+        return res.status(200).json(report);
+    } catch (error) {
+        console.error('Error generating organization integrity preview:', error);
+        return res.status(500).json({ message: 'Failed to generate preview', error: error.message });
+    }
+});
+
+router.post('/organization-integrity/reconcile', requireSuperAdmin, async (req, res) => {
+    const DB_TYPE = process.env.DB_TYPE || 'mysql';
+    if (DB_TYPE !== 'postgresql') {
+        return res.status(400).json({ message: 'Organization integrity tooling is only available for PostgreSQL.' });
+    }
+
+    const dryRun = req.body?.dryRun !== false;
+    if (dryRun) {
+        try {
+            const report = await getOrgIntegrityPreview(req.body?.limit || 50);
+            return res.status(200).json({ dryRun: true, ...report });
+        } catch (error) {
+            console.error('Error in organization integrity dry-run:', error);
+            return res.status(500).json({ message: 'Failed to run dry-run', error: error.message });
+        }
+    }
+
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        const updateUsersMinistrySql = `
+            UPDATE users u
+            SET ministry = m.name,
+                updatedat = CURRENT_TIMESTAMP
+            FROM ministries m
+            WHERE COALESCE(u.voided, false) = false
+              AND COALESCE(m.voided, false) = false
+              AND NULLIF(TRIM(COALESCE(u.ministry, '')), '') IS NOT NULL
+              AND ${ministryMatchesClause('u.ministry', 'm.name', 'm.alias')}
+              AND COALESCE(u.ministry, '') <> COALESCE(m.name, '')
+        `;
+
+        const updateUsersStateSql = `
+            UPDATE users u
+            SET state_department = d.name,
+                updatedat = CURRENT_TIMESTAMP
+            FROM ministries m
+            JOIN departments d ON d."ministryId" = m."ministryId" AND COALESCE(d.voided, false) = false
+            WHERE COALESCE(u.voided, false) = false
+              AND COALESCE(m.voided, false) = false
+              AND NULLIF(TRIM(COALESCE(u.ministry, '')), '') IS NOT NULL
+              AND NULLIF(TRIM(COALESCE(u.state_department, '')), '') IS NOT NULL
+              AND ${ministryMatchesClause('u.ministry', 'm.name', 'm.alias')}
+              AND ${stateDepartmentMatchesClause('u.state_department', 'd.name', 'd.alias')}
+              AND COALESCE(u.state_department, '') <> COALESCE(d.name, '')
+        `;
+
+        const updateScopesMinistrySql = `
+            UPDATE user_organization_scope s
+            SET ministry = m.name
+            FROM ministries m
+            WHERE COALESCE(m.voided, false) = false
+              AND s.scope_type IN ('MINISTRY_ALL', 'STATE_DEPARTMENT_ALL')
+              AND NULLIF(TRIM(COALESCE(s.ministry, '')), '') IS NOT NULL
+              AND ${ministryMatchesClause('s.ministry', 'm.name', 'm.alias')}
+              AND COALESCE(s.ministry, '') <> COALESCE(m.name, '')
+        `;
+
+        const updateScopesStateSql = `
+            UPDATE user_organization_scope s
+            SET state_department = d.name
+            FROM ministries m
+            JOIN departments d ON d."ministryId" = m."ministryId" AND COALESCE(d.voided, false) = false
+            WHERE COALESCE(m.voided, false) = false
+              AND s.scope_type = 'STATE_DEPARTMENT_ALL'
+              AND NULLIF(TRIM(COALESCE(s.ministry, '')), '') IS NOT NULL
+              AND NULLIF(TRIM(COALESCE(s.state_department, '')), '') IS NOT NULL
+              AND ${ministryMatchesClause('s.ministry', 'm.name', 'm.alias')}
+              AND ${stateDepartmentMatchesClause('s.state_department', 'd.name', 'd.alias')}
+              AND COALESCE(s.state_department, '') <> COALESCE(d.name, '')
+        `;
+
+        const updateProjectsMinistrySql = `
+            UPDATE projects p
+            SET ministry = m.name,
+                updated_at = CURRENT_TIMESTAMP
+            FROM ministries m
+            WHERE COALESCE(p.voided, false) = false
+              AND COALESCE(m.voided, false) = false
+              AND NULLIF(TRIM(COALESCE(p.ministry, '')), '') IS NOT NULL
+              AND ${ministryMatchesClause('p.ministry', 'm.name', 'm.alias')}
+              AND COALESCE(p.ministry, '') <> COALESCE(m.name, '')
+        `;
+
+        const updateProjectsStateSql = `
+            UPDATE projects p
+            SET state_department = d.name,
+                updated_at = CURRENT_TIMESTAMP
+            FROM ministries m
+            JOIN departments d ON d."ministryId" = m."ministryId" AND COALESCE(d.voided, false) = false
+            WHERE COALESCE(p.voided, false) = false
+              AND COALESCE(m.voided, false) = false
+              AND NULLIF(TRIM(COALESCE(p.ministry, '')), '') IS NOT NULL
+              AND NULLIF(TRIM(COALESCE(p.state_department, '')), '') IS NOT NULL
+              AND ${ministryMatchesClause('p.ministry', 'm.name', 'm.alias')}
+              AND ${stateDepartmentMatchesClause('p.state_department', 'd.name', 'd.alias')}
+              AND COALESCE(p.state_department, '') <> COALESCE(d.name, '')
+        `;
+
+        const usersMinistry = await conn.query(updateUsersMinistrySql);
+        const usersState = await conn.query(updateUsersStateSql);
+        const scopesMinistry = await conn.query(updateScopesMinistrySql);
+        const scopesState = await conn.query(updateScopesStateSql);
+        const projectsMinistry = await conn.query(updateProjectsMinistrySql);
+        const projectsState = await conn.query(updateProjectsStateSql);
+
+        await conn.commit();
+
+        return res.status(200).json({
+            dryRun: false,
+            changed: {
+                usersMinistry: usersMinistry.rowCount || 0,
+                usersStateDepartment: usersState.rowCount || 0,
+                scopesMinistry: scopesMinistry.rowCount || 0,
+                scopesStateDepartment: scopesState.rowCount || 0,
+                projectsMinistry: projectsMinistry.rowCount || 0,
+                projectsStateDepartment: projectsState.rowCount || 0,
+            },
+        });
+    } catch (error) {
+        try {
+            await conn.rollback();
+        } catch (rollbackError) {
+            console.warn('organization-integrity reconcile rollback failed:', rollbackError.message);
+        }
+        console.error('Error reconciling organization integrity:', error);
+        return res.status(500).json({ message: 'Failed to reconcile organization data', error: error.message });
+    } finally {
+        conn.release();
+    }
+});
+
+router.get('/organization-integrity/misaligned-distinct', requireSuperAdmin, async (req, res) => {
+    const DB_TYPE = process.env.DB_TYPE || 'mysql';
+    if (DB_TYPE !== 'postgresql') {
+        return res.status(400).json({ message: 'Organization integrity tooling is only available for PostgreSQL.' });
+    }
+    try {
+        const [misalignedMinistries, misalignedStateDepartments] = await Promise.all([
+            getMisalignedMinistryDistinct(),
+            getMisalignedStateDepartmentDistinct(),
+        ]);
+        return res.status(200).json({ misalignedMinistries, misalignedStateDepartments });
+    } catch (error) {
+        console.error('Error loading misaligned distinct org strings:', error);
+        return res.status(500).json({ message: 'Failed to load misaligned ministry/state lists', error: error.message });
+    }
+});
+
+router.post('/organization-integrity/manual-map', requireSuperAdmin, async (req, res) => {
+    const DB_TYPE = process.env.DB_TYPE || 'mysql';
+    if (DB_TYPE !== 'postgresql') {
+        return res.status(400).json({ message: 'Organization integrity tooling is only available for PostgreSQL.' });
+    }
+
+    const ministryMappings = Array.isArray(req.body?.ministryMappings) ? req.body.ministryMappings : [];
+    const stateDepartmentMappings = Array.isArray(req.body?.stateDepartmentMappings) ? req.body.stateDepartmentMappings : [];
+    if (ministryMappings.length + stateDepartmentMappings.length > 500) {
+        return res.status(400).json({ message: 'Too many mappings in one request (max 500 combined).' });
+    }
+
+    const conn = await pool.getConnection();
+    const changed = {
+        usersMinistry: 0,
+        scopesMinistry: 0,
+        projectsMinistry: 0,
+        usersStateDepartment: 0,
+        scopesStateDepartment: 0,
+        projectsStateDepartment: 0,
+    };
+
+    try {
+        await conn.beginTransaction();
+
+        for (const row of ministryMappings) {
+            const toName = String(row?.toMinistryName || '').trim();
+            if (!toName) continue;
+            const canonical = await resolveCanonicalMinistryName(conn, toName);
+            if (!canonical) {
+                throw new Error(`Target ministry not found in registry: "${toName}"`);
+            }
+            const isEmpty = row?.isEmptyMinistry === true || row?.ministryKey === '' || row?.ministryKey == null;
+            if (isEmpty) {
+                const u = await conn.query(
+                    `UPDATE users SET ministry = $1, updatedat = CURRENT_TIMESTAMP
+                     WHERE COALESCE(voided, false) = false
+                       AND (ministry IS NULL OR TRIM(COALESCE(ministry, '')) = '')`,
+                    [canonical]
+                );
+                changed.usersMinistry += u.rowCount || 0;
+
+                const s = await conn.query(
+                    `UPDATE user_organization_scope SET ministry = $1
+                     WHERE scope_type IN ('MINISTRY_ALL', 'STATE_DEPARTMENT_ALL')
+                       AND (ministry IS NULL OR TRIM(COALESCE(ministry, '')) = '')`,
+                    [canonical]
+                );
+                changed.scopesMinistry += s.rowCount || 0;
+
+                const p = await conn.query(
+                    `UPDATE projects SET ministry = $1, updated_at = CURRENT_TIMESTAMP
+                     WHERE COALESCE(voided, false) = false
+                       AND (ministry IS NULL OR TRIM(COALESCE(ministry, '')) = '')`,
+                    [canonical]
+                );
+                changed.projectsMinistry += p.rowCount || 0;
+            } else {
+                const fromKey = String(row.ministryKey).trim();
+                const u = await conn.query(
+                    `UPDATE users SET ministry = $1, updatedat = CURRENT_TIMESTAMP
+                     WHERE COALESCE(voided, false) = false AND TRIM(COALESCE(ministry, '')) = $2`,
+                    [canonical, fromKey]
+                );
+                changed.usersMinistry += u.rowCount || 0;
+
+                const s = await conn.query(
+                    `UPDATE user_organization_scope SET ministry = $1
+                     WHERE scope_type IN ('MINISTRY_ALL', 'STATE_DEPARTMENT_ALL')
+                       AND TRIM(COALESCE(ministry, '')) = $2`,
+                    [canonical, fromKey]
+                );
+                changed.scopesMinistry += s.rowCount || 0;
+
+                const p = await conn.query(
+                    `UPDATE projects SET ministry = $1, updated_at = CURRENT_TIMESTAMP
+                     WHERE COALESCE(voided, false) = false AND TRIM(COALESCE(ministry, '')) = $2`,
+                    [canonical, fromKey]
+                );
+                changed.projectsMinistry += p.rowCount || 0;
+            }
+        }
+
+        for (const row of stateDepartmentMappings) {
+            const toName = String(row?.toDepartmentName || '').trim();
+            if (!toName) continue;
+            const canonicalDept = await resolveCanonicalDepartmentName(conn, toName);
+            if (!canonicalDept) {
+                throw new Error(`Target state department not found in registry: "${toName}"`);
+            }
+            const isEmpty = row?.isEmptyStateDepartment === true || row?.stateDepartmentKey === '' || row?.stateDepartmentKey == null;
+            if (isEmpty) {
+                const u = await conn.query(
+                    `UPDATE users SET state_department = $1, updatedat = CURRENT_TIMESTAMP
+                     WHERE COALESCE(voided, false) = false
+                       AND (state_department IS NULL OR TRIM(COALESCE(state_department, '')) = '')`,
+                    [canonicalDept]
+                );
+                changed.usersStateDepartment += u.rowCount || 0;
+
+                const s = await conn.query(
+                    `UPDATE user_organization_scope SET state_department = $1
+                     WHERE scope_type = 'STATE_DEPARTMENT_ALL'
+                       AND (state_department IS NULL OR TRIM(COALESCE(state_department, '')) = '')`,
+                    [canonicalDept]
+                );
+                changed.scopesStateDepartment += s.rowCount || 0;
+
+                const p = await conn.query(
+                    `UPDATE projects SET state_department = $1, updated_at = CURRENT_TIMESTAMP
+                     WHERE COALESCE(voided, false) = false
+                       AND (state_department IS NULL OR TRIM(COALESCE(state_department, '')) = '')`,
+                    [canonicalDept]
+                );
+                changed.projectsStateDepartment += p.rowCount || 0;
+            } else {
+                const fromKey = String(row.stateDepartmentKey).trim();
+                const u = await conn.query(
+                    `UPDATE users SET state_department = $1, updatedat = CURRENT_TIMESTAMP
+                     WHERE COALESCE(voided, false) = false AND TRIM(COALESCE(state_department, '')) = $2`,
+                    [canonicalDept, fromKey]
+                );
+                changed.usersStateDepartment += u.rowCount || 0;
+
+                const s = await conn.query(
+                    `UPDATE user_organization_scope SET state_department = $1
+                     WHERE scope_type = 'STATE_DEPARTMENT_ALL'
+                       AND TRIM(COALESCE(state_department, '')) = $2`,
+                    [canonicalDept, fromKey]
+                );
+                changed.scopesStateDepartment += s.rowCount || 0;
+
+                const p = await conn.query(
+                    `UPDATE projects SET state_department = $1, updated_at = CURRENT_TIMESTAMP
+                     WHERE COALESCE(voided, false) = false AND TRIM(COALESCE(state_department, '')) = $2`,
+                    [canonicalDept, fromKey]
+                );
+                changed.projectsStateDepartment += p.rowCount || 0;
+            }
+        }
+
+        await conn.commit();
+        return res.status(200).json({ ok: true, changed });
+    } catch (error) {
+        try {
+            await conn.rollback();
+        } catch (rollbackError) {
+            console.warn('organization-integrity manual-map rollback failed:', rollbackError.message);
+        }
+        console.error('Error applying manual organization map:', error);
+        return res.status(500).json({ message: error.message || 'Failed to apply manual mappings', error: error.message });
+    } finally {
+        conn.release();
+    }
+});
+
 module.exports = router;

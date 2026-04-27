@@ -565,6 +565,55 @@ const userService = {
       throw error;
     }
   },
+
+  /** Super Admin only: preview org integrity issues (users, scopes, projects vs ministries/departments). */
+  getOrganizationIntegrityPreview: async (limit = 50) => {
+    try {
+      const response = await axiosInstance.get('/users/organization-integrity/preview', {
+        params: { limit },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching organization integrity preview:', error);
+      throw error;
+    }
+  },
+
+  /** Super Admin only: dry-run or apply ministry/state_department reconciliation. */
+  postOrganizationIntegrityReconcile: async ({ dryRun = true, limit = 50 } = {}) => {
+    try {
+      const response = await axiosInstance.post('/users/organization-integrity/reconcile', {
+        dryRun,
+        limit,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error running organization integrity reconcile:', error);
+      throw error;
+    }
+  },
+
+  /** Super Admin: distinct misaligned ministry / state department strings with counts. */
+  getOrganizationIntegrityMisalignedDistinct: async () => {
+    try {
+      const response = await axiosInstance.get('/users/organization-integrity/misaligned-distinct');
+      return response.data;
+    } catch (error) {
+      console.error('Error loading organization integrity misaligned distinct:', error);
+      throw error;
+    }
+  },
+
+  /** Super Admin: apply manual ministry / state department string replacements. */
+  postOrganizationIntegrityManualMap: async (body) => {
+    try {
+      const response = await axiosInstance.post('/users/organization-integrity/manual-map', body);
+      return response.data;
+    } catch (error) {
+      console.error('Error applying organization integrity manual map:', error);
+      throw error;
+    }
+  },
 };
 
 export default userService;
